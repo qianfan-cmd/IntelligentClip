@@ -3,7 +3,7 @@
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "editor.codeActionsOnSave": {
-    "source.fixAll": true
+    "source.fixAll": "always"
   },
   // 文件与资源管理
   "files.autoSave": "onFocusChange",
