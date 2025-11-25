@@ -18,9 +18,7 @@
     "**/build": true
   },
   // 按语言设置格式化工具
-  "[javascript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
+  "[javascript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
   "[javascriptreact]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
