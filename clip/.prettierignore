@@ -1,0 +1,30 @@
+# 依赖目录
+node_modules/
+.*node_modules*
+
+# 构建输出目录
+build/
+dist/
+.output.js
+
+# 缓存文件
+.local
+
+# 静态资源文件（图片、字体等）
+**/*.svg
+**/*.png
+**/*.jpg
+**/*.gif
+**/*.ico
+**/*.sh
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# IDE/编辑器配置
+.vscode/
+.idea/
+
+# 其他（可根据需要添加）
+# public/*
