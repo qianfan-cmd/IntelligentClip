@@ -4,8 +4,8 @@
     user-select: none; /* 禁用文本选择 */
     transition: opacity 0.2s; 
     /* 容器大小与主图标一致 */
-    width: 48px; 
-    height: 48px;
+    width: 40px; 
+    height: 40px;
     border-radius: 50%;
     margin:0 20px;
 }
@@ -21,12 +21,12 @@
 /* 它必须从父容器的 (0, 0) 开始，因为父容器就是 48x48 */
 .clipMainIconWrapper {
     position: relative; /* 变为 relative，容器内部定位使用 absolute */
-    width: 48px;
-    height: 48px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     background-color: white;
     box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1),0 2px 4px -2px rgba(0,0,0,0.06);
-    cursor: grab;
+    cursor: pointer;
 }
 
 .clipMainIconWrapper:hover {
@@ -39,12 +39,15 @@
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
-    width: 24px;
-    height: 24px;
+    transform: translate(-50%, -50%) scale(0.95);
+    width: 20px;
+    height: 20px;
+    transition: transform 0.3s ease-in-out;
 }
 
-
+.clipMainIcon:hover {
+     transform: translate(-50%, -50%) scale(1);
+}
 /* * 菜单按钮基础样式
  */
 .clipMenuButton {
@@ -58,8 +61,8 @@
     transition: background-color 0.15s;
     outline: none;
     overflow: hidden;
-    width: 48px;
-    height: 48px;
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -130,34 +133,36 @@
     transition-delay: 0.15s; 
 }
 
+
 /* 按钮在最底部，菜单显示在左上方 */
 .clipMenuWrapper.isOpen.menuBottomEdge .menuItemBookmark {
-  transform: translate(calc(-50% - 20px), calc(-50% - 60px)) scale(1);
+  transform: translate(calc(100% - 60px), calc(-150% - 20px)) scale(1); /* 正上方 */
 }
 .clipMenuWrapper.isOpen.menuBottomEdge .menuItemTranslate {
-  transform: translate(calc(-50% - 60px), calc(-50%)) scale(1);
+  transform: translate(calc(-175%), calc(-175%)) scale(1); /* 左上 */
 }
 .clipMenuWrapper.isOpen.menuBottomEdge .menuItemAiIcon {
-  transform: translate(calc(-50% - 15px), calc(-50% + 60px)) scale(1);
+  transform: translate(calc(-100% - 40px), calc(-50%)) scale(1); /* 正左 */
 }
+
 
 /* 按钮在最顶部，菜单显示在左下方 */
 .clipMenuWrapper.isOpen.menuTopEdge .menuItemBookmark {
-  transform: translate(calc(-50% - 20px), calc(-50% + 60px)) scale(1);
+  transform: translate(calc(-100% - 40px), calc(-50%)) scale(1); 
 }
 .clipMenuWrapper.isOpen.menuTopEdge .menuItemTranslate {
-  transform: translate(calc(-50% - 60px), calc(-50%)) scale(1);
+  transform: translate(calc(-175%), calc(75%)) scale(1);
 }
 .clipMenuWrapper.isOpen.menuTopEdge .menuItemAiIcon {
-  transform: translate(calc(-50% - 15px), calc(-50% - 60px)) scale(1);
+  transform: translate(calc(-50%), calc(40px)) scale(1);
 }
 
 .clipSettingsButton {
     position: absolute;
     right: -10px;
     top: -10px;
-    width: 20px;
-    height: 20px;
+    width: 15px;
+    height: 15px;
     border-radius: 50%;
     background-color: #e5e7eb;
     box-shadow: 0 2px 4px rgba(0,0,0,0.12);

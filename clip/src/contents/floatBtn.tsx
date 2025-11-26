@@ -22,10 +22,11 @@ const MenuButton = ({ icon, onClick }: { icon: React.ReactNode; onClick: () => v
 );
 
 // 吸附常量
-const BUTTON_SIZE = 48;
-const RIGHT_MARGIN = 40;
-
-const INITIAL_POSITION = { x: window.innerWidth - 80, y: 200 };
+const BUTTON_SIZE: number = 40;
+const RIGHT_MARGIN: number = document.documentElement.clientWidth - BUTTON_SIZE - 40 + 7.5;//固定右侧间隔
+const TOP_MARGIN: number = 20;
+const BOTTOM_MARGIN: number = 20;
+const INITIAL_POSITION = { x: RIGHT_MARGIN, y: 200 };
 
 const floatButton = () => {
   const [position, setPosition] = useState(INITIAL_POSITION);//按钮位置
@@ -65,15 +66,24 @@ const floatButton = () => {
     setPosition({ x: newX, y: newY });
   }, [isDragging]);
 
-  // --- 自动吸附 ---
-  const handleMouseUp = useCallback(() => {
+  //自动吸附
+  const handleMouseUp = useCallback((position: { x: number; y: number }) => {
     if (isDragging) {
       // 自动吸附回右侧
-      const rightLimit = window.innerWidth - BUTTON_SIZE - RIGHT_MARGIN;
-
+      //对顶部和做一个限制，防止按钮移动到网页外面被遮挡
+      let topLimit: number;
+      if (position.y <= 0) {
+         topLimit = TOP_MARGIN;
+      } else if (position.y > document.documentElement.clientHeight - BUTTON_SIZE / 2) {
+        topLimit = document.documentElement.clientHeight - BUTTON_SIZE - BOTTOM_MARGIN;
+      } else {
+         topLimit = position.y;
+      }
+      
+      console.log(position.y);
       setPosition((p) => ({
-        x: rightLimit,
-        y: p.y
+        x: RIGHT_MARGIN,
+        y: topLimit
       }));
     }
 
@@ -176,7 +186,7 @@ const handleMouseLeave = () => {
       style={{ 
         left: position.x,
         top: position.y,
-        // ⭐ 拖拽无动画，吸附有动画
+        // 拖拽无动画，吸附有动画
         transition: isDragging ? "none" : "left 0.2s ease-out",
       }}
       onMouseEnter={ handleMouseEnter }
