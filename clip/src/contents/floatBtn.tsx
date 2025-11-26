@@ -23,7 +23,7 @@ const MenuButton = ({ icon, onClick }: { icon: React.ReactNode; onClick: () => v
 
 // 吸附常量
 const BUTTON_SIZE: number = 40;
-const RIGHT_MARGIN: number = document.documentElement.clientWidth - BUTTON_SIZE - 40 + 7.5;//固定右侧间隔
+const RIGHT_MARGIN: number = (document.documentElement.clientWidth - BUTTON_SIZE - 40 + 7.5)// * window.devicePixelRatio;//固定右侧间隔,适配缩放
 const TOP_MARGIN: number = 20;
 const BOTTOM_MARGIN: number = 20;
 const INITIAL_POSITION = { x: RIGHT_MARGIN, y: 200 };
@@ -66,6 +66,22 @@ const floatButton = () => {
     setPosition({ x: newX, y: newY });
   }, [isDragging]);
 
+ //动态计算右侧吸附位置
+function getRightMargin() {
+  const dpr = window.devicePixelRatio;
+
+  const buttonSize = BUTTON_SIZE;
+
+  // 视觉间隔
+  const visualMargin = 20;
+
+ //滚动条宽度
+  const scropWidth = window.innerWidth - document.documentElement.clientWidth
+
+  // CSS 像素无需 × DPR，它本来就按视觉像素工作
+  return window.innerWidth - scropWidth - buttonSize - visualMargin - dpr * 7.5;
+}
+
   //自动吸附
   const handleMouseUp = useCallback((position: { x: number; y: number }) => {
     if (isDragging) {
@@ -81,14 +97,26 @@ const floatButton = () => {
       }
       
       console.log(position.y);
-      setPosition((p) => ({
-        x: RIGHT_MARGIN,
+      setPosition(() => ({
+        x: getRightMargin(),
         y: topLimit
       }));
     }
 
     setIsDragging(false);
   }, [isDragging]);
+
+  let lastRatio = window.devicePixelRatio;//缩放比例
+
+  // 监听窗口缩放事件，重新计算吸附位置
+window.addEventListener("resize", () => {
+  if (window.devicePixelRatio !== lastRatio) {
+    lastRatio = window.devicePixelRatio;
+
+    // 重新吸附右侧，保证不偏移
+    handleMouseUp(position);
+  }
+});
 
 //当按钮在角落时，改变菜单的显示方向
 const changeMenuPositionClass: () => string | null = () => {
@@ -193,38 +221,39 @@ const handleMouseLeave = () => {
       onMouseLeave={ handleMouseLeave }
     >
 
-      <div className={`clipMenuWrapper ${isMenuOpen ? 'isOpen' : ''} ${changeMenuPositionClass()}`}> 
+      <div className={`clipMenuWrapper ${isMenuOpen ? 'isOpen' : ''} ${changeMenuPositionClass()}`}>
         <div className="clipMenu">
-          <div className="clipMenuItem menuItemBookmark"> 
+          <div className="clipMenuItem menuItemBookmark">
             <MenuButton icon={bookMarkIcon} onClick={handleSave} />
           </div>
           <div className="clipMenuItem menuItemTranslate">
             <MenuButton icon={translateIcon} onClick={handleTranslate} />
           </div>
           <div className="clipMenuItem menuItemAiIcon">
-            <MenuButton icon={aiIcon} onClick={handleSave} />
+            <MenuButton icon={aiIcon} onClick={handleAI} />
           </div>
         </div>
       </div>
 
       {/* 主图标 */}
-      <div 
-        className="clipMainIconWrapper" 
+      <div
+        className="clipMainIconWrapper"
         onMouseDown={handleMouseDown}
       >
         <AiOutlineRobot color='black' size={25} className='clipMainIcon'/>
- <div className={`clipSettingsButton ${isMenuOpen ? 'isOpen' : ''}`} onMouseDown={(e) => e.stopPropagation()} onClick={handleOpenSettings}>-</div>
-      </div>
+        <div className={`clipSettingsButton ${isMenuOpen ? 'isOpen' : ''}`} onMouseDown={(e) => e.stopPropagation()} onClick={handleOpenSettings}>-</div>
+      </div>
 
-      {isSettingsOpen && (
-        <div className="clipSettingsPopover" onMouseDown={(e) => e.stopPropagation()}>
-          <div className="clipSettingsItem" onClick={handleHideOnce}>隐藏直到下次访问</div>
-          <div className="clipSettingsItem" onClick={handleDisableSite}>在此网站禁用</div>
-          <div className="clipSettingsItem" onClick={handleDisableGlobal}>全局禁用</div>
-          <div className="clipSettingsDivider"></div>
-          <div className="clipSettingsHint">您可以在此处重新启用 设置</div>
-        </div>
-      )}
+      {isSettingsOpen && (
+        <div className="clipSettingsPopover" onMouseDown={(e) => e.stopPropagation()}>
+          <div className="clipSettingsItem" onClick={handleHideOnce}>隐藏直到下次访问</div>
+          <div className="clipSettingsItem" onClick={handleDisableSite}>在此网站禁用</div>
+          <div className="clipSettingsItem" onClick={handleDisableGlobal}>全局禁用</div>
+          <div className="clipSettingsDivider"></div>
+          <div className="clipSettingsHint">您可以在此处重新启用 设置</div>
+        </div>
+      )}
+
     </div>
   );
 };
