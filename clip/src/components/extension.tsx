@@ -7,7 +7,6 @@ import { getVideoData } from "@/utils/functions"
 import React from "react"
 
 export default function Extension() {
-  //https://github.com/vantezzen/plasmo-state
 
   const {
     setExtensionContainer,
@@ -54,9 +53,25 @@ export default function Extension() {
 
     fetchVideoData()
 
+    // Use MutationObserver to detect URL changes (SPA navigation)
+    let lastUrl = window.location.href
+    const observer = new MutationObserver(() => {
+      if (window.location.href !== lastUrl) {
+        lastUrl = window.location.href
+        console.log("🔄 URL changed (MutationObserver), checking for new video...")
+        fetchVideoData()
+      }
+    })
+
+    observer.observe(document.body, { childList: true, subtree: true })
+
+    // Also keep the interval as a fallback, but reduce frequency
     const intervalId = setInterval(fetchVideoData, 2000)
 
-    return () => clearInterval(intervalId)
+    return () => {
+      clearInterval(intervalId)
+      observer.disconnect()
+    }
   }, [extensionVideoId])
 
   React.useEffect(() => {
