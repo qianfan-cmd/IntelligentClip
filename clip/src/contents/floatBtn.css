@@ -48,6 +48,12 @@
 .clipMainIcon:hover {
      transform: translate(-50%, -50%) scale(1);
 }
+
+/* 鼠标按下图标缩小 */
+.clipMainIcon:active {
+    transform: translate(-50%, -50%) scale(0.9);
+}
+
 /* * 菜单按钮基础样式
  */
 .clipMenuButton {
@@ -68,9 +74,6 @@
     justify-content: center;
 }
 
-.clipMenuButton:hover {
-    background-color: #c0b8b8; /* 模拟 hover:bg-gray-100 */
-}
 
 /* * 菜单容器：用于定位菜单项 */
 .clipMenuWrapper {
@@ -113,7 +116,19 @@
         transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
 }
 
+/* 菜单图标 */
+.clipMenuIcon {
+    transform:scale(0.95);
+    transition: transform 0.3s ease-in-out;
+}
 
+.clipMenuIcon:hover {
+    transform: scale(1.1);
+}
+
+.clipMenuIcon:active {
+    transform: scale(0.9);
+}
 /* calc动态计算样式数值 */
 /* 书签 */
 .clipMenuWrapper.isOpen .menuItemBookmark {

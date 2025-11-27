@@ -170,6 +170,9 @@ const handleMouseLeave = () => {
     })();
   }, []);
 
+  const handleMain = () => {
+    console.log("打开悬浮面板");
+  }
   const handleSave = () => console.log("执行剪藏/保存操作");
   const handleTranslate = () => console.log("执行翻译操作");
   const handleAI = () => console.log("执行ai对话操作");
@@ -203,9 +206,9 @@ const handleMouseLeave = () => {
     setIsEnabled(false); 
   };
 
-  const bookMarkIcon = <CiBookmark color='#000000' size={25}/>;
-  const translateIcon = <MdGTranslate color='#000000' size={25}/>;
-  const aiIcon = <AiFillAliwangwang color='#000000' size={25}/>;
+  const bookMarkIcon = <CiBookmark color='#000000' size={25} className='clipMenuIcon'/>;
+  const translateIcon = <MdGTranslate color='#000000' size={25} className='clipMenuIcon'/>;
+  const aiIcon = <AiFillAliwangwang color='#000000' size={25} className='clipMenuIcon'/>;
 
   return (
     <div 
@@ -239,6 +242,7 @@ const handleMouseLeave = () => {
       <div
         className="clipMainIconWrapper"
         onMouseDown={handleMouseDown}
+        onClick={handleMain}
       >
         <AiOutlineRobot color='black' size={25} className='clipMainIcon'/>
         <div className={`clipSettingsButton ${isMenuOpen ? 'isOpen' : ''}`} onMouseDown={(e) => e.stopPropagation()} onClick={handleOpenSettings}>-</div>
