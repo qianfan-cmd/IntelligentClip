@@ -1,14 +1,21 @@
+/**
+ * TranscriptSkeleton - 字幕加载骨架屏
+ */
 import { Skeleton } from "@/components/ui/skeleton"
 
 export default function TranscriptSkeleton() {
   return (
-    <div className="space-y-4 w-full">
-      {Array.from({ length: 16 }).map((_, index) => (
-        <div key={index} className="flex flex-col w-full justify-between items-center p-3 border-[0.5px] rounded-md border-zinc-200 dark:border-zinc-800 space-y-4">
-          <div className="w-full flex flex-row items-center justify-between">
-            <Skeleton className="h-8 w-32" />
+    <div className="space-y-2">
+      {Array.from({ length: 8 }).map((_, index) => (
+        <div 
+          key={index} 
+          className="flex items-start gap-3 p-3"
+        >
+          <Skeleton className="h-6 w-16 rounded-md flex-shrink-0" />
+          <div className="flex-1 space-y-1.5">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
           </div>
-          <Skeleton className="h-36 w-full " />
         </div>
       ))}
     </div>

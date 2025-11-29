@@ -1,8 +1,8 @@
 import ExtensionActions from "@/components/extension-actions"
 import ExtensionPanels from "@/components/extension-panels"
+import { VideoHeader } from "@/components/video-header"
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible"
 import { useExtension } from "@/contexts/extension-context"
-import { useLocalStorage } from "@/lib/hooks/use-local-storage"
 import { getVideoData } from "@/utils/functions"
 import React from "react"
 
@@ -17,7 +17,8 @@ export default function Extension() {
     setExtensionTheme,
     extensionTheme,
     extensionIsOpen,
-    extensionVideoId
+    extensionVideoId,
+    extensionData
   } = useExtension()
 
   React.useEffect(() => {
@@ -42,7 +43,6 @@ export default function Extension() {
         console.log("  - Has metadata:", !!data?.metadata)
         console.log("  - Has transcript:", !!data?.transcript)
         console.log("  - Transcript events:", data?.transcript?.events?.length || 0)
-        console.log("  - Full data structure:", JSON.stringify(data, null, 2))
         
         setExtensionData(data)
         setExtensionLoading(false)
@@ -95,15 +95,28 @@ export default function Extension() {
       ref={setExtensionContainer}
       className={`antialiased w-full mb-3 z-10 ${extensionTheme}`}
       key="youtube-ai-extension">
-      <div className="w-full">
+      <div className="w-full space-y-3">
         <Collapsible
           open={extensionIsOpen}
           onOpenChange={setExtensionIsOpen}
           className="space-y-3">
+          
+          {/* 顶部操作栏 */}
           <ExtensionActions />
+          
           {extensionIsOpen && (
-            <div className="w-full bg-white dark:bg-[#0f0f0f] h-fit max-h-[500px] border border-zinc-200 dark:border-zinc-800 rounded-md overflow-auto no-scrollbar">
-              <ExtensionPanels />
+            <div className="w-full space-y-3">
+              {/* 视频信息卡片 */}
+              <VideoHeader 
+                videoId={extensionVideoId}
+                title={extensionData?.metadata?.title || document.title?.replace(" - YouTube", "")}
+                channelName={extensionData?.metadata?.author}
+              />
+              
+              {/* 内容面板 */}
+              <div className="w-full bg-white dark:bg-[#0f0f0f] border border-gray-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
+                <ExtensionPanels />
+              </div>
             </div>
           )}
         </Collapsible>

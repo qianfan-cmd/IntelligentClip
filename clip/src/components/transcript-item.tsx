@@ -1,7 +1,11 @@
+/**
+ * TranscriptItem - 单条字幕组件
+ * 支持时间跳转、复制和搜索高亮
+ */
 import { Button } from "@/components/ui/button"
 import { TooltipWrapper } from "@/components/ui/tooltip-wrapper"
 import { useCopyToClipboard } from "@/lib/hooks/use-copy-to-clipboard"
-import { CheckIcon, ClipboardCopyIcon, ClockIcon } from "@radix-ui/react-icons"
+import { Clock, Copy, Check } from "lucide-react"
 import { memo } from "react"
 
 type Transcript = {
@@ -28,10 +32,11 @@ function TranscriptItem({ item, searchInput }: TranscriptItemProps) {
   }
 
   const startTime = new Date(item.startTime).toISOString().substr(14, 5)
-  const endTime = new Date(item.endTime).toISOString().substr(14, 5)
 
   function JumpToTime() {
-    player.currentTime = item.startTime / 1000
+    if (player) {
+      player.currentTime = item.startTime / 1000
+    }
   }
 
   const highlightText = (text: string, search: string): JSX.Element => {
@@ -41,7 +46,7 @@ function TranscriptItem({ item, searchInput }: TranscriptItemProps) {
       <>
         {parts.map((part, index) =>
           part.toLowerCase() === search.toLowerCase() ? (
-            <mark key={index} style={{ backgroundColor: "yellow" }}>
+            <mark key={index} className="bg-yellow-200 dark:bg-yellow-500/30 px-0.5 rounded">
               {part}
             </mark>
           ) : (
@@ -56,39 +61,39 @@ function TranscriptItem({ item, searchInput }: TranscriptItemProps) {
     <div
       data-start-time={item.startTime}
       data-end-time={item.endTime}
-      className="flex flex-col w-full justify-between items-center p-3 border-[0.5px] rounded-md border-zinc-200 dark:border-zinc-800 space-y-4 group">
-      <div className="w-full flex flex-row items-center justify-between">
-        <Button
-          variant="outline"
-          className="space-x-2 bg-transparent dark:bg-transparent dark:hover:bg-transparent border-[0.5px]"
-          onClick={JumpToTime}>
-          <ClockIcon className="h-4 w-4 opacity-60" />
-          <span className="hover:cursor-pointer hover:underline text-blue-500 text-[11px]">
-            {startTime} : {endTime}
-          </span>
-        </Button>
+      className="group flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-colors"
+    >
+      {/* 时间戳 */}
+      <button
+        onClick={JumpToTime}
+        className="flex-shrink-0 flex items-center gap-1 px-2 py-1 rounded-md text-xs font-mono text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
+      >
+        <Clock className="h-3 w-3" />
+        <span>{startTime}</span>
+      </button>
 
-        {/* on hover show Copy Section */}
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <TooltipWrapper text="Copy Section">
-            <Button variant="outline" size="icon" onClick={CopySection}>
-              {isCopied ? (
-                <CheckIcon className="h-4.5 w-4.5 opacity-60" />
-              ) : (
-                <ClipboardCopyIcon className="h-4 w-4 opacity-60" />
-              )}
-            </Button>
-          </TooltipWrapper>
-        </div>
-
-        {/* <Button variant="outline" size="icon">
-          <DotsVerticalIcon className="h-4 w-4 opacity-60" />
-        </Button> */}
-      </div>
-
-      <p className="text-[10.5px] capitalize leading-7">
+      {/* 字幕文本 */}
+      <p className="flex-1 text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
         {highlightText(item.text, searchInput)}
       </p>
+
+      {/* 复制按钮 - 悬停显示 */}
+      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+        <TooltipWrapper text={isCopied ? "已复制" : "复制"}>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={CopySection}
+            className="h-7 w-7"
+          >
+            {isCopied ? (
+              <Check className="h-3.5 w-3.5 text-green-500" />
+            ) : (
+              <Copy className="h-3.5 w-3.5 text-gray-400" />
+            )}
+          </Button>
+        </TooltipWrapper>
+      </div>
     </div>
   )
 }
