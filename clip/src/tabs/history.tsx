@@ -5,6 +5,7 @@ import { ChatProvider, useChat } from "@/contexts/chat-context"
 import { ExtensionProvider, useExtension } from "@/contexts/extension-context"
 import { createRecordFromClip } from "@/lib/feishuBitable"
 import Chat from "@/components/chat"
+import Markdown from "@/components/markdown"
 import "../style.css"
 
 export default function HistoryPage() {
@@ -493,10 +494,11 @@ function HistoryLayout() {
                     </div>
                     AI 摘要
                   </h3>
-                  <div className="prose dark:prose-invert max-w-none bg-gradient-to-br from-gray-50 to-slate-50 dark:from-zinc-900 dark:to-slate-900 p-6 rounded-2xl border border-gray-200/60 dark:border-zinc-800 shadow-sm">
-                    <p className="whitespace-pre-wrap leading-relaxed text-gray-700 dark:text-gray-300">
-                      {selectedClip.summary}
-                    </p>
+                  <div className="bg-gradient-to-br from-gray-50 to-slate-50 dark:from-zinc-900 dark:to-slate-900 p-6 rounded-2xl border border-gray-200/60 dark:border-zinc-800 shadow-sm">
+                    <Markdown 
+                      markdown={selectedClip.summary} 
+                      className="text-gray-700 dark:text-gray-300 leading-relaxed [&_p]:mb-3 [&_ul]:my-2 [&_ol]:my-2 [&_li]:text-sm [&_h1]:text-xl [&_h2]:text-lg [&_h3]:text-base [&_code]:text-xs"
+                    />
                   </div>
                 </section>
 

@@ -9,9 +9,16 @@ import { Provider, useAtomValue } from "jotai"
 import { openAIKeyAtom } from "@/lib/atoms/openai"
 import { usePort } from "@plasmohq/messaging/hook"
 
+/**
+ * @deprecated 此组件已被 clip-toolbar.tsx 替代
+ * 保留此文件仅供参考，新的工具栏使用完全隔离的样式方案
+ */
+
+// 注意：此文件已被禁用，请使用 clip-toolbar.tsx
+// 如需完全移除，可删除此文件
 export const config: PlasmoCSConfig = {
-  matches: ["<all_urls>"],
-  exclude_matches: ["*://www.youtube.com/*"]
+  // 使用不可能匹配的模式来禁用此脚本
+  matches: ["https://this-will-never-match-any-real-url.invalid/*"]
 }
 
 export const getStyle = () => {
