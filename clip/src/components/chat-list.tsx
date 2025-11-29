@@ -24,13 +24,13 @@ export default function ChatList({ className }: ChatListProps) {
   }, [chatMessages])
 
   return (
-    <div className="pt-16">
+    <div className={cn("flex-1 overflow-hidden", className)}>
       {!chatMessages || chatMessages.length === 0 ? (
         <EmptyScreen setPromptInput={setChatPrompt} />
       ) : (
         <div
           ref={scrollContainerRef}
-          className="h-[375px] overflow-y-scroll no-scrollbar">
+          className="h-full overflow-y-auto no-scrollbar px-4 pb-4">
           {chatMessages.map((message: Message, index: number) => (
             <ChatItem key={index} message={message} />
           ))}

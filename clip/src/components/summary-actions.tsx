@@ -5,6 +5,8 @@ import { useSummary } from "@/contexts/summary-context"
 import { models, prompts, type Model, type Prompt } from "@/lib/constants"
 import { useCopyToClipboard } from "@/lib/hooks/use-copy-to-clipboard"
 import { CheckIcon, ClipboardCopyIcon, ReloadIcon } from "@radix-ui/react-icons"
+import { Save } from "lucide-react"
+import { ClipStore } from "@/lib/clip-store"
 
 import { Button } from "./ui/button"
 import { TooltipWrapper } from "./ui/tooltip-wrapper"
@@ -31,6 +33,26 @@ export default function SummaryActions({}: SummaryActionsProps) {
     copyToClipboard(summaryContent)
   }
 
+  async function handleSaveSummary() {
+    if (!summaryContent || summaryIsGenerating) return
+    
+    try {
+      await ClipStore.add({
+        source: "youtube",
+        url: window.location.href,
+        title: document.title,
+        rawTextSnippet: summaryContent.slice(0, 500),
+        summary: summaryContent,
+        keyPoints: [],
+        tags: ["youtube", "summary"]
+      })
+      alert("✅ Summary saved to clips!")
+    } catch (e) {
+      console.error(e)
+      alert("Failed to save summary.")
+    }
+  }
+
   return (
     <div className="flex flex-row w-full justify-between items-center sticky top-0 z-10 bg-white dark:bg-[#0f0f0f] pt-3.5 pb-2 px-3">
       <Select
@@ -54,6 +76,16 @@ export default function SummaryActions({}: SummaryActionsProps) {
       </Select>
 
       <div className="flex flex-row space-x-2">
+        <TooltipWrapper text="Save to Clips">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleSaveSummary}
+            disabled={summaryIsGenerating || !summaryContent}>
+            <Save className="h-4 w-4 opacity-60" />
+          </Button>
+        </TooltipWrapper>
+
         <TooltipWrapper text="Regenerate Summary">
           <Button
             variant="outline"

@@ -5,6 +5,7 @@ import { useCopyToClipboard } from "@/lib/hooks/use-copy-to-clipboard"
 
 // prettier-ignore
 import { ActivityLogIcon, CaretSortIcon, ChatBubbleIcon, CheckIcon, Link2Icon, Pencil2Icon } from "@radix-ui/react-icons";
+import { History } from "lucide-react"
 
 import { IconOpenAI } from "@/components/ui/icons"
 import { useExtension } from "@/contexts/extension-context"
@@ -20,6 +21,19 @@ export default function ExtensionActions({}: ExtensionActionsProps) {
   function CopyVideoURL() {
     if (isCopied) return
     copyToClipboard(window.location.href)
+  }
+
+  function openHistoryPage() {
+    console.log("📜 Opening history page...")
+    chrome.runtime.sendMessage({ action: "openHistory" }, (response) => {
+      if (chrome.runtime.lastError) {
+        console.error("❌ Message error:", chrome.runtime.lastError)
+        // Fallback: try opening directly
+        chrome.tabs.create({ url: chrome.runtime.getURL("tabs/history.html") })
+      } else {
+        console.log("✅ History page opened:", response)
+      }
+    })
   }
 
   return (
@@ -61,6 +75,12 @@ export default function ExtensionActions({}: ExtensionActionsProps) {
       </div>
 
       <div className="flex items-center space-x-2">
+        <TooltipWrapper text="View Clip History">
+          <Button variant="outline" size="icon" onClick={openHistoryPage}>
+            <History className="h-4 w-4 opacity-60" />
+          </Button>
+        </TooltipWrapper>
+
         <TooltipWrapper text="Copy Video URL">
           <Button variant="outline" size="icon" onClick={() => CopyVideoURL()}>
             {isCopied ? (

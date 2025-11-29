@@ -29,30 +29,61 @@ async function extractTranscriptFromDOM(): Promise<any> {
   console.log("📄 Strategy 0: Attempting to extract transcript from DOM...")
   
   try {
-    // First, try to find and click the transcript button to open the panel
-    const transcriptSelectors = [
-      "ytd-video-description-transcript-section-renderer button",
-      "button[aria-label*='transcript' i]",
-      "button[aria-label*='transcrição' i]",
-      "button[aria-label*='transcripción' i]",
-      "[aria-label*='Show transcript' i]"
-    ]
-    
-    let transcriptButton = null
-    for (const selector of transcriptSelectors) {
-      transcriptButton = document.querySelector(selector)
-      if (transcriptButton) {
-        console.log(`✅ Found transcript button with selector: ${selector}`)
-        break
+    // Helper function to check for transcript button with retries
+    const checkTranscriptButton = async (attempt = 0): Promise<HTMLElement | null> => {
+      const transcriptSelectors = [
+        "ytd-video-description-transcript-section-renderer button",
+        "button[aria-label*='transcript' i]",
+        "button[aria-label*='transcrição' i]",
+        "button[aria-label*='transcripción' i]",
+        "[aria-label*='Show transcript' i]"
+      ]
+      
+      let button = null
+      for (const selector of transcriptSelectors) {
+        button = document.querySelector(selector)
+        if (button) {
+          console.log(`✅ Found transcript button with selector: ${selector}`)
+          return button as HTMLElement
+        }
       }
+
+      if (attempt < 10) {
+        console.log(`⏳ Transcript button check attempt ${attempt + 1}/10`)
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        return checkTranscriptButton(attempt + 1)
+      }
+      
+      return null
     }
+
+    const transcriptButton = await checkTranscriptButton()
     
     if (transcriptButton && !document.querySelector("ytd-transcript-segment-renderer")) {
       console.log("🖱️ Clicking transcript button to open panel...")
-      ;(transcriptButton as HTMLElement).click()
+      transcriptButton.click()
       
-      // Wait for transcript panel to load
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      // Wait for transcript panel to load with polling
+      const waitForContent = async (attempt = 0): Promise<boolean> => {
+        const segmentSelectors = [
+          "ytd-transcript-segment-renderer",
+          ".ytd-transcript-segment-renderer"
+        ]
+        
+        for (const selector of segmentSelectors) {
+          if (document.querySelector(selector)) {
+            return true
+          }
+        }
+
+        if (attempt < 10) { // Wait up to 5 seconds (10 * 500ms)
+          await new Promise(resolve => setTimeout(resolve, 500))
+          return waitForContent(attempt + 1)
+        }
+        return false
+      }
+
+      await waitForContent()
     }
     
     // Now extract the transcript segments
@@ -330,150 +361,31 @@ export async function getVideoData(id: string) {
       kind: selectedTrack.kind
     })
 
-    // Fetch transcript with robust retry logic
-    try {
-      // Strategy 0: Extract from DOM (Most reliable, no network requests needed)
-      const domTranscript = await extractTranscriptFromDOM()
-      if (domTranscript && domTranscript.events && domTranscript.events.length > 0) {
-        console.log("✅ Successfully extracted transcript from DOM")
-        return { metadata, transcript: domTranscript }
-      }
-      
-      // Strategy 1: Try fetching from page context (bypasses CORS and auth issues)
-      console.log("🔗 Strategy 1: Fetching transcript from page context...")
-      const jsonUrl = selectedTrack.baseUrl + "&fmt=json3"
-      
-      try {
-        const pageResponse = await injectPageScript(true, jsonUrl)
-        if (pageResponse.captionData) {
-          console.log("✅ Got caption data from page context")
-          try {
-            const transcript = JSON.parse(pageResponse.captionData)
-            if (transcript.events && Array.isArray(transcript.events)) {
-              console.log("✅ Successfully parsed JSON3 transcript from page context")
-              console.log("📊 Total events:", transcript.events.length)
-              return { metadata, transcript }
-            }
-          } catch (parseError) {
-            console.warn("⚠️ Page context JSON3 parse failed:", parseError.message)
-          }
-        } else if (pageResponse.captionError) {
-          console.warn("⚠️ Page context fetch failed:", pageResponse.captionError)
+    // Wait for DOM to update to the new video ID
+    const waitForDOMToUpdate = async (videoId: string, maxAttempts = 20): Promise<void> => {
+      console.log(`⏳ Waiting for DOM to update to video ${videoId}...`)
+      for (let i = 0; i < maxAttempts; i++) {
+        const currentVideoId = document.querySelector('ytd-watch-flexy')?.getAttribute('video-id')
+        if (currentVideoId === videoId) {
+          console.log("✅ DOM updated to new video")
+          return
         }
-      } catch (pageError) {
-        console.warn("⚠️ Strategy 1 failed:", pageError.message)
+        await new Promise(resolve => setTimeout(resolve, 500))
       }
-      
-      // Strategy 2: JSON3 format via background script (Fallback)
-      console.log("🔗 Strategy 2: Fetching JSON3 transcript via background...")
-      
-      let text = await fetchWithRetry(jsonUrl)
-      
-      if (text) {
-        try {
-          const transcript = JSON.parse(text)
-          if (transcript.events && Array.isArray(transcript.events)) {
-            console.log("✅ Successfully parsed JSON3 transcript")
-            console.log("📊 Total events:", transcript.events.length)
-            return { metadata, transcript }
-          }
-        } catch (parseError) {
-          console.warn("⚠️ JSON3 parse failed:", parseError.message)
-        }
-      }
-      
-      // Strategy 3: XML format (Fallback)
-      console.log("🔄 Strategy 3: JSON3 failed or empty, trying XML fallback...")
-      const xmlUrl = selectedTrack.baseUrl
-      text = await fetchWithRetry(xmlUrl)
-      
-      if (text) {
-        console.log("📄 XML response length:", text.length)
-        
-        // Parse XML
-        const parser = new DOMParser()
-        const xmlDoc = parser.parseFromString(text, "text/xml")
-        const textElements = xmlDoc.getElementsByTagName('text')
-        
-        console.log("📊 XML text elements found:", textElements.length)
-        
-        if (textElements.length > 0) {
-          const events = []
-          
-          for (let i = 0; i < textElements.length; i++) {
-            const element = textElements[i]
-            const start = parseFloat(element.getAttribute('start') || '0')
-            const duration = parseFloat(element.getAttribute('dur') || '0')
-            const content = element.textContent || ''
-            
-            if (content.trim()) {
-              events.push({
-                tStartMs: Math.floor(start * 1000),
-                dDurationMs: Math.floor(duration * 1000),
-                segs: [{ utf8: content.trim() }]
-              })
-            }
-          }
-          
-          if (events.length > 0) {
-            console.log("✅ Successfully parsed XML transcript")
-            return { metadata, transcript: { events } }
-          }
-        }
-      }
-
-      // Strategy 4: VTT format (Fallback)
-      console.log("🔄 Strategy 4: XML failed, trying VTT fallback...")
-      const vttUrl = selectedTrack.baseUrl + "&fmt=vtt"
-      text = await fetchWithRetry(vttUrl)
-      
-      if (text) {
-        console.log("📄 VTT response length:", text.length)
-        
-        // Simple VTT parser
-        const lines = text.split('\n')
-        const events = []
-        let currentTime = null
-        
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i].trim()
-          
-          // Match timestamp line (e.g., "00:00:00.000 --> 00:00:03.000")
-          if (line.includes('-->')) {
-            const times = line.split('-->').map(t => t.trim())
-            const startParts = times[0].split(':')
-            // Handle HH:MM:SS.mmm or MM:SS.mmm
-            let startMs = 0
-            if (startParts.length === 3) {
-              startMs = (parseInt(startParts[0]) * 3600000) + (parseInt(startParts[1]) * 60000) + (parseFloat(startParts[2]) * 1000)
-            } else if (startParts.length === 2) {
-              startMs = (parseInt(startParts[0]) * 60000) + (parseFloat(startParts[1]) * 1000)
-            }
-            currentTime = startMs
-          } else if (line && currentTime !== null && !line.match(/^\d+$/) && !line.startsWith('WEBVTT')) {
-            // This is caption text
-            events.push({
-              tStartMs: Math.floor(currentTime),
-              dDurationMs: 3000, // Default duration
-              segs: [{ utf8: line }]
-            })
-            currentTime = null
-          }
-        }
-        
-        if (events.length > 0) {
-          console.log("✅ Successfully parsed VTT transcript")
-          return { metadata, transcript: { events } }
-        }
-      }
-      
-      console.error("❌ All transcript fetching strategies failed")
-      return { metadata, transcript: null }
-      
-    } catch (fetchError) {
-      console.error("❌ Error in transcript fetching process:", fetchError.message)
-      return { metadata, transcript: null }
+      console.warn("⚠️ Timeout waiting for DOM update, proceeding anyway...")
     }
+
+    await waitForDOMToUpdate(id)
+
+    // Only use Strategy 0: Extract transcript from DOM
+    const domTranscript = await extractTranscriptFromDOM()
+    if (domTranscript && domTranscript.events && domTranscript.events.length > 0) {
+      console.log("✅ Successfully extracted transcript from DOM (Strategy 0)")
+      return { metadata, transcript: domTranscript }
+    }
+
+    console.warn("⚠️ Strategy 0 did not yield transcript. Skipping other strategies by request.")
+    return { metadata, transcript: null }
     
   } catch (error) {
     console.error("❌ Error in getVideoData:", error.message)

@@ -19,8 +19,8 @@ async function createCompletion(model: string, prompt: string, context: any): Pr
     throw new Error("OpenAI API key is not set")
   }
 
-  if (!context.transcript || !context.transcript.events) {
-    throw new Error("Transcript data is missing. Please make sure the video has captions/subtitles.")
+  if ((!context.transcript || !context.transcript.events) && !context.text) {
+    throw new Error("Transcript data or text content is missing.")
   }
 
   if (!context.metadata || !context.metadata.title) {
@@ -32,14 +32,19 @@ async function createCompletion(model: string, prompt: string, context: any): Pr
 
   console.log("Creating Completion with model:", model)
 
-  const parsed = context.transcript.events
-    .filter((x: { segs: any }) => x.segs)
-    .map((x: { segs: any[] }) => x.segs.map((y: { utf8: any }) => y.utf8).join(" "))
-    .join(" ")
-    .replace(/[\u200B-\u200D\uFEFF]/g, "")
-    .replace(/\s+/g, " ")
+  let parsed = ""
+  if (context.transcript?.events) {
+    parsed = context.transcript.events
+      .filter((x: { segs: any }) => x.segs)
+      .map((x: { segs: any[] }) => x.segs.map((y: { utf8: any }) => y.utf8).join(" "))
+      .join(" ")
+      .replace(/[\u200B-\u200D\uFEFF]/g, "")
+      .replace(/\s+/g, " ")
+  } else {
+    parsed = context.text || ""
+  }
 
-  const USER = `${prompt}\n\nVideo Title: ${context.metadata.title}\nVideo Transcript: ${parsed}`
+  const USER = `${prompt}\n\nTitle: ${context.metadata.title}\nContent: ${parsed}`
 
   console.log("User Prompt")
   console.log(USER)

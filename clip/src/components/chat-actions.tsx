@@ -11,6 +11,8 @@ import { useExtension } from "@/contexts/extension-context"
 import { useCopyToClipboard } from "@/lib/hooks/use-copy-to-clipboard"
 import { cn } from "@/lib/utils"
 import { PlusIcon } from "@radix-ui/react-icons"
+import { Save } from "lucide-react"
+import { ClipStore } from "@/lib/clip-store"
 import React from "react"
 
 interface ChatActionProps {
@@ -21,6 +23,7 @@ export default function ChatAction({ className }: ChatActionProps) {
   const {
     chatModel,
     chatIsGenerating,
+    chatMessages,
     setChatMessages,
     setChatIsGenerating,
     setChatIsError,
@@ -40,6 +43,31 @@ export default function ChatAction({ className }: ChatActionProps) {
     setChatMessages([])
     setChatIsGenerating(false)
     setChatIsError(false)
+  }
+
+  async function handleSaveChat() {
+    if (!chatMessages || chatMessages.length === 0) {
+      alert("No chat messages to save.")
+      return
+    }
+    
+    const chatContent = chatMessages.map(m => `**${m.role.toUpperCase()}**: ${m.content}`).join("\n\n")
+    
+    try {
+      await ClipStore.add({
+        source: "youtube",
+        url: window.location.href,
+        title: `Chat: ${document.title}`,
+        rawTextSnippet: chatContent.slice(0, 500),
+        summary: chatContent,
+        keyPoints: [],
+        tags: ["youtube", "chat", "ai"]
+      })
+      alert("✅ Chat saved to clips!")
+    } catch (e) {
+      console.error(e)
+      alert("Failed to save chat.")
+    }
   }
 
   return (
@@ -69,6 +97,16 @@ export default function ChatAction({ className }: ChatActionProps) {
       </Select>
 
       <div className="flex flex-row space-x-2">
+        <TooltipWrapper text="Save Chat">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleSaveChat}
+            disabled={chatIsGenerating || !chatMessages || chatMessages.length === 0}>
+            <Save className="h-4 w-4 opacity-60" />
+          </Button>
+        </TooltipWrapper>
+
         <TooltipWrapper text="New Chat">
           <Button
             variant="outline"
