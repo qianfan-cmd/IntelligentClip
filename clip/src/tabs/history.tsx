@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react"
 import { ClipStore, type Clip } from "@/lib/clip-store"
-import { Trash2, ExternalLink, Search, Calendar, Tag, Save, MessageSquare, Share, Loader2, CheckSquare, Square, Edit3, X, Check } from "lucide-react"
+import { Trash2, ExternalLink, Search, Calendar, Tag, Save, MessageSquare, Share, Loader2, CheckSquare, Square, Edit3, X, Check, ChevronDown, ChevronUp } from "lucide-react"
 import { ChatProvider, useChat } from "@/contexts/chat-context"
 import { ExtensionProvider, useExtension } from "@/contexts/extension-context"
 import { createRecordFromClip } from "@/lib/feishuBitable"
@@ -32,6 +32,9 @@ function HistoryLayout() {
   const [isEditingNotes, setIsEditingNotes] = useState(false)
   const [editedNotes, setEditedNotes] = useState("")
   const [isSavingNotes, setIsSavingNotes] = useState(false)
+  
+  // Raw text expand state
+  const [isRawTextExpanded, setIsRawTextExpanded] = useState(false)
   
   const { setExtensionData } = useExtension()
   const { chatMessages } = useChat()
@@ -198,10 +201,14 @@ function HistoryLayout() {
 
   // Update extension context when clip changes
   useEffect(() => {
+    // Reset expanded state when switching clips
+    setIsRawTextExpanded(false)
+    setIsEditingNotes(false)
+    
     if (selectedClip) {
       setExtensionData({
         transcript: {
-          events: [{ segs: [{ utf8: selectedClip.rawTextSnippet || selectedClip.summary }] }]
+          events: [{ segs: [{ utf8: selectedClip.rawTextFull || selectedClip.rawTextSnippet || selectedClip.summary }] }]
         },
         metadata: {
           title: selectedClip.title
@@ -524,22 +531,50 @@ function HistoryLayout() {
                   </section>
                 )}
 
-                {/* Raw Text Snippet Section */}
-                {selectedClip.rawTextSnippet && (
+                {/* Raw Text Section - Full text with expand/collapse */}
+                {(selectedClip.rawTextFull || selectedClip.rawTextSnippet) && (
                   <section>
-                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-gray-800 dark:text-gray-200">
-                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-gray-400 to-slate-500 flex items-center justify-center shadow-md">
-                        <span className="text-white text-sm">📄</span>
-                      </div>
-                      原文片段
-                    </h3>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-bold flex items-center gap-2 text-gray-800 dark:text-gray-200">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-gray-400 to-slate-500 flex items-center justify-center shadow-md">
+                          <span className="text-white text-sm">📄</span>
+                        </div>
+                        原文内容
+                      </h3>
+                      {selectedClip.rawTextFull && selectedClip.rawTextFull.length > 500 && (
+                        <button
+                          onClick={() => setIsRawTextExpanded(!isRawTextExpanded)}
+                          className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-zinc-800 rounded-xl hover:bg-gray-200 dark:hover:bg-zinc-700 transition-all duration-200"
+                        >
+                          {isRawTextExpanded ? (
+                            <>
+                              <ChevronUp className="h-4 w-4" />
+                              收起
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="h-4 w-4" />
+                              展开全文
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
                     <div className="bg-gradient-to-br from-slate-50 to-gray-100 dark:from-zinc-900 dark:to-slate-900 p-6 rounded-2xl border border-gray-200/60 dark:border-zinc-800 relative">
                       <div className="absolute top-4 left-4 text-4xl text-gray-200 dark:text-zinc-700 select-none">"</div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 italic leading-relaxed pl-8">
-                        {selectedClip.rawTextSnippet}
-                      </p>
+                      <div className={`text-sm text-gray-600 dark:text-gray-400 leading-relaxed pl-8 pr-8 whitespace-pre-wrap ${!isRawTextExpanded && selectedClip.rawTextFull && selectedClip.rawTextFull.length > 500 ? 'max-h-[300px] overflow-hidden' : ''}`}>
+                        {selectedClip.rawTextFull || selectedClip.rawTextSnippet}
+                      </div>
+                      {!isRawTextExpanded && selectedClip.rawTextFull && selectedClip.rawTextFull.length > 500 && (
+                        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-slate-50 dark:from-zinc-900 to-transparent pointer-events-none rounded-b-2xl" />
+                      )}
                       <div className="absolute bottom-4 right-4 text-4xl text-gray-200 dark:text-zinc-700 select-none">"</div>
                     </div>
+                    {selectedClip.rawTextFull && (
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 text-right">
+                        共 {selectedClip.rawTextFull.length.toLocaleString()} 字符
+                      </p>
+                    )}
                   </section>
                 )}
 

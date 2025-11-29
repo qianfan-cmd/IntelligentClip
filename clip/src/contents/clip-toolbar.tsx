@@ -190,7 +190,7 @@ function showNotification(message: string, type: "success" | "error" | "warning"
 function ClipToolbar() {
   const [expanded, setExpanded] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [loadingType, setLoadingType] = useState<"full" | "selection" | null>(null)
+  const [loadingType, setLoadingType] = useState<"full" | "selection" | "direct-full" | "direct-selection" | null>(null)
   
   const openAIKey = useAtomValue(openAIKeyAtom)
   const port = usePort("page-completion")
@@ -243,7 +243,7 @@ function ClipToolbar() {
     }
   }
 
-  // 剪藏选中内容
+  // 剪藏选中内容（AI摘要）
   const handleClipSelection = async () => {
     const selection = window.getSelection()
     const selectedText = selection?.toString().trim()
@@ -291,6 +291,85 @@ function ClipToolbar() {
       setLoading(false)
       setLoadingType(null)
       showNotification("❌ 剪藏失败", "error")
+    }
+  }
+
+  // 直接保存整页（不使用AI）
+  const handleDirectSaveFullPage = async () => {
+    if (!checkContext()) {
+      showNotification("⚠️ 扩展已重载，请刷新页面", "warning")
+      return
+    }
+
+    setLoading(true)
+    setLoadingType("direct-full")
+    
+    try {
+      const content = await extractContent()
+      
+      await ClipStore.add({
+        source: content?.metadata?.platform === "Bilibili" ? "bilibili" : 
+               content?.metadata?.platform === "YouTube" ? "youtube" : "webpage",
+        url: content?.url || window.location.href,
+        title: content?.title || document.title,
+        rawTextSnippet: content?.snippet || "",
+        rawTextFull: content?.text || "",
+        summary: "",  // 无AI摘要
+        keyPoints: [],
+        tags: [],
+        meta: content?.metadata
+      })
+      
+      setLoading(false)
+      setLoadingType(null)
+      showNotification("✅ 已直接保存整页！", "success")
+    } catch (e) {
+      console.error("❌ Direct save error:", e)
+      setLoading(false)
+      setLoadingType(null)
+      showNotification("❌ 保存失败", "error")
+    }
+  }
+
+  // 直接保存选中内容（不使用AI）
+  const handleDirectSaveSelection = async () => {
+    const selection = window.getSelection()
+    const selectedText = selection?.toString().trim()
+    
+    if (!selectedText || selectedText.length < 10) {
+      showNotification("⚠️ 请先选中一些文字（至少10个字符）", "warning")
+      return
+    }
+    
+    if (!checkContext()) {
+      showNotification("⚠️ 扩展已重载，请刷新页面", "warning")
+      return
+    }
+
+    setLoading(true)
+    setLoadingType("direct-selection")
+    
+    try {
+      await ClipStore.add({
+        source: "webpage",
+        url: window.location.href,
+        title: document.title,
+        rawTextSnippet: selectedText.slice(0, 500),
+        rawTextFull: selectedText,
+        summary: "",  // 无AI摘要
+        keyPoints: [],
+        tags: [],
+        meta: {}
+      })
+      
+      setLoading(false)
+      setLoadingType(null)
+      showNotification("✅ 已直接保存选中内容！", "success")
+    } catch (e) {
+      console.error("❌ Direct save error:", e)
+      setLoading(false)
+      setLoadingType(null)
+      showNotification("❌ 保存失败", "error")
     }
   }
 
@@ -370,7 +449,7 @@ function ClipToolbar() {
     borderRadius: "12px",
     boxShadow: "0 4px 20px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05)",
     padding: expanded ? "16px" : "0",
-    width: expanded ? "200px" : "auto",
+    width: expanded ? "220px" : "auto",
     animation: "fadeIn 0.2s ease-out",
     overflow: "hidden",
   }
@@ -503,7 +582,12 @@ function ClipToolbar() {
 
         {/* 操作按钮 */}
         <div style={{ ...baseReset, display: "flex", flexDirection: "column", gap: "8px" }}>
-          {/* 剪藏整页 */}
+          {/* 分组标题：整页 */}
+          <div style={{ ...baseReset, fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>
+            整页剪藏
+          </div>
+          
+          {/* 整页 + AI 摘要 */}
           <button
             style={primaryButtonStyle}
             disabled={loading}
@@ -515,15 +599,15 @@ function ClipToolbar() {
               if (!loading) e.currentTarget.style.background = "#4f46e5"
             }}
           >
-            {loadingType === "full" ? <Icons.Loader /> : <Icons.FileText />}
-            <span>{loadingType === "full" ? "处理中..." : "剪藏整页"}</span>
+            {loadingType === "full" ? <Icons.Loader /> : <Icons.Sparkles />}
+            <span>{loadingType === "full" ? "AI处理中..." : "AI 摘要保存"}</span>
           </button>
 
-          {/* 剪藏选中 */}
+          {/* 整页直接保存 */}
           <button
             style={actionButtonStyle}
             disabled={loading}
-            onClick={handleClipSelection}
+            onClick={handleDirectSaveFullPage}
             onMouseEnter={(e) => {
               if (!loading) e.currentTarget.style.background = "#e5e7eb"
             }}
@@ -531,9 +615,56 @@ function ClipToolbar() {
               if (!loading) e.currentTarget.style.background = "#f3f4f6"
             }}
           >
-            {loadingType === "selection" ? <Icons.Loader /> : <Icons.Sparkles />}
-            <span>{loadingType === "selection" ? "处理中..." : "剪藏选中"}</span>
+            {loadingType === "direct-full" ? <Icons.Loader /> : <Icons.FileText />}
+            <span>{loadingType === "direct-full" ? "保存中..." : "直接保存"}</span>
           </button>
+
+          {/* 分隔线 */}
+          <div style={{ ...baseReset, height: "1px", background: "#e5e7eb", margin: "8px 0" }} />
+          
+          {/* 分组标题：选中 */}
+          <div style={{ ...baseReset, fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>
+            选中内容
+          </div>
+
+          {/* 选中 + AI 摘要 */}
+          <button
+            style={{
+              ...actionButtonStyle,
+              background: "#eef2ff",
+              color: "#4f46e5",
+            }}
+            disabled={loading}
+            onClick={handleClipSelection}
+            onMouseEnter={(e) => {
+              if (!loading) e.currentTarget.style.background = "#e0e7ff"
+            }}
+            onMouseLeave={(e) => {
+              if (!loading) e.currentTarget.style.background = "#eef2ff"
+            }}
+          >
+            {loadingType === "selection" ? <Icons.Loader /> : <Icons.Sparkles />}
+            <span>{loadingType === "selection" ? "AI处理中..." : "AI 摘要保存"}</span>
+          </button>
+
+          {/* 选中直接保存 */}
+          <button
+            style={actionButtonStyle}
+            disabled={loading}
+            onClick={handleDirectSaveSelection}
+            onMouseEnter={(e) => {
+              if (!loading) e.currentTarget.style.background = "#e5e7eb"
+            }}
+            onMouseLeave={(e) => {
+              if (!loading) e.currentTarget.style.background = "#f3f4f6"
+            }}
+          >
+            {loadingType === "direct-selection" ? <Icons.Loader /> : <Icons.FileText />}
+            <span>{loadingType === "direct-selection" ? "保存中..." : "直接保存"}</span>
+          </button>
+
+          {/* 分隔线 */}
+          <div style={{ ...baseReset, height: "1px", background: "#e5e7eb", margin: "8px 0" }} />
 
           {/* 查看历史 */}
           <button
