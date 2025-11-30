@@ -1,7 +1,7 @@
 // @ts-ignore
 import cssText from "data-text:~style.css"
-import React, { useEffect, useState } from "react"
-import { Button } from "~components"
+import React, { useEffect, useState, useRef } from "react"
+import { Button } from "../components"
 import { FiRefreshCcw, FiGrid, FiSettings, FiX, FiHelpCircle } from "react-icons/fi"
 import { AiFillAliwangwang } from "react-icons/ai"
 import { RiMessage2Line, RiMagicLine } from "react-icons/ri"
@@ -20,15 +20,31 @@ export const getStyle = () => {
 function PanelContent({ onClose, onRefresh }: { onClose: () => void, onRefresh: () => void }) {
   const [title, setTitle] = useState("Clip")
   const [quickSaveValue, setQuickSaveValue] = useState("")
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (ref.current) {
+      const root = ref.current.getRootNode() as ShadowRoot
+      if (root.host && root.host instanceof HTMLElement) {
+        root.host.style.setProperty("z-index", "2147483647", "important")
+        root.host.style.setProperty("position", "fixed", "important")
+        root.host.style.top = "0px"
+        root.host.style.left = "0px"
+        root.host.style.width = "0px"
+        root.host.style.height = "0px"
+        root.host.style.overflow = "visible"
+      }
+    }
+  }, [])
 
   const openHomepage = () => {
-    const url = chrome.runtime.getURL("tabs/history.html")
-    window.open(url, "_blank", "noopener,noreferrer")
+    chrome.runtime.sendMessage({ type: "clip:open-history" })
   }
 
   return (
     <div 
-      className="fixed z-[2147483647] flex flex-col bg-white/95 backdrop-blur-md shadow-2xl rounded-2xl border border-white/20 font-sans text-slate-800"
+      ref={ref}
+      className="fixed z-[2147483647] flex flex-col bg-white/95 backdrop-blur-md shadow-2xl rounded-2xl border border-white/20 font-sans text-slate-800 animate-scale-up origin-top-right"
       style={{
         top: "24px",
         right: "24px",
@@ -117,7 +133,7 @@ function PanelContent({ onClose, onRefresh }: { onClose: () => void, onRefresh: 
             { icon: RiMessage2Line, label: "Chat", action: () => {} },
             { icon: RiMagicLine, label: "AI", action: () => {} },
             { icon: FiGrid, label: "Layout", action: () => {} },
-            { icon: FiSettings, label: "Settings", action: () => chrome.runtime.openOptionsPage() }
+            { icon: FiSettings, label: "Settings", action: () => chrome.runtime.sendMessage({ type: "clip:open-options" }) }
           ].map((Item, idx) => (
             <button 
               key={idx}

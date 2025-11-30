@@ -52,9 +52,9 @@ function Popup() {
   // 登录：写入登录状态，显示浮窗，跳转主页并关闭 Popup
   const handleSignIn = async () => {
     await chrome.storage.local.set({ clip_logged_in: true })
-    await showFloat()
     const url = chrome.runtime.getURL("tabs/history.html")
     await chrome.tabs.create({ url })
+    await showFloat()
     window.close()
   }
 
