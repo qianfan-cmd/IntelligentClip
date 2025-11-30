@@ -5,6 +5,8 @@ import { AiOutlineRobot } from "react-icons/ai";
 import { MdGTranslate } from "react-icons/md";
 import { CiBookmark } from "react-icons/ci";
 import { AiFillAliwangwang } from "react-icons/ai";
+import { FaExchangeAlt } from "react-icons/fa";//语言切换图标
+ 
 
 //在所有网页中运行
 export const config = {
@@ -34,6 +36,7 @@ const floatButton = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isEnabled, setIsEnabled] = useState(true);//悬浮按钮是否被禁用
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);//设置界面开关
+  const [translateLang, setTranslateLang] = useState<string>('en-US');
   const hideTimeout = useRef<NodeJS.Timeout | null>(null);//菜单隐藏时间
   const offsetRef = useRef({ x: 0, y: 0 });//计算当前位置
   const containerRef = useRef<HTMLDivElement>(null);//获取div元素
@@ -176,6 +179,10 @@ const handleMouseLeave = () => {
   const handleSave = () => console.log("执行剪藏/保存操作");
   const handleTranslate = () => console.log("执行翻译操作");
   const handleAI = () => console.log("执行ai对话操作");
+  const handleLanguage = () => {
+    console.log("切换翻译语言");
+    // 后续在语言切换时调用 setTranslateLang(newLang)
+  }
 
   if (!isEnabled) return null;
 
@@ -208,7 +215,9 @@ const handleMouseLeave = () => {
 
   const bookMarkIcon = <CiBookmark color='#000000' size={25} className='clipMenuIcon'/>;
   const translateIcon = <MdGTranslate color='#000000' size={25} className='clipMenuIcon'/>;
+  const languageIcon = <FaExchangeAlt color='#000000' size={25} className='clipMenuIcon'/>;
   const aiIcon = <AiFillAliwangwang color='#000000' size={25} className='clipMenuIcon'/>;
+ 
 
   return (
     <div 
@@ -230,7 +239,14 @@ const handleMouseLeave = () => {
             <MenuButton icon={bookMarkIcon} onClick={handleSave} />
           </div>
           <div className="clipMenuItem menuItemTranslate">
-            <MenuButton icon={translateIcon} onClick={handleTranslate} />
+            <div className="translate-expand-container">
+               <div className="translate-sub-btn" onClick={handleLanguage}>
+                 {languageIcon}
+               </div>
+               <div className="translate-main-btn" onClick={handleTranslate}>
+                 {translateIcon}
+               </div>
+            </div>
           </div>
           <div className="clipMenuItem menuItemAiIcon">
             <MenuButton icon={aiIcon} onClick={handleAI} />

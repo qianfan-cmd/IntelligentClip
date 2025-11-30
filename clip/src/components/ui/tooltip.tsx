@@ -11,16 +11,32 @@ const TooltipTrigger = TooltipPrimitive.Trigger
 const TooltipContent = React.forwardRef<
   React.ElementRef<typeof TooltipPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
->(({ className, sideOffset = 4, ...props }, ref) => (
+>(({ className, sideOffset = 6, children, ...props }, ref) => (
   <TooltipPrimitive.Content
     ref={ref}
     sideOffset={sideOffset}
-    className={cn(
-      "z-50 overflow-hidden rounded-md bg-zinc-900 px-3 py-1.5 text-xs text-zinc-50 animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 dark:bg-zinc-50 dark:text-zinc-900",
-      className
-    )}
+    className={cn("", className)}
+    style={{
+      zIndex: 2147483647,
+      background: "#ffffff",
+      color: "#000000",
+      borderRadius: 10,
+      boxShadow: "0 6px 12px rgba(0,0,0,0.15)",
+      padding: "6px 10px",
+      fontSize: 12,
+      lineHeight: "16px",
+      whiteSpace: "nowrap"
+    }}
     {...props}
-  />
+  >
+    {children}
+    <TooltipPrimitive.Arrow
+      offset={6}
+      width={12}
+      height={6}
+      style={{ fill: "#ffffff", filter: "drop-shadow(0 2px 2px rgba(0,0,0,0.12))" }}
+    />
+  </TooltipPrimitive.Content>
 ))
 TooltipContent.displayName = TooltipPrimitive.Content.displayName
 
