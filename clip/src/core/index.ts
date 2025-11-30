@@ -18,6 +18,13 @@ export {
   detectSourceType 
 } from "./contentExtractor"
 
+// 图片提取导出
+export {
+  extractImagesFromSelection,
+  extractImagesFromDocument,
+  extractImagesFromHtml
+} from "./imageExtractor"
+
 // 提取器导出（如需单独使用）
 export { extractByReadability } from "./extractors/readability"
 export { extractByFallback } from "./extractors/fallback"

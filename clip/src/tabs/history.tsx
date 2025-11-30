@@ -380,6 +380,12 @@ function HistoryLayout() {
                             {new Date(clip.createdAt).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })}
                           </span>
                           <div className="flex items-center gap-2">
+                            {/* Images count indicator */}
+                            {clip.images && clip.images.length > 0 && (
+                              <span className="text-[10px] bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400 px-2 py-0.5 rounded-full font-medium" title={`${clip.images.length} 张图片`}>
+                                🖼️ {clip.images.length}
+                              </span>
+                            )}
                             {clip.syncedToFeishu && (
                               <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium" title="已同步到飞书">
                                 ✓ 已同步
@@ -618,6 +624,69 @@ function HistoryLayout() {
                         共 {selectedClip.rawTextFull.length.toLocaleString()} 字符
                       </p>
                     )}
+                  </section>
+                )}
+
+                {/* Images Section - 图片预览 */}
+                {selectedClip.images && selectedClip.images.length > 0 && (
+                  <section>
+                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-gray-800 dark:text-gray-200">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center shadow-md">
+                        <span className="text-white text-sm">🖼️</span>
+                      </div>
+                      图片
+                      <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
+                        ({selectedClip.images.length} 张)
+                      </span>
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {selectedClip.images.map((img, i) => (
+                        <a
+                          key={i}
+                          href={img.src}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group relative aspect-video bg-gradient-to-br from-gray-100 to-slate-100 dark:from-zinc-800 dark:to-slate-800 rounded-xl overflow-hidden border border-gray-200/60 dark:border-zinc-700 shadow-sm hover:shadow-lg hover:ring-2 hover:ring-cyan-400 dark:hover:ring-cyan-500 transition-all duration-200"
+                          title={img.alt || `图片 ${i + 1}`}
+                        >
+                          <img
+                            src={img.src}
+                            alt={img.alt || `图片 ${i + 1}`}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            loading="lazy"
+                            onError={(e) => {
+                              // 图片加载失败时显示占位符
+                              const target = e.target as HTMLImageElement
+                              target.style.display = "none"
+                              const placeholder = target.nextElementSibling as HTMLElement
+                              if (placeholder) placeholder.style.display = "flex"
+                            }}
+                          />
+                          <div className="hidden absolute inset-0 items-center justify-center bg-gray-100 dark:bg-zinc-800 text-gray-400">
+                            <span className="text-sm">图片加载失败</span>
+                          </div>
+                          {/* Hover overlay */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-end">
+                            <div className="p-3 w-full">
+                              <p className="text-white text-xs truncate">
+                                {img.alt || `点击查看原图`}
+                              </p>
+                              {img.width && img.height && (
+                                <p className="text-white/70 text-xs">
+                                  {img.width} × {img.height}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          {/* External link icon */}
+                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="w-6 h-6 rounded-full bg-white/90 dark:bg-zinc-800/90 flex items-center justify-center shadow">
+                              <ExternalLink className="h-3 w-3 text-gray-600 dark:text-gray-300" />
+                            </div>
+                          </div>
+                        </a>
+                      ))}
+                    </div>
                   </section>
                 )}
 

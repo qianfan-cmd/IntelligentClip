@@ -2,6 +2,8 @@
  * 内容提取层类型定义
  */
 
+import type { ClipImage } from "@/lib/clip-store"
+
 export interface ExtractedContent {
   title: string
   url: string
@@ -9,6 +11,7 @@ export interface ExtractedContent {
   text: string           // 纯文本（给 LLM 用）
   snippet: string        // 前 N 字的预览
   metadata?: ContentMetadata
+  images?: ClipImage[]   // 提取的图片列表
 }
 
 export interface ContentMetadata {

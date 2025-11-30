@@ -268,13 +268,17 @@ function ClipToolbar() {
     requestTypeRef.current = "selection"
     
     try {
+      // 使用 extractSelectedContent 获取选中内容（包含图片）
+      const selectedContent = extractSelectedContent()
+      
       extractedContentRef.current = {
         title: document.title,
         text: selectedText,
         html: selectedText,
         snippet: selectedText.slice(0, 500),
         url: window.location.href,
-        metadata: {}
+        metadata: {},
+        images: selectedContent?.images || []
       }
       
       port.send({
@@ -317,12 +321,14 @@ function ClipToolbar() {
         summary: "",  // 无AI摘要
         keyPoints: [],
         tags: [],
-        meta: content?.metadata
+        meta: content?.metadata,
+        images: content?.images  // 保存提取的图片
       })
       
       setLoading(false)
       setLoadingType(null)
-      showNotification("✅ 已直接保存整页！", "success")
+      const imgCount = content?.images?.length || 0
+      showNotification(`✅ 已直接保存整页！${imgCount > 0 ? `（含${imgCount}张图片）` : ""}`, "success")
     } catch (e) {
       console.error("❌ Direct save error:", e)
       setLoading(false)
@@ -350,6 +356,10 @@ function ClipToolbar() {
     setLoadingType("direct-selection")
     
     try {
+      // 提取选中内容中的图片
+      const selectedContent = extractSelectedContent()
+      const images = selectedContent?.images || []
+      
       await ClipStore.add({
         source: "webpage",
         url: window.location.href,
@@ -359,12 +369,14 @@ function ClipToolbar() {
         summary: "",  // 无AI摘要
         keyPoints: [],
         tags: [],
-        meta: {}
+        meta: {},
+        images  // 保存选中内容中的图片
       })
       
       setLoading(false)
       setLoadingType(null)
-      showNotification("✅ 已直接保存选中内容！", "success")
+      const imgCount = images.length
+      showNotification(`✅ 已直接保存选中内容！${imgCount > 0 ? `（含${imgCount}张图片）` : ""}`, "success")
     } catch (e) {
       console.error("❌ Direct save error:", e)
       setLoading(false)
@@ -411,12 +423,14 @@ function ClipToolbar() {
         summary: summary,
         keyPoints: [],
         tags: [],
-        meta: content?.metadata
+        meta: content?.metadata,
+        images: content?.images  // 保存提取的图片
       }).then(() => {
         setLoading(false)
         setLoadingType(null)
         requestTypeRef.current = null
-        showNotification("✅ 剪藏成功！", "success")
+        const imgCount = content?.images?.length || 0
+        showNotification(`✅ 剪藏成功！${imgCount > 0 ? `（含${imgCount}张图片）` : ""}`, "success")
       }).catch((err) => {
         setLoading(false)
         setLoadingType(null)

@@ -9,6 +9,7 @@ import { youtubeHandler } from "./handlers/youtube"
 import { bilibiliHandler } from "./handlers/bilibili"
 import { baikeHandler } from "./handlers/baike"
 import { docsHandler, isDocsPage } from "./handlers/docs"
+import { extractImagesFromDocument, extractImagesFromSelection } from "./imageExtractor"
 
 // Re-export types from types.ts
 export type { ExtractedContent, ContentMetadata, SiteHandler, SiteHandlerConfig } from "./types"
@@ -40,8 +41,10 @@ function shouldUseDocsHandler(url: string): boolean {
 
 /**
  * 规范化提取结果
+ * @param content - 原始提取内容
+ * @param includeImages - 是否提取图片
  */
-function normalize(content: ExtractedContent): ExtractedContent {
+function normalize(content: ExtractedContent, includeImages: boolean = true): ExtractedContent {
   const maxSnippetLength = 500
   
   // 清洗文本
@@ -58,6 +61,12 @@ function normalize(content: ExtractedContent): ExtractedContent {
       : cleanText
   )
 
+  // 提取图片（如果还没有）
+  let images = content.images
+  if (includeImages && (!images || images.length === 0)) {
+    images = extractImagesFromDocument()
+  }
+
   return {
     ...content,
     title: content.title || document.title || "Untitled",
@@ -65,7 +74,8 @@ function normalize(content: ExtractedContent): ExtractedContent {
     text: cleanText,
     snippet,
     html: content.html || "",
-    metadata: content.metadata || {}
+    metadata: content.metadata || {},
+    images
   }
 }
 
@@ -203,12 +213,16 @@ export function extractSelectedContent(): ExtractedContent | null {
     ? selectedText.slice(0, maxSnippetLength) + "..."
     : selectedText
 
+  // 提取选中内容中的图片
+  const images = extractImagesFromSelection(selection)
+
   return {
     title,
     url,
     html: "",
     text: selectedText,
     snippet,
-    metadata: {}
+    metadata: {},
+    images
   }
 }

@@ -1,5 +1,19 @@
 import type { ContentMetadata } from "@/core/index"
 
+/**
+ * 剪藏的图片信息
+ */
+export interface ClipImage {
+  /** 图片 URL（绝对路径） */
+  src: string
+  /** 图片描述 */
+  alt?: string
+  /** 图片宽度 */
+  width?: number
+  /** 图片高度 */
+  height?: number
+}
+
 export interface Clip {
   id: string
   source: "youtube" | "bilibili" | "webpage" | "chat" | "other"
@@ -26,6 +40,10 @@ export interface Clip {
   scenarios?: string[]
   /** 用户个人感想/评论 */
   personalComment?: string
+  
+  // ===== 图片剪藏 =====
+  /** 剪藏的图片列表 */
+  images?: ClipImage[]
 }
 
 /**
