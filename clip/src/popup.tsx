@@ -7,9 +7,8 @@ import "./style.css"
 
 function Popup() {
   const [data, setData] = useState("")
-  // 打开扩展主页：在新标签页打开打包后的 sidepanel.html
   const openHomepage = async () => {
-    const url = chrome.runtime.getURL("sidepanel.html")
+    const url = chrome.runtime.getURL("tabs/history.html")
     await chrome.tabs.create({ url })
   }
 
@@ -32,11 +31,19 @@ function Popup() {
     }
   }
 
-  // 启动时检查登录状态：已登录则显示浮窗并关闭 Popup
+  // 切换浏览器中的浮窗显示状态
+  const toggleFloat = async () => {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+    if (tab.id) {
+      await chrome.tabs.sendMessage(tab.id, { type: "clip:toggle-float" })
+    }
+  }
+
+  // 启动时检查登录状态：已登录则切换浮窗显示状态并关闭 Popup
   useEffect(() => {
     chrome.storage.local.get(["clip_logged_in"]).then(async (res) => {
       if (res.clip_logged_in) {
-        await showFloat()
+        await toggleFloat()
         window.close()
       }
     })
@@ -46,13 +53,13 @@ function Popup() {
   const handleSignIn = async () => {
     await chrome.storage.local.set({ clip_logged_in: true })
     await showFloat()
-    const url = chrome.runtime.getURL("sidepanel.html")
+    const url = chrome.runtime.getURL("tabs/history.html")
     await chrome.tabs.create({ url })
     window.close()
   }
 
   return (
-    <div className="w-[360px] h-[500px] flex flex-col bg-white bg-gradient-to-b from-blue-100 from-0% to-violet-100 to-50%">
+    <div className="w-[360px] h-[500px] flex flex-col bg-[#ffff] bg-gradient-to-b from-blue-100 from-0% to-violet-100 to-50% border-0">
       <div className="w-full h-[50px] flex items-center justify-between px-4">
         <Button
           variant="ghost"
