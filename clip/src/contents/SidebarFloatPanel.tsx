@@ -173,6 +173,24 @@ function FloatClip() {
     return () => chrome.runtime.onMessage.removeListener(handler)
   }, [])
 
+  useEffect(() => {
+    const pageHandler = (e: MessageEvent) => {
+      const d = e?.data as any
+      if (!d || d.source !== "clip") return
+      if (d.type === "clip:show-float") setVisible(true)
+      if (d.type === "clip:hide-float") setVisible(false)
+      if (d.type === "clip:toggle-float") setVisible((v) => !v)
+    }
+    window.addEventListener("message", pageHandler)
+    return () => window.removeEventListener("message", pageHandler)
+  }, [])
+
+  useEffect(() => {
+    const type = visible ? "clip:panel-open" : "clip:panel-close"
+    try { window.postMessage({ source: "clip", type }, "*") } catch {}
+    try { chrome.runtime.sendMessage({ type }) } catch {}
+  }, [visible])
+
   if (!visible) return null
 
   return <PanelContent key={refreshKey} onClose={() => setVisible(false)} onRefresh={handleRefresh} />

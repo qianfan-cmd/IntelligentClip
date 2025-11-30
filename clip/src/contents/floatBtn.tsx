@@ -21,7 +21,7 @@ export const config = {
 }
 
 const BUTTON_SIZE: number = 40;
-const RIGHT_MARGIN: number = (document.documentElement.clientWidth - BUTTON_SIZE - 40 + 7.5)
+const RIGHT_MARGIN: number = (window.innerWidth - (window.innerWidth - document.documentElement.clientWidth) - BUTTON_SIZE - window.devicePixelRatio * 7.5)
 const TOP_MARGIN: number = 20;
 const BOTTOM_MARGIN: number = 20;
 const INITIAL_POSITION = { x: RIGHT_MARGIN, y: 200 };
@@ -31,7 +31,7 @@ const Z_INDEX = 2147483640
 const MenuButton = ({ icon, onClick, tooltip }: { icon: React.ReactNode; onClick: () => void; tooltip: string|React.ReactNode }) => (
   <TooltipWrapper side="left" text={typeof tooltip === 'string' ? tooltip as string : undefined} content={typeof tooltip !== 'string' ? tooltip as React.ReactNode : undefined}>
     <button
-      className="p-3 bg-white border-none rounded-full shadow-md cursor-pointer transition-colors duration-150 outline-none overflow-hidden w-10 h-10 flex items-center justify-center hover:scale-110 active:scale-90 group"
+      className="p-3 bg-white border-none rounded-full shadow-md cursor-pointer transition-colors duration-150 outline-none overflow-hidden w-[40px] h-[40px] flex items-center justify-center hover:scale-110 active:scale-90 group"
       onClick={onClick}
     >
       <div className="transform transition-transform duration-300 group-hover:scale-110">
@@ -76,13 +76,14 @@ function showNotification(message: string, type: "success" | "error" | "warning"
 }
 
 const floatButton = () => {
-  const [position, setPosition] = useState(INITIAL_POSITION);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isEnabled, setIsEnabled] = useState(true);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [translateLang, setTranslateLang] = useState<string>('en-US');
-  const hideTimeout = useRef<NodeJS.Timeout | null>(null);
+  const [position, setPosition] = useState(INITIAL_POSITION);//悬浮按钮当前位置
+  const [isDragging, setIsDragging] = useState(false);//是否拖拽
+  const [isMenuOpen, setIsMenuOpen] = useState(false);//是否打开菜单
+  const [isEnabled, setIsEnabled] = useState(true);//是否启用按钮
+  const [hiddenByPanel, setHiddenByPanel] = useState(false);//是否被面板隐藏
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);//设置面板
+  const [translateLang, setTranslateLang] = useState<string>('en-US');//当前翻译语言提示
+  const hideTimeout = useRef<NodeJS.Timeout | null>(null);//隐藏超时定时器
   const offsetRef = useRef({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false)
@@ -97,6 +98,17 @@ const floatButton = () => {
       return !!chrome.runtime?.id
     } catch {
       return false
+    }
+  }
+
+  const normalizeUrl = (u: string): string => {
+    try {
+      const url = new URL(u)
+      const path = url.pathname.replace(/\/+$/, "") || "/"
+      return `${url.origin}${path}`
+    } catch {
+      const base = u.split("#")[0].split("?")[0]
+      return base.replace(/\/+$/, "") || "/"
     }
   }
 
@@ -125,11 +137,11 @@ const floatButton = () => {
   }, [isDragging]);
 
   function getRightMargin() {
-    const dpr = window.devicePixelRatio;
-    const buttonSize = BUTTON_SIZE;
-    const visualMargin = 20;
-    const scropWidth = window.innerWidth - document.documentElement.clientWidth
-    return window.innerWidth - scropWidth - buttonSize - visualMargin - dpr * 7.5;
+    const dpr = window.devicePixelRatio
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
+    const margin = dpr * 7.5
+    const x = window.innerWidth - scrollbarWidth - BUTTON_SIZE - margin
+    return Math.max(0, x)
   }
 
   const handleMouseUp = useCallback((position: { x: number; y: number }) => {
@@ -151,17 +163,40 @@ const floatButton = () => {
     setIsDragging(false);
   }, [isDragging]);
 
-  let lastRatio = window.devicePixelRatio;
+  const snapToRight = useCallback(() => {
+    const topLimit = Math.max(
+      TOP_MARGIN,
+      Math.min(position.y, (window.innerHeight || document.documentElement.clientHeight) - BUTTON_SIZE - BOTTOM_MARGIN)
+    )
+    setPosition({ x: getRightMargin(), y: topLimit })
+  }, [position.y])
+
   useEffect(() => {
-    const handleResize = () => {
-      if (window.devicePixelRatio !== lastRatio) {
-        lastRatio = window.devicePixelRatio;
-        handleMouseUp(position);
-      }
+    setPosition((p) => ({ x: getRightMargin(), y: p.y }))
+    const onResize = () => {
+      snapToRight()
     }
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [position, handleMouseUp]);
+    window.addEventListener("resize", onResize)
+    const vv = window.visualViewport
+    vv?.addEventListener("resize", onResize)
+    vv?.addEventListener("scroll", onResize)
+    return () => {
+      window.removeEventListener("resize", onResize)
+      vv?.removeEventListener("resize", onResize)
+      vv?.removeEventListener("scroll", onResize)
+    }
+  }, [snapToRight])
+
+  useEffect(() => {
+    const pageHandler = (e: MessageEvent) => {
+      const d = e?.data as any
+      if (!d || d.source !== "clip") return
+      if (d.type === "clip:panel-open" || d.type === "clip:show-float") setHiddenByPanel(true)
+      if (d.type === "clip:panel-close" || d.type === "clip:hide-float") setHiddenByPanel(false)
+    }
+    window.addEventListener("message", pageHandler)
+    return () => window.removeEventListener("message", pageHandler)
+  }, [])
 
   // Determine menu position mode based on container position
   const getMenuPositionMode = () => {
@@ -239,7 +274,19 @@ const floatButton = () => {
   }, []);
 
   const handleMain = () => {
-    console.log("打开悬浮面板");
+    try { 
+      window.postMessage({ source: "clip", type: "clip:show-float" }, "*") 
+    } catch(e) {
+      console.log("悬浮窗打开请求发送失败：",e);
+    }
+    if (!checkContext()) return
+    try { 
+      chrome.runtime.sendMessage({ type: "clip:show-float" })
+     } catch(e) {
+      console.log(e);
+      alert("悬浮窗打开失败");
+     }
+    setHiddenByPanel(true)
   }
 
   useEffect(() => {
@@ -288,10 +335,28 @@ const floatButton = () => {
       showNotification("⚠️ 扩展已重载，请刷新页面", "warning")
       return
     }
-    setLoading(true)
-    setLoadingType("direct-full")
+    //检查当前网页是否保存过
     try {
       const content = await extractContent()
+      try {
+        const contentUrlNorm = content?.url ? normalizeUrl(content.url) : null
+        if (contentUrlNorm) {
+          const latest = await ClipStore.getAll()
+          if (latest.some((c) => normalizeUrl(c.url) === contentUrlNorm)) {
+            setLoading(false)
+            setLoadingType(null)
+            showNotification("⚠️ 当前页面已保存", "warning")
+            return
+          }
+        }
+      } catch (e) {
+      console.log(e);
+      showNotification("❌ 检查剪藏失败:Error")
+      return
+    }
+    setLoading(true)
+    setLoadingType("direct-full")
+    
       await ClipStore.add({
         source: content?.metadata?.platform === "Bilibili" ? "bilibili" : 
                content?.metadata?.platform === "YouTube" ? "youtube" : "webpage",
@@ -318,13 +383,27 @@ const floatButton = () => {
   }
 
   const handleTranslate = () => console.log("执行翻译操作");
-  const handleAI = () => console.log("执行ai对话操作");
+  const handleAI = () => {
+    try { 
+      window.postMessage({ source: "clip", type: "clip:show-float" }, "*") 
+    } catch(e) {
+      console.log("悬浮窗打开请求发送失败：",e);
+    }
+    if (!checkContext()) return
+    try { 
+      chrome.runtime.sendMessage({ type: "clip:show-float" })
+     } catch(e) {
+      console.log(e);
+      alert("悬浮窗打开失败");
+     }
+    setHiddenByPanel(true)
+  }
   const handleLanguage = () => {
     const next = translateLang === 'en-US' ? 'zh-CN' : 'en-US'
     setTranslateLang(next)
   }
 
-  if (!isEnabled) return null;
+  if (!isEnabled || hiddenByPanel) return null;
 
   const handleOpenSettings = (e: React.MouseEvent) => { 
     e.stopPropagation(); 
@@ -349,21 +428,22 @@ const floatButton = () => {
     setIsEnabled(false); 
   };
 
-  const bookMarkIcon = <CiBookmark color='#000000' size={25} className="w-5 h-5 transform scale-100 transition-transform duration-300 hover:scale-115 active:scale-90"/>;
-  const translateIcon = <MdGTranslate color='#000000' size={25} className="w-5 h-5 transform scale-100 transition-transform duration-300 hover:scale-115 active:scale-90"/>;
-  const languageIcon = <FaExchangeAlt color='#000000' size={25} className="w-5 h-5 transform scale-100 transition-transform duration-300 hover:scale-115 active:scale-90"/>;
-  const aiIcon = <AiFillAliwangwang color='#000000' size={25} className="w-5 h-5 transform scale-100 transition-transform duration-300 hover:scale-115 active:scale-90"/>;
+  const bookMarkIcon = <CiBookmark color='#000000' size={24} className="w-[20px] h-[20px] transform scale-100 transition-transform duration-300 hover:scale-115 active:scale-90"/>;
+  const translateIcon = <MdGTranslate color='#000000' size={24} className="w-[20px] h-[20px] transform scale-100 transition-transform duration-300 hover:scale-115 active:scale-90"/>;
+  const languageIcon = <FaExchangeAlt color='#000000' size={24} className="w-[20px] h-[20px] transform scale-100 transition-transform duration-300 hover:scale-115 active:scale-90"/>;
+  const aiIcon = <AiFillAliwangwang color='#000000' size={24} className="w-[20px] h-[20px] transform scale-100 transition-transform duration-300 hover:scale-115 active:scale-90"/>;
 
   return (
     <div 
       ref={containerRef}
       className={cn(
-        "fixed z-[2147483647] select-none w-10 h-10 rounded-full transition-all duration-200",
+        "fixed z-[2147483647] select-none w-[40px] h-[40px] rounded-full transition-all duration-200",
         isDragging && "opacity-75 transition-none"
       )}
       style={{ 
         left: position.x,
         top: position.y,
+        zIndex: 2147483700,
       }}
       onMouseEnter={ handleMouseEnter }
       onMouseLeave={ handleMouseLeave }
@@ -390,8 +470,8 @@ const floatButton = () => {
                 width: 40, height: 40 
               }}
             >
-              <div className="absolute right-0 top-0 w-10 h-10 bg-white rounded-[20px] shadow-md flex items-center justify-end overflow-hidden transition-[width,box-shadow] duration-300 z-20 hover:w-[90px] hover:justify-between hover:shadow-lg">
-                 <div className="w-10 h-10 flex items-center justify-center cursor-pointer flex-shrink-0 hover:scale-110 active:scale-90 transition-transform" onClick={handleLanguage}>
+              <div className="absolute right-0 top-0 w-[40px] h-[40px] bg-white rounded-[20px] shadow-md flex items-center justify-end overflow-hidden transition-[width,box-shadow] duration-300 z-20 hover:w-[90px] hover:justify-between hover:shadow-lg">
+                 <div className="w-[40px] h-[40px] flex items-center justify-center cursor-pointer flex-shrink-0 hover:scale-110 active:scale-90 transition-transform" onClick={handleLanguage}>
                    {languageIcon}
                  </div>
                  
@@ -405,7 +485,7 @@ const floatButton = () => {
                      </div>
                    }
                  >
-                   <div className="w-10 h-10 flex items-center justify-center cursor-pointer flex-shrink-0 hover:scale-110 active:scale-90 transition-transform" onClick={handleTranslate}>
+                   <div className="w-[40px] h-[40px] flex items-center justify-center cursor-pointer flex-shrink-0 hover:scale-110 active:scale-90 transition-transform" onClick={handleTranslate}>
                      {translateIcon}
                    </div>
                  </TooltipWrapper>
@@ -425,11 +505,11 @@ const floatButton = () => {
 
       {/* 主图标 */}
       <div
-        className="relative w-10 h-10 rounded-full bg-white shadow-md cursor-pointer hover:shadow-xl transition-all group"
+        className="relative w-[40px] h-[40px] rounded-full bg-white shadow-md cursor-pointer hover:shadow-xl transition-all group"
         onMouseDown={handleMouseDown}
         onClick={handleMain}
       >
-        <AiOutlineRobot color='black' size={25} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 scale-95 w-5 h-5 transition-transform duration-300 ease-in-out group-hover:scale-100 group-active:scale-90"/>
+        <AiOutlineRobot color='black' size={24} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[20px] h-[20px] transition-transform duration-300 ease-in-out group-hover:scale-105 group-active:scale-90"/>
         <div 
           className={cn(
             "absolute -right-2.5 -top-2.5 w-4 h-4 rounded-full bg-gray-200 shadow flex items-center justify-center text-gray-700 font-bold cursor-pointer transition-transform scale-0 hover:bg-gray-300 text-[10px]",
