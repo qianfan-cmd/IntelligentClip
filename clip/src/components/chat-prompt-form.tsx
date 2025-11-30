@@ -6,6 +6,10 @@
  * - Shift+Enter 换行
  * - 空输入时禁用发送按钮
  * - 发送后自动聚焦输入框
+ * 
+ * AI 打标功能：
+ * - 解析 AI 回复中的 <clip_tags> JSON
+ * - 自动更新当前剪藏的标注信息
  */
 import { Button } from "@/components/ui/button"
 import { TooltipWrapper } from "@/components/ui/tooltip-wrapper"
@@ -13,6 +17,8 @@ import { useChat } from "@/contexts/chat-context"
 import { useExtension } from "@/contexts/extension-context"
 import { openAIKeyAtom } from "@/lib/atoms/openai"
 import { cn } from "@/lib/utils"
+import { ClipStore } from "@/lib/clip-store"
+import { extractClipTags, removeClipTagsFromResponse, mergeClipTags } from "@/lib/clip-tagging"
 import { Send, Loader2 } from "lucide-react"
 import { useAtomValue } from "jotai"
 import React, { useEffect, useRef, useCallback } from "react"
@@ -26,7 +32,7 @@ interface PromptFormProps {
 
 export default function PromptForm({ className }: PromptFormProps) {
   const port = usePort("chat")
-  const { extensionData } = useExtension()
+  const { extensionData, currentClipId } = useExtension()
   const openAIKey = useAtomValue(openAIKeyAtom)
 
   const {
@@ -64,8 +70,11 @@ export default function PromptForm({ className }: PromptFormProps) {
   async function generateChat(model: string, messages: any) {
     console.log("Function That Generates Chat Called")
 
-    // 验证字幕数据
-    if (!extensionData?.transcript?.events || extensionData.transcript.events.length === 0) {
+    // 剪藏模式：有 summary 或 rawText 数据
+    const isClipMode = extensionData?.summary || extensionData?.rawText
+    
+    // 验证字幕数据（仅视频模式需要）
+    if (!isClipMode && (!extensionData?.transcript?.events || extensionData.transcript.events.length === 0)) {
       console.error("Cannot generate chat: No transcript data available")
       setChatIsError(true)
       setChatIsGenerating(false)
@@ -97,11 +106,66 @@ export default function PromptForm({ className }: PromptFormProps) {
     setChatIsGenerating(true)
     setChatIsError(false)
 
+    // 构建上下文，添加剪藏模式标记
+    const context = { 
+      ...extensionData, 
+      openAIKey,
+      clipMode: isClipMode  // 标记剪藏模式，让后台使用打标系统提示词
+    }
+
     port.send({
       model: model,
       messages: messages,
-      context: { ...extensionData, openAIKey }
+      context
     })
+  }
+
+  /**
+   * 处理 AI 回复中的打标信息
+   * 从回复中提取 <clip_tags> JSON，更新当前剪藏
+   */
+  async function handleClipTagsUpdate(rawContent: string): Promise<string> {
+    // 从 AI 回复中提取打标信息
+    const clipTags = extractClipTags(rawContent)
+    
+    if (clipTags && clipTags.shouldUpdate && currentClipId) {
+      console.log("[ClipTagging] Updating clip tags for:", currentClipId)
+      console.log("[ClipTagging] Tags data:", clipTags)
+      
+      try {
+        // 获取当前剪藏数据
+        const clips = await ClipStore.getAll()
+        const currentClip = clips.find(c => c.id === currentClipId)
+        
+        if (currentClip) {
+          // 合并新的打标信息
+          const mergedTags = mergeClipTags({
+            categories: currentClip.categories,
+            scenarios: currentClip.scenarios,
+            personalComment: currentClip.personalComment,
+            rating: currentClip.rating,
+            tags: currentClip.tags
+          }, clipTags)
+          
+          // 更新剪藏记录
+          await ClipStore.update(currentClipId, {
+            categories: mergedTags.categories,
+            scenarios: mergedTags.scenarios,
+            personalComment: mergedTags.personalComment,
+            rating: mergedTags.rating,
+            tags: mergedTags.tags,
+            updatedAt: Date.now()
+          })
+          
+          console.log("[ClipTagging] Successfully updated clip tags")
+        }
+      } catch (error) {
+        console.error("[ClipTagging] Failed to update clip tags:", error)
+      }
+    }
+    
+    // 返回移除打标 JSON 后的纯文本回复（给用户显示）
+    return removeClipTagsFromResponse(rawContent)
   }
 
   // 监听 port 消息
@@ -111,35 +175,41 @@ export default function PromptForm({ className }: PromptFormProps) {
     if (port.data?.message !== undefined && port.data?.message !== null) {
       // 处理非流式响应（isEnd=true）
       if (port.data.isEnd === true) {
-        const content = port.data.message.replace(/\nEND$/, '').replace(/END$/, '')
+        const rawContent = port.data.message.replace(/\nEND$/, '').replace(/END$/, '')
         
-        if (chatMessages[chatMessages.length - 1]?.role === "user") {
-          setChatMessages([
-            ...chatMessages,
-            { role: "assistant", content: content }
-          ])
-        } else {
-          const newMessages = [...chatMessages]
-          newMessages[newMessages.length - 1].content = content
-          setChatMessages(newMessages)
-        }
-        
-        setChatIsGenerating(false)
-        setChatIsError(false)
-        
-        // 发送完成后重新聚焦输入框
-        setTimeout(() => inputRef.current?.focus(), 100)
+        // 处理打标信息并获取清理后的内容
+        handleClipTagsUpdate(rawContent).then(cleanContent => {
+          if (chatMessages[chatMessages.length - 1]?.role === "user") {
+            setChatMessages([
+              ...chatMessages,
+              { role: "assistant", content: cleanContent }
+            ])
+          } else {
+            const newMessages = [...chatMessages]
+            newMessages[newMessages.length - 1].content = cleanContent
+            setChatMessages(newMessages)
+          }
+          
+          setChatIsGenerating(false)
+          setChatIsError(false)
+          
+          // 发送完成后重新聚焦输入框
+          setTimeout(() => inputRef.current?.focus(), 100)
+        })
       } 
-      // 处理流式响应
+      // 处理流式响应（显示原始内容，结束后再处理打标）
       else if (port.data.isEnd === false) {
+        // 流式响应先显示原始内容（包含打标 JSON）
+        const streamContent = port.data.message
+        
         if (chatMessages[chatMessages.length - 1]?.role === "user") {
           setChatMessages([
             ...chatMessages,
-            { role: "assistant", content: port.data.message }
+            { role: "assistant", content: streamContent }
           ])
         } else {
           const newMessages = [...chatMessages]
-          newMessages[newMessages.length - 1].content = port.data.message
+          newMessages[newMessages.length - 1].content = streamContent
           setChatMessages(newMessages)
         }
         setChatIsError(false)

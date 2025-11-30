@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useCallback } from "react"
 import { ClipStore, type Clip } from "@/lib/clip-store"
-import { Trash2, ExternalLink, Search, Calendar, Tag, Save, MessageSquare, Share, Loader2, CheckSquare, Square, Edit3, X, Check, ChevronDown, ChevronUp } from "lucide-react"
+import { Trash2, ExternalLink, Search, Calendar, Tag, Save, MessageSquare, Share, Loader2, CheckSquare, Square, Edit3, X, Check, ChevronDown, ChevronUp, Star } from "lucide-react"
 import { ChatProvider, useChat } from "@/contexts/chat-context"
 import { ExtensionProvider, useExtension } from "@/contexts/extension-context"
 import { createRecordFromClip } from "@/lib/feishuBitable"
 import Chat from "@/components/chat"
 import Markdown from "@/components/markdown"
+import ClipTagsPanel from "@/components/clip-tags-panel"
 import "../style.css"
 
 export default function HistoryPage() {
@@ -36,7 +37,7 @@ function HistoryLayout() {
   // Raw text expand state
   const [isRawTextExpanded, setIsRawTextExpanded] = useState(false)
   
-  const { setExtensionData } = useExtension()
+  const { setExtensionData, setCurrentClipId } = useExtension()
   const { chatMessages } = useChat()
 
   useEffect(() => {
@@ -206,16 +207,25 @@ function HistoryLayout() {
     setIsEditingNotes(false)
     
     if (selectedClip) {
+      // 设置当前剪藏 ID，用于 AI 打标功能
+      setCurrentClipId(selectedClip.id)
+      
+      // 设置扩展数据，包含剪藏模式所需的信息
       setExtensionData({
+        clipMode: true,  // 标记为剪藏模式
         transcript: {
           events: [{ segs: [{ utf8: selectedClip.rawTextFull || selectedClip.rawTextSnippet || selectedClip.summary }] }]
         },
         metadata: {
           title: selectedClip.title
-        }
+        },
+        summary: selectedClip.summary,
+        rawText: selectedClip.rawTextFull || selectedClip.rawTextSnippet
       })
+    } else {
+      setCurrentClipId(null)
     }
-  }, [selectedClip, setExtensionData])
+  }, [selectedClip, setExtensionData, setCurrentClipId])
 
   return (
     <div className="flex h-screen w-full bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-100 dark:from-zinc-950 dark:via-slate-950 dark:to-gray-950 text-gray-900 dark:text-gray-100 font-sans">
@@ -327,9 +337,39 @@ function HistoryLayout() {
                         
                         {/* Notes indicator */}
                         {clip.notes && (
-                          <div className="text-xs text-amber-600 dark:text-amber-400 mb-3 flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-lg w-fit">
+                          <div className="text-xs text-amber-600 dark:text-amber-400 mb-2 flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-lg w-fit">
                             <Edit3 className="h-3 w-3" />
                             <span className="line-clamp-1 font-medium">{truncateText(clip.notes, 40)}</span>
+                          </div>
+                        )}
+                        
+                        {/* Rating indicator */}
+                        {clip.rating && clip.rating > 0 && (
+                          <div className="flex items-center gap-1 mb-2">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star
+                                key={star}
+                                className={`h-3 w-3 ${
+                                  star <= clip.rating!
+                                    ? "fill-amber-400 text-amber-400"
+                                    : "fill-transparent text-gray-300 dark:text-zinc-600"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        )}
+                        
+                        {/* Tags preview */}
+                        {clip.tags && clip.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mb-2">
+                            {clip.tags.slice(0, 3).map((tag, i) => (
+                              <span key={i} className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
+                                #{tag}
+                              </span>
+                            ))}
+                            {clip.tags.length > 3 && (
+                              <span className="text-[10px] text-gray-400">+{clip.tags.length - 3}</span>
+                            )}
                           </div>
                         )}
                         
@@ -508,6 +548,9 @@ function HistoryLayout() {
                     />
                   </div>
                 </section>
+
+                {/* AI Tags Section - 显示 AI 标注信息 */}
+                <ClipTagsPanel clip={selectedClip} />
 
                 {/* Key Points Section */}
                 {selectedClip.keyPoints && selectedClip.keyPoints.length > 0 && (

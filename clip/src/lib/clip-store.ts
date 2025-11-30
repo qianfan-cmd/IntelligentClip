@@ -18,6 +18,33 @@ export interface Clip {
   feishuRecordId?: string
   notes?: string  // User's personal notes and thoughts
   updatedAt?: number  // Last update timestamp
+  
+  // ===== AI 交互式打标字段 =====
+  /** 内容分类，如"公司介绍""技术文档""教程"等 */
+  categories?: string[]
+  /** 适用场景，如"工作参考""备考复习""投资研究"等 */
+  scenarios?: string[]
+  /** 用户个人感想/评论 */
+  personalComment?: string
+}
+
+/**
+ * AI 打标结果的类型定义
+ * 用于解析 <clip_tags> JSON 内容
+ */
+export interface ClipTagsResult {
+  /** 是否需要更新数据库中的打标信息 */
+  shouldUpdate: boolean
+  /** 内容分类列表 */
+  categories?: string[]
+  /** 适用场景列表 */
+  scenarios?: string[]
+  /** 用户个人感想 */
+  personalComment?: string
+  /** 评分 1-5 星 */
+  rating?: number
+  /** 标签列表 */
+  tags?: string[]
 }
 
 const STORAGE_KEY = "clips"

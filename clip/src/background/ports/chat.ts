@@ -1,9 +1,14 @@
 import { createLlm } from "@/utils/llm"
+import { CLIP_TAGGING_SYSTEM_PROMPT } from "@/lib/clip-tagging"
 import type { ChatCompletionMessageParam } from "openai/resources"
 
 import type { PlasmoMessaging } from "@plasmohq/messaging"
 
-const SYSTEM = `
+/**
+ * 基础对话系统提示词模板
+ * 用于 YouTube/视频内容的对话
+ */
+const VIDEO_SYSTEM_TEMPLATE = `
 You are a helpful assistant, Given the metadata and transcript of a YouTube video. Your primary task is to provide accurate and relevant answers to any questions based on this information. Use the available details effectively to assist users with their inquiries about the video's content, context, or any other related aspects.
 
 START OF METADATA
@@ -15,9 +20,77 @@ START OF TRANSCRIPT
 END OF TRANSCRIPT
 `
 
+/**
+ * 网页剪藏对话系统提示词模板
+ * 集成了 AI 打标功能
+ */
+const CLIP_SYSTEM_TEMPLATE = `
+${CLIP_TAGGING_SYSTEM_PROMPT}
+
+---
+
+## 当前剪藏内容
+
+**标题**: {title}
+
+**摘要**:
+{summary}
+
+**原文内容**:
+{content}
+
+---
+
+请基于以上剪藏内容回答用户问题。如果用户要求打标签、评分或分类，请按照上述格式输出打标结果。
+`
+
 type ChatCompletionResult =
   | { mode: "stream"; stream: any }
   | { mode: "standard"; content: string }
+
+/**
+ * 构建系统提示词
+ * 根据上下文类型（视频/剪藏）选择不同的模板
+ */
+function buildSystemPrompt(context: any): string {
+  const title = context.metadata?.title || "未知标题"
+  
+  // 判断是否是剪藏模式（有 clipMode 标记或有 summary/rawText）
+  const isClipMode = context.clipMode || context.summary || context.rawText
+  
+  if (isClipMode) {
+    // 剪藏模式：使用带打标功能的系统提示词
+    const summary = context.summary || "无摘要"
+    const rawText = context.rawText || context.transcript?.events
+      ?.filter((x: { segs: any }) => x.segs)
+      ?.map((x: { segs: any[] }) => x.segs.map((y: { utf8: any }) => y.utf8).join(" "))
+      ?.join(" ")
+      ?.replace(/[\u200B-\u200D\uFEFF]/g, "")
+      ?.replace(/\s+/g, " ") || "无原文"
+    
+    // 截取原文，避免过长
+    const truncatedContent = rawText.length > 8000 
+      ? rawText.slice(0, 8000) + "...[内容过长已截断]" 
+      : rawText
+    
+    return CLIP_SYSTEM_TEMPLATE
+      .replace("{title}", title)
+      .replace("{summary}", summary)
+      .replace("{content}", truncatedContent)
+  } else {
+    // 视频模式：使用原有的视频对话模板
+    const parsed = context.transcript?.events
+      ?.filter((x: { segs: any }) => x.segs)
+      ?.map((x: { segs: any[] }) => x.segs.map((y: { utf8: any }) => y.utf8).join(" "))
+      ?.join(" ")
+      ?.replace(/[\u200B-\u200D\uFEFF]/g, "")
+      ?.replace(/\s+/g, " ") || ""
+    
+    return VIDEO_SYSTEM_TEMPLATE
+      .replace("{title}", title)
+      .replace("{transcript}", parsed)
+  }
+}
 
 async function createChatCompletion(
   model: string,
@@ -28,14 +101,18 @@ async function createChatCompletion(
     hasOpenAIKey: !!context?.openAIKey,
     hasTranscript: !!context?.transcript,
     hasEvents: !!context?.transcript?.events,
-    hasMetadata: !!context?.metadata
+    hasMetadata: !!context?.metadata,
+    isClipMode: !!(context?.clipMode || context?.summary || context?.rawText)
   })
 
   if (!context.openAIKey) {
     throw new Error("OpenAI API key is not set")
   }
 
-  if (!context.transcript || !context.transcript.events) {
+  // 剪藏模式下不强制要求 transcript
+  const isClipMode = context.clipMode || context.summary || context.rawText
+  
+  if (!isClipMode && (!context.transcript || !context.transcript.events)) {
     throw new Error("Transcript data is missing. Please make sure the video has captions/subtitles.")
   }
 
@@ -47,21 +124,13 @@ async function createChatCompletion(
   console.log("Creating Chat Completion with model:", model)
   const isCustomModel = model?.startsWith("qwen") || model?.startsWith("deepseek") || model?.startsWith("kimi")
 
-  const parsed = context.transcript.events
-    .filter((x: { segs: any }) => x.segs)
-    .map((x: { segs: any[] }) => x.segs.map((y: { utf8: any }) => y.utf8).join(" "))
-    .join(" ")
-    .replace(/[\u200B-\u200D\uFEFF]/g, "")
-    .replace(/\s+/g, " ")
-
-  const SYSTEM_WITH_CONTEXT = SYSTEM.replace("{title}", context.metadata.title).replace(
-    "{transcript}",
-    parsed
-  )
+  // 构建系统提示词
+  const SYSTEM_WITH_CONTEXT = buildSystemPrompt(context)
   messages.unshift({ role: "system", content: SYSTEM_WITH_CONTEXT })
 
   console.log("Messages sent to OpenAI")
-  console.log(messages)
+  console.log("System prompt length:", SYSTEM_WITH_CONTEXT.length)
+  console.log("Is clip mode:", isClipMode)
 
   if (isCustomModel) {
     console.log("Using non-streaming mode for Custom model")
