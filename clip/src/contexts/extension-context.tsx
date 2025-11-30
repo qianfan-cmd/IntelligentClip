@@ -10,6 +10,8 @@ interface ExtensionState {
   extensionPanel: string
   extensionVideoId: string
   extensionData: any
+  /** 当前正在对话的剪藏 ID，用于 AI 打标功能 */
+  currentClipId: string | null
 }
 
 const initialState: ExtensionState = {
@@ -19,7 +21,8 @@ const initialState: ExtensionState = {
   extensionLoading: false,
   extensionPanel: "Summary",
   extensionVideoId: "",
-  extensionData: null
+  extensionData: null,
+  currentClipId: null
 }
 
 interface ExtensionActions {
@@ -30,6 +33,7 @@ interface ExtensionActions {
   setExtensionPanel: (panel: string) => void
   setExtensionVideoId: (videoId: string) => void
   setExtensionData: (data: any) => void
+  setCurrentClipId: (clipId: string | null) => void
   resetExtension: () => void
 }
 
@@ -71,6 +75,9 @@ export function ExtensionProvider({ children }: ExtensionProviderProps) {
   const [extensionData, setExtensionData] = React.useState<any>(
     initialState.extensionData
   )
+  const [currentClipId, setCurrentClipId] = React.useState<string | null>(
+    initialState.currentClipId
+  )
 
   // User Auth logic
 
@@ -82,6 +89,7 @@ export function ExtensionProvider({ children }: ExtensionProviderProps) {
     setExtensionPanel(initialState.extensionPanel)
     setExtensionVideoId(initialState.extensionVideoId)
     setExtensionData(initialState.extensionData)
+    setCurrentClipId(initialState.currentClipId)
   }
 
   const value = {
@@ -92,6 +100,7 @@ export function ExtensionProvider({ children }: ExtensionProviderProps) {
     extensionPanel,
     extensionVideoId,
     extensionData,
+    currentClipId,
     setExtensionContainer,
     setExtensionIsOpen,
     setExtensionTheme,
@@ -99,6 +108,7 @@ export function ExtensionProvider({ children }: ExtensionProviderProps) {
     setExtensionPanel,
     setExtensionVideoId,
     setExtensionData,
+    setCurrentClipId,
     resetExtension
   }
 

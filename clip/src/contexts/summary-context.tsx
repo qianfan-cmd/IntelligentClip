@@ -1,5 +1,6 @@
 import { openAIKeyAtom } from "@/lib/atoms/openai"
 import { models, prompts, type Model, type Prompt } from "@/lib/constants"
+import { ClipStore } from "@/lib/clip-store"
 import { useAtomValue } from "jotai"
 import * as React from "react"
 
@@ -114,6 +115,20 @@ export function SummaryProvider({ children }: SummaryProviderProps) {
         setSummaryIsGenerating(false)
         setSummaryIsError(false)
         setSummaryErrorMessage(null)
+
+        // Save to ClipStore
+        if (extensionData?.metadata) {
+          ClipStore.add({
+            source: "youtube",
+            url: window.location.href,
+            title: extensionData.metadata.title || document.title,
+            rawTextSnippet: extensionData.transcript?.events?.[0]?.segs?.[0]?.utf8 || "",
+            summary: content,
+            keyPoints: [], 
+            tags: []
+          }).then(() => console.log("Clip saved automatically"))
+        }
+
       } else if (port.data.isEnd === false) {
         // 流式响应，持续更新
         console.log("Streaming message:", port.data.message)

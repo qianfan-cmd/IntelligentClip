@@ -7,7 +7,9 @@ export const atomWithPlasmoStorage = <T>(key: string, initialValue: T) => {
   baseAtom.onMount = (setValue) => {
     ;(async () => {
       const result = await storage.get(key)
-      setValue(result as T)
+      if (result !== undefined && result !== null) {
+        setValue(result as T)
+      }
     })()
   }
   const derivedAtom = atom(

@@ -28,6 +28,17 @@ npm run build
 
 This should create a production bundle for your extension, ready to be zipped and published to the stores.
 
+## Security Warning (Feishu/Lark Integration)
+
+This project includes a feature to export clips to Feishu/Lark Bitable (Multidimensional Tables).
+
+**Important:**
+- The current implementation requires users to input a **Personal Base Token** in the extension settings.
+- These credentials are stored in `chrome.storage.local` (unencrypted in the browser's profile folder).
+- **DO NOT** commit your personal tokens to version control.
+- **DO NOT** use this implementation in a production environment where high security is required.
+- For a production-ready application, you should implement a proper OAuth 2.0 flow to obtain user access tokens securely, rather than asking users to paste long-lived personal tokens.
+
 ## Submit to the webstores
 
 The easiest way to deploy your Plasmo extension is to use the built-in [bpp](https://bpp.browser.market) GitHub action. Prior to using this action however, make sure to build your extension and upload the first version to the store to establish the basic credentials. Then, simply follow [this setup instruction](https://docs.plasmo.com/framework/workflows/submit) and you should be on your way for automated submission!

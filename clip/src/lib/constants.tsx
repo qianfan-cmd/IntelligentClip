@@ -77,9 +77,21 @@ Please ensure that the summary, bullet points, and explanations fit within the 3
 
 export const models: Model[] = [
   {
-    value: "gpt-5",
-    label: "GPT-5",
-    content: "gpt-5",
+    value: "qwen3-max",
+    label: "Qwen 3 Max (通义千问)",
+    content: "qwen3-max",
+    icon: <IconOpenAI className="h-4 w-4 opacity-70" />
+  },
+  {
+    value: "deepseek-v3",
+    label: "DeepSeek V3",
+    content: "deepseek-v3",
+    icon: <IconOpenAI className="h-4 w-4 opacity-70" />
+  },
+  {
+    value: "kimi-k2",
+    label: "Kimi K2",
+    content: "kimi-k2",
     icon: <IconOpenAI className="h-4 w-4 opacity-70" />
   },
   {
@@ -107,21 +119,9 @@ export const models: Model[] = [
     icon: <IconOpenAI className="h-4 w-4 opacity-70" />
   },
   {
-    value: "qwen3-max",
-    label: "Qwen 3 Max (通义千问)",
-    content: "qwen3-max",
-    icon: <IconOpenAI className="h-4 w-4 opacity-70" />
-  },
-  {
-    value: "deepseek-v3",
-    label: "DeepSeek V3",
-    content: "deepseek-v3",
-    icon: <IconOpenAI className="h-4 w-4 opacity-70" />
-  },
-  {
-    value: "kimi-k2",
-    label: "Kimi K2",
-    content: "kimi-k2",
+    value: "gpt-5",
+    label: "GPT-5",
+    content: "gpt-5",
     icon: <IconOpenAI className="h-4 w-4 opacity-70" />
   }
 ]
