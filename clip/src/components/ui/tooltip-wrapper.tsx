@@ -5,7 +5,17 @@ import {
   TooltipTrigger
 } from "@/components/ui/tooltip"
 
-export function TooltipWrapper({ children, text, side = "bottom", offset = 6 }) {
+type TooltipSide = "bottom" | "left" | "top" | "right"
+
+interface TooltipWrapperProps {
+  children: React.ReactNode
+  text?: string
+  content?: React.ReactNode
+  side?: TooltipSide
+  offset?: number
+}
+
+export function TooltipWrapper({ children, text, content, side = "bottom", offset = 6 }: TooltipWrapperProps) {
   return (
     <TooltipProvider delayDuration={0}>
       <Tooltip>
@@ -25,7 +35,7 @@ export function TooltipWrapper({ children, text, side = "bottom", offset = 6 }) 
             whiteSpace: 'nowrap'
           }}
         >
-          <span>{text}</span>
+          {content ? content : <span>{text}</span>}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

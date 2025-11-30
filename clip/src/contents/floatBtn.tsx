@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, type CSSProperties } from 'react';
 import { Storage } from '@plasmohq/storage';
 import cssText from 'data-text:./floatBtn.css';
 import { AiOutlineRobot } from "react-icons/ai";
@@ -6,22 +6,21 @@ import { MdGTranslate } from "react-icons/md";
 import { CiBookmark } from "react-icons/ci";
 import { AiFillAliwangwang } from "react-icons/ai";
 import { FaExchangeAlt } from "react-icons/fa";//语言切换图标
- 
+import { TooltipProvider } from "@/components/ui/tooltip"
+import { TooltipWrapper } from "@/components/ui/tooltip-wrapper"
+import type { PlasmoCSConfig, PlasmoGetShadowHostId } from "plasmo"
+import { ClipStore } from "@/lib/clip-store"
+import { extractContent, extractSelectedContent } from "@/core/index"
+import type { ExtractedContent } from "@/core/types"
+import { Provider, useAtomValue } from "jotai"
+import { openAIKeyAtom } from "@/lib/atoms/openai"
+import { usePort } from "@plasmohq/messaging/hook"
 
 //在所有网页中运行
 export const config = {
   matches: ["<all_urls>"] 
 }
 
-// 菜单按钮组件
-const MenuButton = ({ icon, onClick }: { icon: React.ReactNode; onClick: () => void }) => (
-  <button 
-    className="clipMenuButton"
-    onClick={onClick}
-  >
-    {icon}
-  </button>
-);
 
 // 吸附常量
 const BUTTON_SIZE: number = 40;
@@ -40,6 +39,69 @@ const floatButton = () => {
   const hideTimeout = useRef<NodeJS.Timeout | null>(null);//菜单隐藏时间
   const offsetRef = useRef({ x: 0, y: 0 });//计算当前位置
   const containerRef = useRef<HTMLDivElement>(null);//获取div元素
+  const [expanded, setExpanded] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [loadingType, setLoadingType] = useState<"full" | "selection" | "direct-full" | "direct-selection" | null>(null)
+  const openAIKey = useAtomValue(openAIKeyAtom)
+  const port = usePort("page-completion")
+  const extractedContentRef = useRef<ExtractedContent | null>(null)
+  const requestTypeRef = useRef<"full" | "selection" | null>(null)
+  const Z_INDEX = 2147483640
+
+    // 检查扩展上下文
+  const checkContext = (): boolean => {
+    try {
+      return !!chrome.runtime?.id
+    } catch {
+      return false
+    }
+  }
+
+  // 菜单按钮组件
+const MenuButton = ({ icon, onClick, tooltip }: { icon: React.ReactNode; onClick: () => void; tooltip: string|React.ReactNode }) => (
+  <TooltipWrapper side="left" text={typeof tooltip === 'string' ? tooltip as string : undefined} content={typeof tooltip !== 'string' ? tooltip as React.ReactNode : undefined}>
+    <button
+      className="clipMenuButton"
+      onClick={onClick}
+    >
+      {icon}
+    </button>
+  </TooltipWrapper>
+);
+
+// 通知组件
+function showNotification(message: string, type: "success" | "error" | "warning" = "success") {
+  const colors = {
+    success: { bg: "#10b981", text: "#ffffff" },
+    error: { bg: "#ef4444", text: "#ffffff" },
+    warning: { bg: "#f59e0b", text: "#ffffff" },
+  }
+  
+  const notification = document.createElement("div")
+  notification.textContent = message
+  Object.assign(notification.style, {
+    position: "fixed",
+    top: "20px",
+    right: "20px",
+    background: colors[type].bg,
+    color: colors[type].text,
+    padding: "12px 20px",
+    borderRadius: "8px",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+    zIndex: String(Z_INDEX + 10),
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontSize: "14px",
+    fontWeight: "500",
+    animation: "fadeIn 0.3s ease-out",
+  } as CSSProperties)
+  
+  document.body.appendChild(notification)
+  setTimeout(() => {
+    notification.style.opacity = "0"
+    notification.style.transition = "opacity 0.3s"
+    setTimeout(() => notification.remove(), 300)
+  }, type === "error" ? 5000 : 3000)
+}
 
   // --- 拖拽开始 ---
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -176,12 +238,95 @@ const handleMouseLeave = () => {
   const handleMain = () => {
     console.log("打开悬浮面板");
   }
-  const handleSave = () => console.log("执行剪藏/保存操作");
+
+    // 监听 LLM 响应
+    useEffect(() => {
+      if (!port.data || !requestTypeRef.current) return
+  
+      if (port.data.isEnd) {
+        const summary = port.data.message?.replace(/\nEND$/, "").replace(/END$/, "") || ""
+        const content = extractedContentRef.current
+        
+        if (!checkContext()) {
+          setLoading(false)
+          setLoadingType(null)
+          showNotification("⚠️ 扩展已重载，请刷新页面", "warning")
+          return
+        }
+        
+        ClipStore.add({
+          source: content?.metadata?.platform === "Bilibili" ? "bilibili" : 
+                 content?.metadata?.platform === "YouTube" ? "youtube" : "webpage",
+          url: content?.url || window.location.href,
+          title: content?.title || document.title,
+          rawTextSnippet: content?.snippet || "",
+          rawTextFull: content?.text || "",
+          summary: summary,
+          keyPoints: [],
+          tags: [],
+          meta: content?.metadata,
+          images: content?.images  // 保存提取的图片
+        }).then(() => {
+          setLoading(false)
+          setLoadingType(null)
+          requestTypeRef.current = null
+          const imgCount = content?.images?.length || 0
+          showNotification(`✅ 剪藏成功！${imgCount > 0 ? `（含${imgCount}张图片）` : ""}`, "success")
+        }).catch((err) => {
+          setLoading(false)
+          setLoadingType(null)
+          showNotification("❌ 保存失败: " + err.message, "error")
+        })
+      } else if (port.data.error) {
+        setLoading(false)
+        setLoadingType(null)
+        showNotification("❌ AI 处理失败", "error")
+      }
+    }, [port.data])
+
+  //直接保存整页
+  const handleSave = async () => {
+    if (!checkContext()) {
+      showNotification("⚠️ 扩展已重载，请刷新页面", "warning")
+      return
+    }
+
+    setLoading(true)
+    setLoadingType("direct-full")
+    
+    try {
+      const content = await extractContent()
+      
+      await ClipStore.add({
+        source: content?.metadata?.platform === "Bilibili" ? "bilibili" : 
+               content?.metadata?.platform === "YouTube" ? "youtube" : "webpage",
+        url: content?.url || window.location.href,
+        title: content?.title || document.title,
+        rawTextSnippet: content?.snippet || "",
+        rawTextFull: content?.text || "",
+        summary: "",  // 无AI摘要
+        keyPoints: [],
+        tags: [],
+        meta: content?.metadata,
+        images: content?.images  // 保存提取的图片
+      })
+      
+      setLoading(false)
+      setLoadingType(null)
+      const imgCount = content?.images?.length || 0
+      showNotification(`✅ 已直接保存整页！${imgCount > 0 ? `（含${imgCount}张图片）` : ""}`, "success")
+    } catch (e) {
+      console.error("❌ Direct save error:", e)
+      setLoading(false)
+      setLoadingType(null)
+      showNotification("❌ 保存失败", "error")
+    }
+  }
   const handleTranslate = () => console.log("执行翻译操作");
   const handleAI = () => console.log("执行ai对话操作");
   const handleLanguage = () => {
-    console.log("切换翻译语言");
-    // 后续在语言切换时调用 setTranslateLang(newLang)
+    const next = translateLang === 'en-US' ? 'zh-CN' : 'en-US'
+    setTranslateLang(next)
   }
 
   if (!isEnabled) return null;
@@ -233,26 +378,39 @@ const handleMouseLeave = () => {
       onMouseLeave={ handleMouseLeave }
     >
 
-      <div className={`clipMenuWrapper ${isMenuOpen ? 'isOpen' : ''} ${changeMenuPositionClass()}`}>
-        <div className="clipMenu">
+      <TooltipProvider delayDuration={0}>
+        <div className={`clipMenuWrapper ${isMenuOpen ? 'isOpen' : ''} ${changeMenuPositionClass()}`}>
+          <div className="clipMenu">
           <div className="clipMenuItem menuItemBookmark">
-            <MenuButton icon={bookMarkIcon} onClick={handleSave} />
+            <MenuButton icon={bookMarkIcon} onClick={handleSave} tooltip='一键保存'/>
           </div>
           <div className="clipMenuItem menuItemTranslate">
             <div className="translate-expand-container">
                <div className="translate-sub-btn" onClick={handleLanguage}>
                  {languageIcon}
                </div>
-               <div className="translate-main-btn" onClick={handleTranslate}>
-                 {translateIcon}
-               </div>
+               
+               <TooltipWrapper
+                 offset={8}
+                 content={
+                   <div style={{ display: 'flex', alignItems: 'center' }}>
+                     <span style={{ fontWeight: 600 }}>翻译为：</span>
+                     <span style={{ marginLeft: 4 }}>{translateLang}</span>
+                   </div>
+                 }
+               >
+                 <div className="translate-main-btn" onClick={handleTranslate}>
+                   {translateIcon}
+                 </div>
+               </TooltipWrapper>
             </div>
           </div>
           <div className="clipMenuItem menuItemAiIcon">
-            <MenuButton icon={aiIcon} onClick={handleAI} />
+            <MenuButton icon={aiIcon} onClick={handleAI} tooltip='ai对话'/>
           </div>
         </div>
-      </div>
+        </div>
+      </TooltipProvider>
 
       {/* 主图标 */}
       <div
