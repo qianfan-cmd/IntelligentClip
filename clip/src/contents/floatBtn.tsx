@@ -92,6 +92,8 @@ const floatButton = () => {
   const port = usePort("page-completion")
   const extractedContentRef = useRef<ExtractedContent | null>(null)
   const requestTypeRef = useRef<"full" | "selection" | null>(null)
+  const lastDragTimeRef = useRef<number>(0)
+  const dragMovedRef = useRef<boolean>(false)
 
   const checkContext = (): boolean => {
     try {
@@ -115,6 +117,7 @@ const floatButton = () => {
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
     setIsDragging(true);
+    dragMovedRef.current = false
     offsetRef.current = {
       x: e.clientX - position.x,
       y: e.clientY - position.y,
@@ -123,7 +126,7 @@ const floatButton = () => {
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging) return;
-
+    setIsMenuOpen(false);
     let newX = e.clientX - offsetRef.current.x;
     let newY = e.clientY - offsetRef.current.y;
 
@@ -134,6 +137,11 @@ const floatButton = () => {
     newY = Math.max(0, Math.min(newY, window.innerHeight - iconHeight));
 
     setPosition({ x: newX, y: newY });
+    if (!dragMovedRef.current) {
+      const dx = Math.abs(newX - (position.x ?? 0))
+      const dy = Math.abs(newY - (position.y ?? 0))
+      if (dx > 3 || dy > 3) dragMovedRef.current = true
+    }
   }, [isDragging]);
 
   function getRightMargin() {
@@ -145,7 +153,7 @@ const floatButton = () => {
   }
 
   const handleMouseUp = useCallback((position: { x: number; y: number }) => {
-    if (isDragging) {
+    if (isDragging && dragMovedRef.current) {
       let topLimit: number;
       if (position.y <= 0) {
          topLimit = TOP_MARGIN;
@@ -159,6 +167,7 @@ const floatButton = () => {
         x: getRightMargin(),
         y: topLimit
       }));
+      lastDragTimeRef.current = Date.now()
     }
     setIsDragging(false);
   }, [isDragging]);
@@ -171,9 +180,14 @@ const floatButton = () => {
     setPosition({ x: getRightMargin(), y: topLimit })
   }, [position.y])
 
+  const isAtRightEdge = useCallback(() => {
+    return Math.abs(position.x - getRightMargin()) <= 10
+  }, [position.x])
+
   useEffect(() => {
     setPosition((p) => ({ x: getRightMargin(), y: p.y }))
     const onResize = () => {
+      if (isDragging) return
       snapToRight()
     }
     window.addEventListener("resize", onResize)
@@ -185,7 +199,7 @@ const floatButton = () => {
       vv?.removeEventListener("resize", onResize)
       vv?.removeEventListener("scroll", onResize)
     }
-  }, [snapToRight])
+  }, [snapToRight, isDragging])
 
   useEffect(() => {
     const pageHandler = (e: MessageEvent) => {
@@ -274,6 +288,8 @@ const floatButton = () => {
   }, []);
 
   const handleMain = () => {
+    if (Date.now() - lastDragTimeRef.current < 150) return
+    if (!isAtRightEdge()) return
     try { 
       window.postMessage({ source: "clip", type: "clip:show-float" }, "*") 
     } catch(e) {
@@ -384,6 +400,8 @@ const floatButton = () => {
 
   const handleTranslate = () => console.log("执行翻译操作");
   const handleAI = () => {
+    if (Date.now() - lastDragTimeRef.current < 150) return
+    if (!isAtRightEdge()) return
     try { 
       window.postMessage({ source: "clip", type: "clip:show-float" }, "*") 
     } catch(e) {
@@ -437,7 +455,7 @@ const floatButton = () => {
     <div 
       ref={containerRef}
       className={cn(
-        "fixed z-[2147483647] select-none w-[40px] h-[40px] rounded-full transition-all duration-200",
+        "fixed z-[2147483647] select-none w-[40px] h-[40px] rounded-full transition-opacity duration-200",
         isDragging && "opacity-75 transition-none"
       )}
       style={{ 
@@ -505,7 +523,7 @@ const floatButton = () => {
 
       {/* 主图标 */}
       <div
-        className="relative w-[40px] h-[40px] rounded-full bg-white shadow-md cursor-pointer hover:shadow-xl transition-all group"
+        className="relative w-[40px] h-[40px] rounded-full bg-white shadow-md cursor-pointer hover:shadow-xl transition-shadow group"
         onMouseDown={handleMouseDown}
         onClick={handleMain}
       >
