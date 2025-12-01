@@ -103,9 +103,9 @@ interface CreateFieldResponse {
 // 需要的字段定义（按顺序）
 const REQUIRED_FIELDS = [
   { name: "标题", type: 1 }, // 多行文本
-  { name: "链接", type: 15 }, // 超链接
   { name: "摘要", type: 1 }, // 多行文本
   { name: "正文", type: 1 }, // 多行文本
+  { name: "链接", type: 1 }, // 超链接
   { name: "来源", type: 1 }, // 多行文本
   { name: "创建时间", type: 5 }, // 日期
   { name: "标签", type: 1 }, // 多行文本
@@ -115,9 +115,9 @@ const REQUIRED_FIELDS = [
 // 逻辑字段与可能的名称候选（支持中英文，多加一些默认列名以提升命中率）
 const LOGICAL_FIELD_NAME_CANDIDATES: Record<string, string[]> = {
   title: ["Title", "标题", "名称", "记录名", "记录名称", "Name"],
-  url: ["URL", "链接"],
   summary: ["Summary", "摘要"],
   fullText: ["Full Text", "正文", "原文", "内容"],
+  url: ["URL", "链接"],
   source: ["Source", "来源"],
   createdAt: ["Created At", "创建时间", "剪藏时间"],
   tags: ["Tags", "标签"],

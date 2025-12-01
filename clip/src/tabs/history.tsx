@@ -310,7 +310,7 @@ function HistoryLayout() {
       })
       // 列表刷新：尽管 storage 监听会更新，这里显式刷新以确保 UI 反馈
       await loadClips()
-      alert("✅ Successfully exported to Feishu!")
+      alert("✅ 成功上传到飞书多维表格！")
     } catch (e) {
       console.error(e)
       const msg = (e as Error)?.message || "未知错误"
