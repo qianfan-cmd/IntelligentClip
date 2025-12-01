@@ -207,7 +207,7 @@ function ClipToolbar() {
   }
 
   // 剪藏整页
-  const handleClipFullPage = async () => {
+   const handleClipFullPage = async () => {
     if (!checkContext()) {
       showNotification("⚠️ 扩展已重载，请刷新页面", "warning")
       return
