@@ -72,6 +72,11 @@
     "typescript-eslint": "^8.48.0"
   },
   "manifest": {
+    "permissions": [
+      "tabs",
+      "storage",
+      "unlimitedStorage"
+    ],
     "host_permissions": [
       "https://*/*",
       "https://apis.iflow.cn/*"

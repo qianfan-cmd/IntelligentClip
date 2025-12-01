@@ -4,6 +4,8 @@ import { Trash2, ExternalLink, Search, Calendar, Tag, Save, MessageSquare, Share
 import { ChatProvider, useChat } from "@/contexts/chat-context"
 import { ExtensionProvider, useExtension } from "@/contexts/extension-context"
 import { createRecordFromClip } from "@/lib/feishuBitable"
+import { storage } from "@/lib/atoms/storage"
+import type { FeishuConfig } from "@/lib/atoms/feishu"
 import Chat from "@/components/chat"
 import Markdown from "@/components/markdown"
 import ClipTagsPanel from "@/components/clip-tags-panel"
@@ -191,6 +193,15 @@ function HistoryLayout() {
     }
   }, [])
 
+  // Check for URL params to select clip
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const clipId = params.get("id")
+    if (clipId) {
+      setSelectedClipId(clipId)
+    }
+  }, [])
+
   const loadClips = async () => {
     const data = await ClipStore.getAll()
     // Sort by createdAt in descending order (newest first)
@@ -278,19 +289,49 @@ function HistoryLayout() {
 
   const handleExportToFeishu = async (clip: Clip) => {
     if (exportingId) return
+    // 导出前检查：从安全存储读取飞书配置，缺失则提示并可跳转设置页
+    try {
+      const cfg = await storage.get<FeishuConfig>("feishuConfig")
+      const missing = !cfg || !cfg.appToken || !cfg.tableId || !cfg.appId || !cfg.appSecret
+      if (missing) {
+        const goSettings = confirm("未检测到完整的飞书配置（需要 App Token、Table ID、App ID 和 App Secret）。现在前往扩展设置页进行配置吗？")
+        if (goSettings && chrome?.runtime?.openOptionsPage) {
+          chrome.runtime.openOptionsPage()
+        }
+        return
+      }
+    } catch (e) {
+      console.warn("读取飞书配置失败", e)
+      const goSettings = confirm("读取飞书配置失败。现在前往扩展设置页进行配置吗？")
+      if (goSettings && chrome?.runtime?.openOptionsPage) {
+        chrome.runtime.openOptionsPage()
+      }
+      return
+    }
+
     setExportingId(clip.id)
     try {
+      // 调用飞书多维表格接口创建记录
       const recordId = await createRecordFromClip(clip)
       await ClipStore.update(clip.id, {
         syncedToFeishu: true,
         feishuRecordId: recordId
       })
-      // Refresh list (though storage listener should handle it, explicit reload is safer for UI feedback)
+      // 列表刷新：尽管 storage 监听会更新，这里显式刷新以确保 UI 反馈
       await loadClips()
-      alert("✅ Successfully exported to Feishu!")
+      alert("✅ 成功上传到飞书多维表格！")
     } catch (e) {
       console.error(e)
-      alert("❌ Export failed: " + (e as Error).message)
+      const msg = (e as Error)?.message || "未知错误"
+      // 错误处理：配置缺失时提供快速跳转至设置页
+      if (msg.includes("飞书配置缺失") || msg.includes("configuration missing")) {
+        const go = confirm("飞书配置缺失或不完整。是否前往扩展设置进行配置？\n需要：App Token、Table ID、App ID 和 App Secret")
+        if (go && chrome?.runtime?.openOptionsPage) {
+          chrome.runtime.openOptionsPage()
+        }
+      } else {
+        alert("❌ 导出失败: " + msg)
+      }
     } finally {
       setExportingId(null)
     }
@@ -604,14 +645,14 @@ function HistoryLayout() {
                       {/* Source Icon */}
                       {!isSelectMode && (
                         <div className={`flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${
-                          clip.source === 'selection' ? 'bg-emerald-500/10 text-emerald-400' :
-                          clip.source === 'page' ? 'bg-blue-500/10 text-blue-400' :
-                          clip.source === 'youtube' ? 'bg-red-500/10 text-red-400' :
+                          (clip.source as string) === 'selection' ? 'bg-emerald-500/10 text-emerald-400' :
+                          (clip.source as string) === 'page' || clip.source === 'webpage' ? 'bg-blue-500/10 text-blue-400' :
+                          clip.source === 'youtube' || clip.source === 'bilibili' ? 'bg-red-500/10 text-red-400' :
                           'bg-purple-500/10 text-purple-400'
                         }`}>
-                          {clip.source === 'selection' ? <FileText className="h-4 w-4" /> :
-                           clip.source === 'page' ? <Globe className="h-4 w-4" /> :
-                           clip.source === 'youtube' ? <Zap className="h-4 w-4" /> :
+                          {(clip.source as string) === 'selection' ? <FileText className="h-4 w-4" /> :
+                           (clip.source as string) === 'page' || clip.source === 'webpage' ? <Globe className="h-4 w-4" /> :
+                           clip.source === 'youtube' || clip.source === 'bilibili' ? <Zap className="h-4 w-4" /> :
                            <Sparkles className="h-4 w-4" />}
                         </div>
                       )}

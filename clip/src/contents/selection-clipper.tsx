@@ -76,6 +76,11 @@ const Icons = {
       <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
     </svg>
   ),
+  Chat: () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+  ),
   Save: () => (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
@@ -306,6 +311,17 @@ function SelectionClipper() {
     setVisible(false)
   }
 
+  // 发送到侧边栏聊天窗口
+  const handleSendToChat = () => {
+    // 通过自定义事件将选中内容发送到 SidebarFloatPanel
+    window.dispatchEvent(new CustomEvent('clip-send-to-chat', {
+      detail: { text: selectedText }
+    }))
+    setExpanded(false)
+    setVisible(false)
+    showNotification("✨ 已发送到 AI 聊天窗口", "success")
+  }
+
   if (!visible) return null
 
   // 样式定义
@@ -465,6 +481,21 @@ function SelectionClipper() {
             >
               {loading ? <Icons.Loader /> : <Icons.Sparkles />}
               <span>{loading ? "AI 生成中..." : "AI 摘要保存"}</span>
+            </button>
+            
+            <button
+              style={{
+                ...actionBtnStyle(false),
+                background: "linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)",
+                color: "#fff",
+              }}
+              disabled={loading || savingDirect}
+              onClick={handleSendToChat}
+              onMouseEnter={(e) => { if (!loading && !savingDirect) e.currentTarget.style.opacity = "0.9" }}
+              onMouseLeave={(e) => { e.currentTarget.style.opacity = loading || savingDirect ? "0.6" : "1" }}
+            >
+              <Icons.Chat />
+              <span>询问 AI</span>
             </button>
             
             <button
