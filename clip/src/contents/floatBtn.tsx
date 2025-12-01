@@ -110,7 +110,7 @@ function showNotification(message: string, type: "success" | "error" | "warning"
     notification.style.transition = "opacity 0.3s"
     setTimeout(() => notification.remove(), 300)
   }, type === "error" ? 5000 : 3000)
-  return () => {}
+  return () => { }
 }
 
 const floatButton = () => {
@@ -143,8 +143,8 @@ const floatButton = () => {
   const captureSelection = () => {
     try {
       selectedTextRef.current = window.getSelection()?.toString().trim() || ""
-    } catch(e) {
-      console.log("选取失败：",e);
+    } catch (e) {
+      console.log("选取失败：", e);
       showNotification("⚠️ 抓取失败，请重新选择内容", "warning")
     }
   }
@@ -260,8 +260,8 @@ const floatButton = () => {
     const pageHandler = (e: MessageEvent) => {
       const d = e?.data as { source?: string; type?: string } | undefined
       if (!d || d.source !== "clip") return
-      if (d.type === "clip:panel-open" || d.type === "clip:show-float") setHiddenByPanel(true)
-      if (d.type === "clip:panel-close" || d.type === "clip:hide-float") setHiddenByPanel(false)
+      if (d.type === "clip:panel-open") setHiddenByPanel(true)
+      if (d.type === "clip:panel-close" || d.type === "clip:toggle-float") setHiddenByPanel(false)
     }
     window.addEventListener("message", pageHandler)
     return () => window.removeEventListener("message", pageHandler)
@@ -340,21 +340,20 @@ const floatButton = () => {
         setIsEnabled(false);
       }
       const savedMode = await storage.get<string>('clipSaveMode')
-      if (savedMode && ["allPageSave","allPageAISave","selectSave","selectAISave"].includes(savedMode)) {
+      if (savedMode && ["allPageSave", "allPageAISave", "selectSave", "selectAISave"].includes(savedMode)) {
         setSaveTypeTip(savedMode)
         chosenSaveActionRef.current =
           savedMode === "allPageSave" ? handleSave :
-          savedMode === "allPageAISave" ? handleAISaveFull :
-          savedMode === "selectSave" ? handleDirectSaveSelection :
-          savedMode === "selectAISave" ? handleAISaveSelection :
-          handleSave
+            savedMode === "allPageAISave" ? handleAISaveFull :
+              savedMode === "selectSave" ? handleDirectSaveSelection :
+                savedMode === "selectAISave" ? handleAISaveSelection :
+                  handleSave
       }
     })();
   }, []);
 
   const handleMain = () => {
     if (Date.now() - lastDragTimeRef.current < 150) return
-    if (!isAtRightEdge()) return
     try {
       window.postMessage({ source: "clip", type: "clip:show-float" }, "*")
     } catch (e) {
@@ -367,7 +366,6 @@ const floatButton = () => {
       console.log(e);
       alert("悬浮窗打开失败");
     }
-    setHiddenByPanel(true)
   }
 
   useEffect(() => {
@@ -490,11 +488,19 @@ const floatButton = () => {
   }
 
   const handleTranslate = () => console.log("执行翻译操作");
+
   const handleAI = () => {
     if (Date.now() - lastDragTimeRef.current < 150) return
-    if (!isAtRightEdge()) return
     try {
-      window.postMessage({ source: "clip", type: "clip:show-float" }, "*")
+      window.postMessage({ source: "clip", type: "clip:show-float-chat" }, "*")
+      const sel = window.getSelection()?.toString().trim() || ""
+      try {
+        window.dispatchEvent(new CustomEvent('clip-send-to-chat', { detail: { text: sel } }))
+      } catch (e) {
+        console.log(e);
+        alert("悬浮窗打开失败");
+      }
+
     } catch (e) {
       console.log("悬浮窗打开请求发送失败：", e);
     }
@@ -505,16 +511,16 @@ const floatButton = () => {
       console.log(e);
       alert("悬浮窗打开失败");
     }
-    setHiddenByPanel(true)
   }
+
   const handlePickSaveType = (payload: { tag: "allPageSave" | "allPageAISave" | "selectSave" | "selectAISave" }) => {
     setSaveTypeTip(payload.tag)
     chosenSaveActionRef.current =
       payload.tag === "allPageSave" ? handleSave :
-      payload.tag === "allPageAISave" ? handleAISaveFull :
-      payload.tag === "selectSave" ? handleDirectSaveSelection :
-      payload.tag === "selectAISave" ? handleAISaveSelection :
-      handleSave
+        payload.tag === "allPageAISave" ? handleAISaveFull :
+          payload.tag === "selectSave" ? handleDirectSaveSelection :
+            payload.tag === "selectAISave" ? handleAISaveSelection :
+              handleSave
     const storage = new Storage()
     storage.set('clipSaveMode', payload.tag)
   }
@@ -527,7 +533,7 @@ const floatButton = () => {
     } else {
       await handleSave()
     }
-  } 
+  }
   //整页保存(AI)
   const handleAISaveFull = async () => {
     if (!checkContext()) {
@@ -607,7 +613,7 @@ const floatButton = () => {
     }
   }
 
-    // 直接保存选中内容（不使用AI）
+  // 直接保存选中内容（不使用AI）
   const handleDirectSaveSelection = async () => {
     const liveText = window.getSelection()?.toString().trim()
     const selectedText = (selectedTextRef.current || liveText || "").trim()
@@ -741,8 +747,8 @@ const floatButton = () => {
                     "w-[40px] h-[40px] items-center justify-center cursor-pointer flex-shrink-0 hover:scale-110 active:scale-90 transition-transform",
                     isSaveTypeOpen ? "flex" : "hidden group-hover:flex"
                   )}
-                  onMouseEnter={() => { handleMouseEnter(); captureSelection(); handleOpenSaveTypeChange() }}
-                  onMouseLeave={handleCloseSaveTypeChange}
+                    onMouseEnter={() => { handleMouseEnter(); captureSelection(); handleOpenSaveTypeChange() }}
+                    onMouseLeave={handleCloseSaveTypeChange}
                   >
                     {saveTypeChangeIcon}
                   </div>
@@ -758,12 +764,12 @@ const floatButton = () => {
                         allPageAISave: "AI整页剪藏",
                         selectSave: "选中剪藏",
                         selectAISave: "AI摘要剪藏"
-                      } as Record<string,string>)[saveTypeTip] || "整页剪藏"}</span>
+                      } as Record<string, string>)[saveTypeTip] || "整页剪藏"}</span>
                     </div>
                   }
                 >
-                  <div className="w-[40px] h-[40px] flex items-center justify-center cursor-pointer flex-shrink-0 hover:scale-110 active:scale-90 transition-transform" onMouseEnter={() => { expandStartRef.current = Date.now(); captureSelection() }} 
-                  onClick={handleSaveClick}
+                  <div className="w-[40px] h-[40px] flex items-center justify-center cursor-pointer flex-shrink-0 hover:scale-110 active:scale-90 transition-transform" onMouseEnter={() => { expandStartRef.current = Date.now(); captureSelection() }}
+                    onClick={handleSaveClick}
                   >
                     {bookMarkIcon}
                   </div>
@@ -781,7 +787,7 @@ const floatButton = () => {
                 onMouseLeave={handleCloseSaveTypeChange}
               >
                 <SaveTypeChange onChoose={handlePickSaveType} selectedTag=
-                {saveTypeTip as "allPageSave" | "allPageAISave" | "selectSave" | "selectAISave"} />
+                  {saveTypeTip as "allPageSave" | "allPageAISave" | "selectSave" | "selectAISave"} />
               </div>
             )}
             {/* Translate Item */}
@@ -863,7 +869,7 @@ const floatButton = () => {
         )}
       </div>
 
-     {/* 打开设置面板 */}
+      {/* 打开设置面板 */}
       {isSettingsOpen && (
         <div
           className="absolute top-6 right-5 w-[180px] bg-gray-800 text-gray-200 rounded-[10px] shadow-xl py-1.5 z-[2147483647] text-[13px] leading-snug"

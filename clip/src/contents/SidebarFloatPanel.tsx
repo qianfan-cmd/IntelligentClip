@@ -600,6 +600,10 @@ function FloatClip() {
       const d = e?.data as any
       if (!d || d.source !== "clip") return
       if (d.type === "clip:show-float") setVisible(true)
+      if (d.type === "clip:show-float-chat") {
+        setVisible(true)
+        setPendingChatText(" ")
+      }
       if (d.type === "clip:hide-float") setVisible(false)
       if (d.type === "clip:toggle-float") setVisible((v) => !v)
     }
