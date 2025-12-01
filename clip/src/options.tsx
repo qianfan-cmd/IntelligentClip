@@ -71,7 +71,7 @@ function OptionsPanel() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1.5">
-                  App Token（Base Token）
+                  Table Token（Base Token）
                 </label>
                 <input
                   type="text"
