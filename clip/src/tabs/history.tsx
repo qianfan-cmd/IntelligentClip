@@ -191,6 +191,15 @@ function HistoryLayout() {
     }
   }, [])
 
+  // Check for URL params to select clip
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const clipId = params.get("id")
+    if (clipId) {
+      setSelectedClipId(clipId)
+    }
+  }, [])
+
   const loadClips = async () => {
     const data = await ClipStore.getAll()
     // Sort by createdAt in descending order (newest first)
