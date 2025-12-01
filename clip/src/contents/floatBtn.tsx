@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Storage } from '@plasmohq/storage';
 import styleText from "data-text:../style.css"
 import { AiOutlineRobot } from "react-icons/ai";
@@ -31,10 +31,13 @@ const INITIAL_POSITION = { x: RIGHT_MARGIN, y: 200 };
 const Z_INDEX = 2147483640
 
 // 菜单按钮组件
-const MenuButton = ({ icon, onClick, tooltip }: { icon: React.ReactNode; onClick: () => void; tooltip: string | React.ReactNode }) => (
+const MenuButton = ({ icon, onClick, tooltip, isDark }: { icon: React.ReactNode; onClick: () => void; tooltip: string | React.ReactNode; isDark?: boolean }) => (
   <TooltipWrapper side="left" text={typeof tooltip === 'string' ? tooltip as string : undefined} content={typeof tooltip !== 'string' ? tooltip as React.ReactNode : undefined}>
     <button
-      className="p-3 bg-white border-none rounded-full shadow-md cursor-pointer transition-colors duration-150 outline-none overflow-hidden w-[40px] h-[40px] flex items-center justify-center hover:scale-110 active:scale-90 group"
+      className={cn(
+        "p-3 border-none rounded-full shadow-md cursor-pointer transition-colors duration-150 outline-none overflow-hidden w-[40px] h-[40px] flex items-center justify-center hover:scale-110 active:scale-90 group",
+        isDark ? "bg-neutral-900 text-white" : "bg-white text-gray-900"
+      )}
       onClick={onClick}
     >
       <div className="transform transition-transform duration-300 group-hover:scale-110">
@@ -133,6 +136,9 @@ const floatButton = () => {
   const port = usePort("page-completion")
   const extractedContentRef = useRef<ExtractedContent | null>(null)
   const requestTypeRef = useRef<"full" | "selection" | null>(null)
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    try { return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches } catch { return false }
+  })
   const lastDragTimeRef = useRef<number>(0)
   const dragMovedRef = useRef<boolean>(false)
   const expandStartRef = useRef<number>(0)
@@ -280,6 +286,15 @@ const floatButton = () => {
   };
 
   const menuMode = getMenuPositionMode();
+
+  useEffect(() => {
+    try {
+      const mq = window.matchMedia('(prefers-color-scheme: dark)')
+      const cb = (e: MediaQueryListEvent) => setIsDark(e.matches)
+      mq.addEventListener('change', cb)
+      return () => mq.removeEventListener('change', cb)
+    } catch {}
+  }, [])
 
   // Dynamic transforms based on menu mode
   const getTransform = (type: 'bookmark' | 'translate' | 'ai') => {
@@ -695,11 +710,11 @@ const floatButton = () => {
     }
   };
 
-  const bookMarkIcon = <CiBookmark color='#000000' size={24} className="w-[20px] h-[20px] transform scale-100 transition-transform duration-300 hover:scale-115 active:scale-90" />;
-  const translateIcon = <MdGTranslate color='#000000' size={24} className="w-[20px] h-[20px] transform scale-100 transition-transform duration-300 hover:scale-115 active:scale-90" />;
-  const languageIcon = <FaExchangeAlt color='#000000' size={24} className="w-[20px] h-[20px] transform scale-100 transition-transform duration-300 hover:scale-115 active:scale-90" />;
-  const aiIcon = <AiFillAliwangwang color='#000000' size={24} className="w-[20px] h-[20px] transform scale-100 transition-transform duration-300 hover:scale-115 active:scale-90" />;
-  const saveTypeChangeIcon = <RiExchangeBoxLine color='#000000' size={24} className="w-[20px] h-[20px] transform scale-100 transition-transform duration-300 hover:scale-115 active:scale-90" />;
+  const bookMarkIcon = <CiBookmark color='currentColor' size={24} className="w-[20px] h-[20px] transform scale-100 transition-transform duration-300 hover:scale-115 active:scale-90" />;
+  const translateIcon = <MdGTranslate color='currentColor' size={24} className="w-[20px] h-[20px] transform scale-100 transition-transform duration-300 hover:scale-115 active:scale-90" />;
+  const languageIcon = <FaExchangeAlt color='currentColor' size={24} className="w-[20px] h-[20px] transform scale-100 transition-transform duration-300 hover:scale-115 active:scale-90" />;
+  const aiIcon = <AiFillAliwangwang color='currentColor' size={24} className="w-[20px] h-[20px] transform scale-100 transition-transform duration-300 hover:scale-115 active:scale-90" />;
+  const saveTypeChangeIcon = <RiExchangeBoxLine color='currentColor' size={24} className="w-[20px] h-[20px] transform scale-100 transition-transform duration-300 hover:scale-115 active:scale-90" />;
 
   return (
     <div
@@ -731,7 +746,8 @@ const floatButton = () => {
               }}
             >
               <div className={cn(
-                "absolute right-0 top-0 w-[40px] h-[40px] bg-white rounded-[20px] shadow-md flex items-center justify-center overflow-hidden px-0 transition-[width,box-shadow,padding] duration-300 z-20 hover:w-[90px] hover:justify-between hover:shadow-lg hover:px-2 group",
+                "absolute right-0 top-0 w-[40px] h-[40px] rounded-[20px] shadow-md flex items-center justify-center overflow-hidden px-0 transition-[width,box-shadow,padding] duration-300 z-20 hover:w-[90px] hover:justify-between hover:shadow-lg hover:px-2 group",
+                isDark ? "bg-neutral-900 text-white" : "bg-white text-gray-900",
                 isSaveTypeOpen && "w-[90px] justify-between shadow-lg px-2"
               )}>
                 <TooltipWrapper
@@ -745,6 +761,7 @@ const floatButton = () => {
                 >
                   <div className={cn(
                     "w-[40px] h-[40px] items-center justify-center cursor-pointer flex-shrink-0 hover:scale-110 active:scale-90 transition-transform",
+                    isDark ? "text-white" : "text-gray-900",
                     isSaveTypeOpen ? "flex" : "hidden group-hover:flex"
                   )}
                     onMouseEnter={() => { handleMouseEnter(); captureSelection(); handleOpenSaveTypeChange() }}
@@ -768,7 +785,7 @@ const floatButton = () => {
                     </div>
                   }
                 >
-                  <div className="w-[40px] h-[40px] flex items-center justify-center cursor-pointer flex-shrink-0 hover:scale-110 active:scale-90 transition-transform" onMouseEnter={() => { expandStartRef.current = Date.now(); captureSelection() }}
+                  <div className="w-[40px] h-[40px] flex items-center justify-center cursor-pointer flex-shrink-0 hover:scale-110 active:scale-90 transition-transform text-gray-900 dark:text-white" onMouseEnter={() => { expandStartRef.current = Date.now(); captureSelection() }} 
                     onClick={handleSaveClick}
                   >
                     {bookMarkIcon}
@@ -798,7 +815,8 @@ const floatButton = () => {
                 width: 40, height: 40
               }}
             >
-              <div className="absolute right-0 top-0 w-[40px] h-[40px] bg-white rounded-[20px] shadow-md flex items-center justify-end overflow-hidden transition-[width,box-shadow] duration-300 z-20 hover:w-[90px] hover:justify-between hover:shadow-lg">
+              <div className={cn("absolute right-0 top-0 w-[40px] h-[40px] rounded-[20px] shadow-md flex items-center justify-end overflow-hidden transition-[width,box-shadow] duration-300 z-20 hover:w-[90px] hover:justify-between hover:shadow-lg",
+                isDark ? "bg-neutral-900 text-white" : "bg-white text-gray-900")}>
                 <TooltipWrapper
                   side="top"
                   offset={12}
@@ -838,7 +856,7 @@ const floatButton = () => {
               className="absolute top-1/2 left-1/2 origin-center transition-all duration-300 ease-out delay-150"
               style={{ transform: getTransform('ai') }}
             >
-              <MenuButton icon={aiIcon} onClick={handleAI} tooltip='ai对话' />
+              <MenuButton icon={aiIcon} onClick={handleAI} tooltip='ai对话' isDark={isDark} />
             </div>
           </div>
         </div>
@@ -846,14 +864,16 @@ const floatButton = () => {
 
       {/* 主图标 */}
       <div
-        className="relative w-[40px] h-[40px] rounded-full bg-white shadow-md cursor-pointer hover:shadow-xl transition-shadow group"
+        className={cn("relative w-[40px] h-[40px] rounded-full shadow-md cursor-pointer hover:shadow-xl transition-shadow group",
+          isDark ? "bg-neutral-900 text-white" : "bg-white text-gray-900")}
         onMouseDown={handleMouseDown}
         onClick={handleMain}
       >
-        <AiOutlineRobot color='black' size={24} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[20px] h-[20px] transition-transform duration-300 ease-in-out group-hover:scale-105 group-active:scale-90" />
+        <AiOutlineRobot color='currentColor' size={24} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[20px] h-[20px] transition-transform duration-300 ease-in-out group-hover:scale-105 group-active:scale-90" />
         <div
           className={cn(
-            "absolute -right-2.5 -top-2.5 w-4 h-4 rounded-full bg-gray-200 shadow flex items-center justify-center text-gray-700 font-bold cursor-pointer transition-transform scale-0 hover:bg-gray-300 text-[10px]",
+            "absolute -right-2.5 -top-2.5 w-4 h-4 rounded-full shadow flex items-center justify-center font-bold cursor-pointer transition-transform scale-0 text-[10px]",
+            isDark ? "bg-neutral-900 text-gray-200 hover:bg-gray-600" : "bg-gray-200 text-gray-700 hover:bg-gray-300",
             isMenuOpen && "scale-100"
           )}
           onMouseDown={(e) => e.stopPropagation()}
