@@ -60,12 +60,10 @@ function OptionsPanel() {
             <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6 flex gap-3">
               <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-500 flex-shrink-0" />
               <div className="text-sm text-yellow-800 dark:text-yellow-200">
-                <p className="font-medium mb-1">Security Warning</p>
+                <p className="font-medium mb-1">安全提示</p>
                 <p>
-                  These settings are stored locally in your browser. 
-                  The Personal Base Token has high privileges. 
-                  Do not share your screen or export your settings while this is visible.
-                  For production use, this should be replaced with OAuth.
+                  配置信息本地存储在浏览器中。App Secret 具有较高权限，请妥善保管。
+                  系统将使用 App ID 和 App Secret 自动获取 tenant_access_token（有效期 2 小时，自动缓存）。
                 </p>
               </div>
             </div>
@@ -73,7 +71,7 @@ function OptionsPanel() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1.5">
-                  App Token
+                  Table Token（Base Token）
                 </label>
                 <input
                   type="text"
@@ -83,13 +81,13 @@ function OptionsPanel() {
                   className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Found in the URL of your Bitable base: /base/<b>bascn...</b>
+                  在多维表格 URL 中找到：/base/<b>bascn...</b>
                 </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium mb-1.5">
-                  Table ID
+                  Table ID（表格 ID）
                 </label>
                 <input
                   type="text"
@@ -99,23 +97,39 @@ function OptionsPanel() {
                   className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Found in the URL of your table: ?table=<b>tbl...</b>
+                  在表格 URL 参数中找到：?table=<b>tbl...</b>
                 </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium mb-1.5">
-                  Personal Base Token
+                  App ID（应用 ID）
                 </label>
                 <input
-                  type="password"
-                  value={feishuConfig.personalBaseToken}
-                  onChange={(e) => setFeishuConfig({ ...feishuConfig, personalBaseToken: e.target.value })}
-                  placeholder="u-..."
+                  type="text"
+                  value={feishuConfig.appId}
+                  onChange={(e) => setFeishuConfig({ ...feishuConfig, appId: e.target.value })}
+                  placeholder="cli_..."
                   className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Your personal access token for Feishu Open Platform.
+                  在飞书开放平台 - 开发配置 - 应用凭证中获取
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1.5">
+                  App Secret（应用密钥）
+                </label>
+                <input
+                  type="password"
+                  value={feishuConfig.appSecret}
+                  onChange={(e) => setFeishuConfig({ ...feishuConfig, appSecret: e.target.value })}
+                  placeholder="输入应用密钥..."
+                  className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  在飞书开放平台 - 开发配置 - 应用凭证中获取，系统将自动获取 tenant_access_token
                 </p>
               </div>
             </div>
