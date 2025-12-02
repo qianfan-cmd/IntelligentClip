@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Storage } from '@plasmohq/storage';
 import styleText from "data-text:../style.css"
+import type { PlasmoGetShadowHostId } from "plasmo"
 import { AiOutlineRobot } from "react-icons/ai";
 import { MdGTranslate } from "react-icons/md";
 import { CiBookmark } from "react-icons/ci";
@@ -21,6 +22,15 @@ import { storage as secureStorage } from "@/lib/atoms/storage"
 
 export const config = {
   matches: ["<all_urls>"]
+}
+
+// 独立的 Shadow Host，提升到全页最顶层
+export const getShadowHostId: PlasmoGetShadowHostId = () => "plasmo-inline"
+
+export const getStyle = () => {
+  const style = document.createElement('style')
+  style.textContent = `${styleText}\n:host(#plasmo-inline){position:relative!important;z-index:auto!important;pointer-events:none!important;}`
+  return style
 }
 
 const BUTTON_SIZE: number = 40;
@@ -119,6 +129,7 @@ function showNotification(message: string, type: "success" | "error" | "warning"
 const floatButton = () => {
   const [position, setPosition] = useState(INITIAL_POSITION);//悬浮按钮当前位置
   const [isDragging, setIsDragging] = useState(false);//是否拖拽
+  const [isSnapping, setIsSnapping] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false);//是否打开菜单
   const [isEnabled, setIsEnabled] = useState(true);//是否启用按钮
   const [hiddenByPanel, setHiddenByPanel] = useState(false);//是否被面板隐藏
@@ -145,6 +156,10 @@ const floatButton = () => {
   const chosenSaveActionRef = useRef<(() => Promise<void> | void) | null>(null)
   const loadingNotifyDismissRef = useRef<(() => void) | null>(null)
   const selectedTextRef = useRef<string>("")
+  const snapAnimRef = useRef<number | null>(null)
+
+//防抖函数
+
 
   const captureSelection = () => {
     try {
@@ -178,6 +193,11 @@ const floatButton = () => {
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
     setIsDragging(true);
+    if (snapAnimRef.current) {
+      cancelAnimationFrame(snapAnimRef.current)
+      snapAnimRef.current = null
+    }
+    setIsSnapping(false)
     dragMovedRef.current = false
     offsetRef.current = {
       x: e.clientX - position.x,
@@ -224,14 +244,29 @@ const floatButton = () => {
         topLimit = position.y;
       }
 
-      setPosition(() => ({
-        x: getRightMargin(),
-        y: topLimit
-      }));
+      const startX = position.x
+      const endX = getRightMargin()
+      const duration = 280
+      setIsDragging(false)
+      setIsSnapping(true)
+      const start = performance.now()
+      const ease = (t: number) => 1 - Math.pow(1 - t, 3)
+      const step = (now: number) => {
+        const p = Math.min(1, (now - start) / duration)
+        const x = startX + (endX - startX) * ease(p)
+        setPosition({ x, y: topLimit })
+        if (p < 1) {
+          snapAnimRef.current = requestAnimationFrame(step)
+        } else {
+          setIsSnapping(false)
+        }
+      }
+      snapAnimRef.current = requestAnimationFrame(step)
       lastDragTimeRef.current = Date.now()
+      return
     }
-    setIsDragging(false);
-  }, [isDragging]);
+    setIsDragging(false)
+  }, [isDragging])
 
   const snapToRight = useCallback(() => {
     const topLimit = Math.max(
@@ -246,7 +281,6 @@ const floatButton = () => {
   }, [position.x])
 
   useEffect(() => {
-    setPosition((p) => ({ x: getRightMargin(), y: p.y }))
     const onResize = () => {
       if (isDragging) return
       snapToRight()
@@ -260,7 +294,7 @@ const floatButton = () => {
       vv?.removeEventListener("resize", onResize)
       vv?.removeEventListener("scroll", onResize)
     }
-  }, [snapToRight, isDragging])
+  }, [snapToRight])
 
   useEffect(() => {
     const pageHandler = (e: MessageEvent) => {
@@ -720,8 +754,8 @@ const floatButton = () => {
     <div
       ref={containerRef}
       className={cn(
-        "fixed z-[2147483647] select-none w-[40px] h-[40px] rounded-full transition-opacity duration-200",
-        isDragging && "opacity-75 transition-none"
+        "fixed z-[2147483647] select-none w-[40px] h-[40px] rounded-full pointer-events-auto",
+        (isDragging || isSnapping) ? "opacity-75" : "transition-all duration-300 ease-out"
       )}
       style={{
         left: position.x,
@@ -908,11 +942,7 @@ const floatButton = () => {
   );
 };
 
-export const getStyle = () => {
-  const style = document.createElement('style');
-  style.textContent = styleText;
-  return style;
-};
+// 保留默认导出样式函数签名，已在上方定义增强版
 
 export default floatButton;
 

@@ -264,14 +264,14 @@ export default function PromptForm({ className, theme }: PromptFormProps) {
           disabled={chatIsGenerating}
         />
 
-        <div className="flex-shrink-0 pr-2 pb-2">
+        <div className="absolute h-full flex-shrink-0 pr-2 pb-2 left-full top-1/2 -translate-y-1/2 ">
           <TooltipWrapper text={chatIsGenerating ? "生成中..." : "发送消息"}>
             <Button
               type="submit"
               size="icon"
               disabled={isDisabled}
               className={cn(
-                "h-9 w-9 rounded-lg transition-all",
+                "absolute top-1/2 right-0 -translate-x-1/2 -translate-y-1/2 h-9 w-9 rounded-lg transition-all",
                 isDisabled
                   ? "bg-gray-200 dark:bg-zinc-700 text-gray-400 cursor-not-allowed"
                   : "bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-md hover:shadow-lg"
