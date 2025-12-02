@@ -755,7 +755,7 @@ const floatButton = () => {
                   offset={12}
                   content={
                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <p>切换保存方式</p>
+                      <p>切换剪藏方式</p>
                     </div>
                   }
                 >
