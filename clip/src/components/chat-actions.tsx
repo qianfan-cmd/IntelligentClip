@@ -15,9 +15,10 @@ import { ClipStore } from "@/lib/clip-store"
 
 interface ChatActionProps {
   className?: string
+  theme?: 'dark' | 'light'
 }
 
-export default function ChatAction({ className }: ChatActionProps) {
+export default function ChatAction({ className, theme }: ChatActionProps) {
   const {
     chatModel,
     chatIsGenerating,
@@ -65,10 +66,12 @@ export default function ChatAction({ className }: ChatActionProps) {
     }
   }
 
+
   const hasMessages = chatMessages && chatMessages.length > 0
 
   return (
     <div
+      data-theme={theme}
       className={cn(
         "flex flex-row w-full justify-between items-center bg-white dark:bg-[#0f0f0f] py-3 px-4",
         className
@@ -81,7 +84,7 @@ export default function ChatAction({ className }: ChatActionProps) {
           setChatModel(models.find((model) => model.value === value))
         }
       >
-        <SelectTrigger className="w-auto min-w-[140px] h-9 text-xs bg-gray-50 dark:bg-zinc-800 border-gray-200 dark:border-zinc-700">
+        <SelectTrigger className="w-auto min-w-[140px] h-9 text-xs bg-white text-black dark:bg-black border-gray-200 dark:border-zinc-700 dark:text-white dark:hover:bg-black-10">
           <SelectValue placeholder="选择模型" />
         </SelectTrigger>
         <SelectContent>

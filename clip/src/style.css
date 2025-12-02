@@ -41,6 +41,10 @@
   background-color: rgba(82, 82, 91, 0.6);
 }
 
+.dark .custom-scrollbar::-webkit-scrollbar-track {
+  background-color: rgba(31, 41, 55, 0.75);
+}
+
 .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: rgba(82, 82, 91, 0.8);
 }
@@ -54,3 +58,43 @@
 .dark .custom-scrollbar {
   scrollbar-color: rgba(82, 82, 91, 0.6) transparent;
 }
+
+/* 全局屏幕适配：根据屏幕宽度调整根字体大小与通用间距变量 */
+html {
+  font-size: 16px;
+  color-scheme: light dark;
+}
+
+:root {
+  --page-padding: 24px;
+  --card-radius: 12px;
+}
+
+@media screen and (max-width: 1366px) {
+  html { font-size: 14px; }
+  :root { --page-padding: 18px; --card-radius: 12px; }
+}
+
+@media screen and (max-width: 1024px) {
+  html { font-size: 13px; }
+  :root { --page-padding: 16px; --card-radius: 10px; }
+}
+
+@media screen and (max-width: 768px) {
+  html { font-size: 12px; }
+  :root { --page-padding: 12px; --card-radius: 10px; }
+}
+
+@media screen and (min-width: 1600px) {
+  html { font-size: 17px; }
+}
+
+@media screen and (min-width: 1920px) {
+  html { font-size: 18px; }
+}
+
+/* 通用响应式工具类，可在页面容器/卡片上复用 */
+.responsive-container { padding: var(--page-padding); }
+.responsive-card { border-radius: var(--card-radius); }
+
+.theme-transition { transition: background-color .2s ease, color .2s ease; }

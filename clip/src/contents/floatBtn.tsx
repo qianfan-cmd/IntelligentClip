@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Storage } from '@plasmohq/storage';
 import styleText from "data-text:../style.css"
 import { AiOutlineRobot } from "react-icons/ai";
@@ -9,15 +9,18 @@ import { FaExchangeAlt } from "react-icons/fa";
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { TooltipWrapper } from "@/components/ui/tooltip-wrapper"
 import { ClipStore } from "@/lib/clip-store"
-import { extractContent } from "@/core/index"
+import { extractContent, extractSelectedContent } from "@/core/index"
 import type { ExtractedContent } from "@/core/types"
 import { useAtomValue } from "jotai"
 import { openAIKeyAtom } from "@/lib/atoms/openai"
 import { usePort } from "@plasmohq/messaging/hook"
 import { cn } from "@/lib/utils"
+import { RiExchangeBoxLine } from "react-icons/ri";
+import { SaveTypeChange } from "@/components/saveType-change"
+import { storage as secureStorage } from "@/lib/atoms/storage"
 
 export const config = {
-  matches: ["<all_urls>"] 
+  matches: ["<all_urls>"]
 }
 
 const BUTTON_SIZE: number = 40;
@@ -28,10 +31,13 @@ const INITIAL_POSITION = { x: RIGHT_MARGIN, y: 200 };
 const Z_INDEX = 2147483640
 
 // 菜单按钮组件
-const MenuButton = ({ icon, onClick, tooltip }: { icon: React.ReactNode; onClick: () => void; tooltip: string|React.ReactNode }) => (
+const MenuButton = ({ icon, onClick, tooltip, isDark }: { icon: React.ReactNode; onClick: () => void; tooltip: string | React.ReactNode; isDark?: boolean }) => (
   <TooltipWrapper side="left" text={typeof tooltip === 'string' ? tooltip as string : undefined} content={typeof tooltip !== 'string' ? tooltip as React.ReactNode : undefined}>
     <button
-      className="p-3 bg-white border-none rounded-full shadow-md cursor-pointer transition-colors duration-150 outline-none overflow-hidden w-[40px] h-[40px] flex items-center justify-center hover:scale-110 active:scale-90 group"
+      className={cn(
+        "p-3 border-none rounded-full shadow-md cursor-pointer transition-colors duration-150 outline-none overflow-hidden w-[40px] h-[40px] flex items-center justify-center hover:scale-110 active:scale-90 group",
+        isDark ? "bg-neutral-900 text-white" : "bg-white text-gray-900"
+      )}
       onClick={onClick}
     >
       <div className="transform transition-transform duration-300 group-hover:scale-110">
@@ -42,15 +48,15 @@ const MenuButton = ({ icon, onClick, tooltip }: { icon: React.ReactNode; onClick
 );
 
 // 通知组件
-function showNotification(message: string, type: "success" | "error" | "warning" = "success") {
+function showNotification(message: string, type: "success" | "error" | "warning" | "loading" = "success") {
   const colors = {
     success: { bg: "#10b981", text: "#ffffff" },
     error: { bg: "#ef4444", text: "#ffffff" },
     warning: { bg: "#f59e0b", text: "#ffffff" },
+    loading: { bg: "#111827", text: "#ffffff" },
   }
-  
+
   const notification = document.createElement("div")
-  notification.textContent = message
   Object.assign(notification.style, {
     position: "fixed",
     top: "20px",
@@ -65,14 +71,49 @@ function showNotification(message: string, type: "success" | "error" | "warning"
     fontSize: "14px",
     fontWeight: "500",
     animation: "fadeIn 0.3s ease-out",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "8px"
   })
-  
+
+  if (!document.getElementById("clip-notify-style")) {
+    const styleEl = document.createElement("style")
+    styleEl.id = "clip-notify-style"
+    styleEl.textContent = `@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}`
+    document.head.appendChild(styleEl)
+  }
+
+  if (type === "loading") {
+    const spinner = document.createElement("div")
+    Object.assign(spinner.style, {
+      width: "12px",
+      height: "12px",
+      border: "2px solid rgba(255,255,255,0.6)",
+      borderTopColor: "transparent",
+      borderRadius: "50%",
+      animation: "spin 1s linear infinite"
+    })
+    notification.appendChild(spinner)
+  }
+
+  const textSpan = document.createElement("span")
+  textSpan.textContent = message
+  notification.appendChild(textSpan)
+
   document.body.appendChild(notification)
+  if (type === "loading") {
+    return () => {
+      notification.style.opacity = "0"
+      notification.style.transition = "opacity 0.2s"
+      setTimeout(() => notification.remove(), 200)
+    }
+  }
   setTimeout(() => {
     notification.style.opacity = "0"
     notification.style.transition = "opacity 0.3s"
     setTimeout(() => notification.remove(), 300)
   }, type === "error" ? 5000 : 3000)
+  return () => { }
 }
 
 const floatButton = () => {
@@ -83,7 +124,10 @@ const floatButton = () => {
   const [hiddenByPanel, setHiddenByPanel] = useState(false);//是否被面板隐藏
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);//设置面板
   const [translateLang, setTranslateLang] = useState<string>('en-US');//当前翻译语言提示
+  const [saveTypeTip, setSaveTypeTip] = useState<string>("一键保存");//当前保存类型提示
+  const [isSaveTypeOpen, setIsSaveTypeOpen] = useState<boolean>(false);//切换保存类型菜单
   const hideTimeout = useRef<NodeJS.Timeout | null>(null);//隐藏超时定时器
+  const saveTypeHideTimeout = useRef<NodeJS.Timeout | null>(null);//保存类型面板隐藏定时器
   const offsetRef = useRef({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false)
@@ -92,8 +136,25 @@ const floatButton = () => {
   const port = usePort("page-completion")
   const extractedContentRef = useRef<ExtractedContent | null>(null)
   const requestTypeRef = useRef<"full" | "selection" | null>(null)
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    try { return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches } catch { return false }
+  })
   const lastDragTimeRef = useRef<number>(0)
   const dragMovedRef = useRef<boolean>(false)
+  const expandStartRef = useRef<number>(0)
+  const chosenSaveActionRef = useRef<(() => Promise<void> | void) | null>(null)
+  const loadingNotifyDismissRef = useRef<(() => void) | null>(null)
+  const selectedTextRef = useRef<string>("")
+
+  const captureSelection = () => {
+    try {
+      selectedTextRef.current = window.getSelection()?.toString().trim() || ""
+    } catch (e) {
+      console.log("选取失败：", e);
+      showNotification("⚠️ 抓取失败，请重新选择内容", "warning")
+    }
+  }
+
 
   const checkContext = (): boolean => {
     try {
@@ -156,13 +217,13 @@ const floatButton = () => {
     if (isDragging && dragMovedRef.current) {
       let topLimit: number;
       if (position.y <= 0) {
-         topLimit = TOP_MARGIN;
+        topLimit = TOP_MARGIN;
       } else if (position.y > document.documentElement.clientHeight - BUTTON_SIZE / 2) {
         topLimit = document.documentElement.clientHeight - BUTTON_SIZE - BOTTOM_MARGIN;
       } else {
-         topLimit = position.y;
+        topLimit = position.y;
       }
-      
+
       setPosition(() => ({
         x: getRightMargin(),
         y: topLimit
@@ -203,10 +264,10 @@ const floatButton = () => {
 
   useEffect(() => {
     const pageHandler = (e: MessageEvent) => {
-      const d = e?.data as any
+      const d = e?.data as { source?: string; type?: string } | undefined
       if (!d || d.source !== "clip") return
-      if (d.type === "clip:panel-open" || d.type === "clip:show-float") setHiddenByPanel(true)
-      if (d.type === "clip:panel-close" || d.type === "clip:hide-float") setHiddenByPanel(false)
+      if (d.type === "clip:panel-open") setHiddenByPanel(true)
+      if (d.type === "clip:panel-close" || d.type === "clip:toggle-float") setHiddenByPanel(false)
     }
     window.addEventListener("message", pageHandler)
     return () => window.removeEventListener("message", pageHandler)
@@ -225,6 +286,15 @@ const floatButton = () => {
   };
 
   const menuMode = getMenuPositionMode();
+
+  useEffect(() => {
+    try {
+      const mq = window.matchMedia('(prefers-color-scheme: dark)')
+      const cb = (e: MediaQueryListEvent) => setIsDark(e.matches)
+      mq.addEventListener('change', cb)
+      return () => mq.removeEventListener('change', cb)
+    } catch {}
+  }, [])
 
   // Dynamic transforms based on menu mode
   const getTransform = (type: 'bookmark' | 'translate' | 'ai') => {
@@ -253,7 +323,7 @@ const floatButton = () => {
   }
 
   const handleMouseEnter = () => {
-    if(hideTimeout.current) {
+    if (hideTimeout.current) {
       clearTimeout(hideTimeout.current);
       hideTimeout.current = null;
     }
@@ -262,7 +332,7 @@ const floatButton = () => {
 
   const handleMouseLeave = () => {
     hideTimeout.current = setTimeout(() => {
-        setIsMenuOpen(false);
+      setIsMenuOpen(false);
     }, 200);
   }
 
@@ -284,30 +354,40 @@ const floatButton = () => {
       if (globalDisabled || siteDisabled) {
         setIsEnabled(false);
       }
+      const savedMode = await storage.get<string>('clipSaveMode')
+      if (savedMode && ["allPageSave", "allPageAISave", "selectSave", "selectAISave"].includes(savedMode)) {
+        setSaveTypeTip(savedMode)
+        chosenSaveActionRef.current =
+          savedMode === "allPageSave" ? handleSave :
+            savedMode === "allPageAISave" ? handleAISaveFull :
+              savedMode === "selectSave" ? handleDirectSaveSelection :
+                savedMode === "selectAISave" ? handleAISaveSelection :
+                  handleSave
+      }
     })();
   }, []);
 
   const handleMain = () => {
     if (Date.now() - lastDragTimeRef.current < 150) return
-    if (!isAtRightEdge()) return
-    try { 
-      window.postMessage({ source: "clip", type: "clip:show-float" }, "*") 
-    } catch(e) {
-      console.log("悬浮窗打开请求发送失败：",e);
+    try {
+      window.postMessage({ source: "clip", type: "clip:show-float" }, "*")
+    } catch (e) {
+      console.log("悬浮窗打开请求发送失败：", e);
     }
     if (!checkContext()) return
-    try { 
+    try {
       chrome.runtime.sendMessage({ type: "clip:show-float" })
-     } catch(e) {
+    } catch (e) {
       console.log(e);
       alert("悬浮窗打开失败");
-     }
-    setHiddenByPanel(true)
+    }
   }
 
   useEffect(() => {
     if (!port.data || !requestTypeRef.current) return
     if (port.data.isEnd) {
+      loadingNotifyDismissRef.current?.()
+      loadingNotifyDismissRef.current = null
       const summary = port.data.message?.replace(/\nEND$/, "").replace(/END$/, "") || ""
       const content = extractedContentRef.current
       if (!checkContext()) {
@@ -317,8 +397,8 @@ const floatButton = () => {
         return
       }
       ClipStore.add({
-        source: content?.metadata?.platform === "Bilibili" ? "bilibili" : 
-               content?.metadata?.platform === "YouTube" ? "youtube" : "webpage",
+        source: content?.metadata?.platform === "Bilibili" ? "bilibili" :
+          content?.metadata?.platform === "YouTube" ? "youtube" : "webpage",
         url: content?.url || window.location.href,
         title: content?.title || document.title,
         rawTextSnippet: content?.snippet || "",
@@ -340,12 +420,15 @@ const floatButton = () => {
         showNotification("❌ 保存失败: " + err.message, "error")
       })
     } else if (port.data.error) {
+      loadingNotifyDismissRef.current?.()
+      loadingNotifyDismissRef.current = null
       setLoading(false)
       setLoadingType(null)
       showNotification("❌ AI 处理失败", "error")
     }
   }, [port.data])
 
+  //直接保存整页
   const handleSave = async () => {
     if (!checkContext()) {
       showNotification("⚠️ 扩展已重载，请刷新页面", "warning")
@@ -366,16 +449,16 @@ const floatButton = () => {
           }
         }
       } catch (e) {
-      console.log(e);
-      showNotification("❌ 检查剪藏失败:Error")
-      return
-    }
-    setLoading(true)
-    setLoadingType("direct-full")
-    
+        console.log(e);
+        showNotification("❌ 检查剪藏失败:Error")
+        return
+      }
+      setLoading(true)
+      setLoadingType("direct-full")
+
       await ClipStore.add({
-        source: content?.metadata?.platform === "Bilibili" ? "bilibili" : 
-               content?.metadata?.platform === "YouTube" ? "youtube" : "webpage",
+        source: content?.metadata?.platform === "Bilibili" ? "bilibili" :
+          content?.metadata?.platform === "YouTube" ? "youtube" : "webpage",
         url: content?.url || window.location.href,
         title: content?.title || document.title,
         rawTextSnippet: content?.snippet || "",
@@ -398,24 +481,194 @@ const floatButton = () => {
     }
   }
 
+  //打开切换保存类型面板
+  const handleOpenSaveTypeChange = () => {
+    if (saveTypeHideTimeout.current) {
+      clearTimeout(saveTypeHideTimeout.current)
+      saveTypeHideTimeout.current = null
+    }
+    if (Date.now() - expandStartRef.current < 180) return
+    setIsSaveTypeOpen(true);
+  }
+
+  //关闭切换保存类型面板
+  const handleCloseSaveTypeChange = () => {
+    if (saveTypeHideTimeout.current) {
+      clearTimeout(saveTypeHideTimeout.current)
+    }
+    saveTypeHideTimeout.current = setTimeout(() => {
+      setIsSaveTypeOpen(false)
+      saveTypeHideTimeout.current = null
+    }, 200)
+  }
+
   const handleTranslate = () => console.log("执行翻译操作");
+
   const handleAI = () => {
     if (Date.now() - lastDragTimeRef.current < 150) return
-    if (!isAtRightEdge()) return
-    try { 
-      window.postMessage({ source: "clip", type: "clip:show-float" }, "*") 
-    } catch(e) {
-      console.log("悬浮窗打开请求发送失败：",e);
+    try {
+      window.postMessage({ source: "clip", type: "clip:show-float-chat" }, "*")
+      const sel = window.getSelection()?.toString().trim() || ""
+      try {
+        window.dispatchEvent(new CustomEvent('clip-send-to-chat', { detail: { text: sel } }))
+      } catch (e) {
+        console.log(e);
+        alert("悬浮窗打开失败");
+      }
+
+    } catch (e) {
+      console.log("悬浮窗打开请求发送失败：", e);
     }
     if (!checkContext()) return
-    try { 
+    try {
       chrome.runtime.sendMessage({ type: "clip:show-float" })
-     } catch(e) {
+    } catch (e) {
       console.log(e);
       alert("悬浮窗打开失败");
-     }
-    setHiddenByPanel(true)
+    }
   }
+
+  const handlePickSaveType = (payload: { tag: "allPageSave" | "allPageAISave" | "selectSave" | "selectAISave" }) => {
+    setSaveTypeTip(payload.tag)
+    chosenSaveActionRef.current =
+      payload.tag === "allPageSave" ? handleSave :
+        payload.tag === "allPageAISave" ? handleAISaveFull :
+          payload.tag === "selectSave" ? handleDirectSaveSelection :
+            payload.tag === "selectAISave" ? handleAISaveSelection :
+              handleSave
+    const storage = new Storage()
+    storage.set('clipSaveMode', payload.tag)
+  }
+
+  const handleSaveClick = async () => {
+    expandStartRef.current = Date.now()
+    const fn = chosenSaveActionRef.current
+    if (fn) {
+      await Promise.resolve(fn())
+    } else {
+      await handleSave()
+    }
+  }
+  //整页保存(AI)
+  const handleAISaveFull = async () => {
+    if (!checkContext()) {
+      showNotification("⚠️ 扩展已重载，请刷新页面", "warning")
+      return
+    }
+    const key = await getOpenAIKeySafely()
+    if (!key) {
+      showNotification("⚠️ 请先在设置中配置 API Key", "warning")
+      return
+    }
+    setLoading(true)
+    setLoadingType("full")
+    requestTypeRef.current = "full"
+    loadingNotifyDismissRef.current = showNotification("AI处理中…", "loading")
+    try {
+      const content = await extractContent()
+      extractedContentRef.current = content
+      port.send({
+        prompt: "请用中文对以下内容进行简洁总结，并列出3-5个要点。",
+        model: "qwen3-max",
+        context: {
+          metadata: { title: content.title, ...content.metadata },
+          text: content.text,
+          openAIKey: key
+        }
+      })
+    } catch (e) {
+      console.error("❌ Clip error:", e)
+      setLoading(false)
+      setLoadingType(null)
+      showNotification("❌ 剪藏失败", "error")
+    }
+  }
+  // 剪藏选中内容（AI摘要）
+  const handleAISaveSelection = async () => {
+    const liveText = window.getSelection()?.toString().trim()
+    const selectedText = (selectedTextRef.current || liveText || "").trim()
+    if (!selectedText || selectedText.length < 10) {
+      showNotification("⚠️ 请先选中一些文字（至少10个字符）", "warning")
+      return
+    }
+    if (!checkContext()) {
+      showNotification("⚠️ 扩展已重载，请刷新页面", "warning")
+      return
+    }
+    const key = await getOpenAIKeySafely()
+    if (!key) {
+      showNotification("⚠️ 请先在设置中配置 API Key", "warning")
+      return
+    }
+    setLoading(true)
+    setLoadingType("selection")
+    requestTypeRef.current = "selection"
+    loadingNotifyDismissRef.current = showNotification("AI处理中…", "loading")
+    try {
+      const selectedContent = extractSelectedContent()
+      extractedContentRef.current = {
+        title: document.title,
+        text: selectedText,
+        html: selectedText,
+        snippet: selectedText.slice(0, 500),
+        url: window.location.href,
+        metadata: {},
+        images: selectedContent?.images || []
+      }
+      port.send({
+        prompt: "请用中文对以下内容进行简洁总结。",
+        model: "qwen3-max",
+        context: { metadata: { title: document.title }, text: selectedText, openAIKey: key }
+      })
+    } catch (e) {
+      console.error("❌ Clip error:", e)
+      setLoading(false)
+      setLoadingType(null)
+      showNotification("❌ 剪藏失败", "error")
+    }
+  }
+
+  // 直接保存选中内容（不使用AI）
+  const handleDirectSaveSelection = async () => {
+    const liveText = window.getSelection()?.toString().trim()
+    const selectedText = (selectedTextRef.current || liveText || "").trim()
+    if (!selectedText || selectedText.length < 10) {
+      showNotification("⚠️ 请先选中一些文字（至少10个字符）", "warning")
+      return
+    }
+    if (!checkContext()) {
+      showNotification("⚠️ 扩展已重载，请刷新页面", "warning")
+      return
+    }
+    setLoading(true)
+    setLoadingType("direct-selection")
+    try {
+      const selectedContent = extractSelectedContent()
+      const images = selectedContent?.images || []
+      await ClipStore.add({
+        source: "webpage",
+        url: window.location.href,
+        title: document.title,
+        rawTextSnippet: selectedText.slice(0, 500),
+        rawTextFull: selectedText,
+        summary: "",
+        keyPoints: [],
+        tags: [],
+        meta: {},
+        images
+      })
+      setLoading(false)
+      setLoadingType(null)
+      const imgCount = images.length
+      showNotification(`✅ 已直接保存选中内容！${imgCount > 0 ? `（含${imgCount}张图片）` : ""}`, "success")
+    } catch (e) {
+      console.error("❌ Direct save error:", e)
+      setLoading(false)
+      setLoadingType(null)
+      showNotification("❌ 保存失败", "error")
+    }
+  }
+
   const handleLanguage = () => {
     const next = translateLang === 'en-US' ? 'zh-CN' : 'en-US'
     setTranslateLang(next)
@@ -423,99 +676,187 @@ const floatButton = () => {
 
   if (!isEnabled || hiddenByPanel) return null;
 
-  const handleOpenSettings = (e: React.MouseEvent) => { 
-    e.stopPropagation(); 
+  const handleOpenSettings = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setIsSettingsOpen((v) => !v);
-   };
-
- const handleHideOnce = (e: React.MouseEvent) => { 
-  e.stopPropagation(); 
-  setIsEnabled(false); 
-}; 
-
- const handleDisableSite = async (e: React.MouseEvent) => { 
-  e.stopPropagation(); 
-  const storage = new Storage(); 
-  await storage.set(`clipDisableSite:${window.location.host}`, true); 
-  setIsEnabled(false); };
-
-  const handleDisableGlobal = async (e: React.MouseEvent) => { 
-    e.stopPropagation(); 
-    const storage = new Storage(); 
-    await storage.set('clipDisableGlobal', true); 
-    setIsEnabled(false); 
   };
 
-  const bookMarkIcon = <CiBookmark color='#000000' size={24} className="w-[20px] h-[20px] transform scale-100 transition-transform duration-300 hover:scale-115 active:scale-90"/>;
-  const translateIcon = <MdGTranslate color='#000000' size={24} className="w-[20px] h-[20px] transform scale-100 transition-transform duration-300 hover:scale-115 active:scale-90"/>;
-  const languageIcon = <FaExchangeAlt color='#000000' size={24} className="w-[20px] h-[20px] transform scale-100 transition-transform duration-300 hover:scale-115 active:scale-90"/>;
-  const aiIcon = <AiFillAliwangwang color='#000000' size={24} className="w-[20px] h-[20px] transform scale-100 transition-transform duration-300 hover:scale-115 active:scale-90"/>;
+  const handleHideOnce = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsEnabled(false);
+  };
+
+  const handleDisableSite = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const storage = new Storage();
+    await storage.set(`clipDisableSite:${window.location.host}`, true);
+    setIsEnabled(false);
+  };
+
+  const handleDisableGlobal = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const storage = new Storage();
+    await storage.set('clipDisableGlobal', true);
+    setIsEnabled(false);
+  };
+
+  const getOpenAIKeySafely = async (): Promise<string | null> => {
+    if (openAIKey) return openAIKey
+    try {
+      const v = await secureStorage.get("openAIKey")
+      return (v as string) ?? null
+    } catch {
+      return openAIKey ?? null
+    }
+  };
+
+  const bookMarkIcon = <CiBookmark color='currentColor' size={24} className="w-[20px] h-[20px] transform scale-100 transition-transform duration-300 hover:scale-115 active:scale-90" />;
+  const translateIcon = <MdGTranslate color='currentColor' size={24} className="w-[20px] h-[20px] transform scale-100 transition-transform duration-300 hover:scale-115 active:scale-90" />;
+  const languageIcon = <FaExchangeAlt color='currentColor' size={24} className="w-[20px] h-[20px] transform scale-100 transition-transform duration-300 hover:scale-115 active:scale-90" />;
+  const aiIcon = <AiFillAliwangwang color='currentColor' size={24} className="w-[20px] h-[20px] transform scale-100 transition-transform duration-300 hover:scale-115 active:scale-90" />;
+  const saveTypeChangeIcon = <RiExchangeBoxLine color='currentColor' size={24} className="w-[20px] h-[20px] transform scale-100 transition-transform duration-300 hover:scale-115 active:scale-90" />;
 
   return (
-    <div 
+    <div
       ref={containerRef}
       className={cn(
         "fixed z-[2147483647] select-none w-[40px] h-[40px] rounded-full transition-opacity duration-200",
         isDragging && "opacity-75 transition-none"
       )}
-      style={{ 
+      style={{
         left: position.x,
         top: position.y,
         zIndex: 2147483700,
       }}
-      onMouseEnter={ handleMouseEnter }
-      onMouseLeave={ handleMouseLeave }
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       <TooltipProvider delayDuration={0}>
         <div className={cn(
-            "absolute inset-0 w-full h-full pointer-events-none opacity-0 transition-opacity duration-300 ease-out",
-            isMenuOpen && "pointer-events-auto opacity-100 cursor-pointer"
-          )}>
+          "absolute inset-0 w-full h-full pointer-events-none opacity-0 transition-opacity duration-300 ease-out",
+          isMenuOpen && "pointer-events-auto opacity-100 cursor-pointer"
+        )}>
           <div className="relative w-full h-full">
-            {/* Bookmark Item */}
-            <div 
+            {/* Bookmark Item (expand like translate) */}
+            <div
               className="absolute top-1/2 left-1/2 origin-center transition-all duration-300 ease-out delay-75"
-              style={{ transform: getTransform('bookmark') }}
-            >
-              <MenuButton icon={bookMarkIcon} onClick={handleSave} tooltip='一键保存'/>
-            </div>
-
-            {/* Translate Item */}
-            <div 
-              className="absolute top-1/2 left-1/2 origin-center transition-all duration-300 ease-out delay-100"
-              style={{ 
-                transform: getTransform('translate'),
-                width: 40, height: 40 
+              style={{
+                transform: getTransform('bookmark'),
+                width: 40, height: 40
               }}
             >
-              <div className="absolute right-0 top-0 w-[40px] h-[40px] bg-white rounded-[20px] shadow-md flex items-center justify-end overflow-hidden transition-[width,box-shadow] duration-300 z-20 hover:w-[90px] hover:justify-between hover:shadow-lg">
-                 <div className="w-[40px] h-[40px] flex items-center justify-center cursor-pointer flex-shrink-0 hover:scale-110 active:scale-90 transition-transform" onClick={handleLanguage}>
-                   {languageIcon}
-                 </div>
-                 
-                 <TooltipWrapper
-                   offset={8}
-                   content={
-                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                       <span style={{ fontWeight: 600 }}>翻译为：</span>
-                       <span style={{ marginLeft: 4 }}>{translateLang}</span>
-                       {/* <span style={{ marginLeft: 8, color: '#6b7280', fontSize: 10 }}>Alt+T</span> */}
-                     </div>
-                   }
-                 >
-                   <div className="w-[40px] h-[40px] flex items-center justify-center cursor-pointer flex-shrink-0 hover:scale-110 active:scale-90 transition-transform" onClick={handleTranslate}>
-                     {translateIcon}
-                   </div>
-                 </TooltipWrapper>
+              <div className={cn(
+                "absolute right-0 top-0 w-[40px] h-[40px] rounded-[20px] shadow-md flex items-center justify-center overflow-hidden px-0 transition-[width,box-shadow,padding] duration-300 z-20 hover:w-[90px] hover:justify-between hover:shadow-lg hover:px-2 group",
+                isDark ? "bg-neutral-900 text-white" : "bg-white text-gray-900",
+                isSaveTypeOpen && "w-[90px] justify-between shadow-lg px-2"
+              )}>
+                <TooltipWrapper
+                  side="top"
+                  offset={12}
+                  content={
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <p>切换剪藏方式</p>
+                    </div>
+                  }
+                >
+                  <div className={cn(
+                    "w-[40px] h-[40px] items-center justify-center cursor-pointer flex-shrink-0 hover:scale-110 active:scale-90 transition-transform",
+                    isDark ? "text-white" : "text-gray-900",
+                    isSaveTypeOpen ? "flex" : "hidden group-hover:flex"
+                  )}
+                    onMouseEnter={() => { handleMouseEnter(); captureSelection(); handleOpenSaveTypeChange() }}
+                    onMouseLeave={handleCloseSaveTypeChange}
+                  >
+                    {saveTypeChangeIcon}
+                  </div>
+                </TooltipWrapper>
+
+                <TooltipWrapper
+                  side="top"
+                  offset={12}
+                  content={
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <span>{({
+                        allPageSave: "整页剪藏",
+                        allPageAISave: "AI整页剪藏",
+                        selectSave: "选中剪藏",
+                        selectAISave: "AI摘要剪藏"
+                      } as Record<string, string>)[saveTypeTip] || "整页剪藏"}</span>
+                    </div>
+                  }
+                >
+                  <div className={cn("w-[40px] h-[40px] flex items-center justify-center cursor-pointer flex-shrink-0 hover:scale-110 active:scale-90 transition-transform", isDark ? "text-white" : "text-gray-900")} onMouseEnter={() => { expandStartRef.current = Date.now(); captureSelection() }} 
+                    onClick={handleSaveClick}
+                  >
+                    {bookMarkIcon}
+                  </div>
+                </TooltipWrapper>
+
+
+              </div>
+            </div>
+
+            {isSaveTypeOpen && (
+              <div
+                className="absolute z-[2147483647]"
+                style={{ top: "50%", transform: "translateY(-50%)", right: "calc(100% + 70px)" }}
+                onMouseEnter={() => { handleMouseEnter(); captureSelection(); handleOpenSaveTypeChange() }}
+                onMouseLeave={handleCloseSaveTypeChange}
+              >
+                <SaveTypeChange onChoose={handlePickSaveType} selectedTag=
+                  {saveTypeTip as "allPageSave" | "allPageAISave" | "selectSave" | "selectAISave"} />
+              </div>
+            )}
+            {/* Translate Item */}
+            <div
+              className="absolute top-1/2 left-1/2 origin-center transition-all duration-300 ease-out delay-100"
+              style={{
+                transform: getTransform('translate'),
+                width: 40, height: 40
+              }}
+            >
+              <div className={cn("absolute right-0 top-0 w-[40px] h-[40px] rounded-[20px] shadow-md flex items-center justify-end overflow-hidden transition-[width,box-shadow] duration-300 z-20 hover:w-[90px] hover:justify-between hover:shadow-lg",
+                isDark ? "bg-neutral-900 text-white" : "bg-white text-gray-900")}>
+                <TooltipWrapper
+                  side="top"
+                  offset={12}
+                  content={
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <span style={{ fontWeight: 600 }}>翻译为：</span>
+                      <span style={{ marginLeft: 4 }}>{translateLang}</span>
+                    </div>
+                  }
+                >
+                  <div className="w-[40px] h-[40px] flex items-center justify-center cursor-pointer flex-shrink-0 hover:scale-110 active:scale-90 transition-transform" onClick={handleLanguage}>
+                    {languageIcon}
+                  </div>
+                </TooltipWrapper>
+
+                <TooltipWrapper
+                  side="top"
+                  offset={8}
+                  content={
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <span>翻译为：</span>
+                      <span style={{ marginLeft: 4 }}>{translateLang}</span>
+                      {/* <span style={{ marginLeft: 8, color: '#6b7280', fontSize: 10 }}>Alt+T</span> */}
+                    </div>
+                  }
+                >
+
+                  <div className="w-[40px] h-[40px] flex items-center justify-center cursor-pointer flex-shrink-0 hover:scale-110 active:scale-90 transition-transform" onClick={handleTranslate}>
+                    {translateIcon}
+                  </div>
+                </TooltipWrapper>
               </div>
             </div>
 
             {/* AI Item */}
-            <div 
+            <div
               className="absolute top-1/2 left-1/2 origin-center transition-all duration-300 ease-out delay-150"
               style={{ transform: getTransform('ai') }}
             >
-              <MenuButton icon={aiIcon} onClick={handleAI} tooltip='ai对话'/>
+              <MenuButton icon={aiIcon} onClick={handleAI} tooltip='ai对话' isDark={isDark} />
             </div>
           </div>
         </div>
@@ -523,25 +864,34 @@ const floatButton = () => {
 
       {/* 主图标 */}
       <div
-        className="relative w-[40px] h-[40px] rounded-full bg-white shadow-md cursor-pointer hover:shadow-xl transition-shadow group"
+        className={cn("relative w-[40px] h-[40px] rounded-full shadow-md cursor-pointer hover:shadow-xl transition-shadow group",
+          isDark ? "bg-neutral-900 text-white" : "bg-white text-gray-900")}
         onMouseDown={handleMouseDown}
         onClick={handleMain}
       >
-        <AiOutlineRobot color='black' size={24} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[20px] h-[20px] transition-transform duration-300 ease-in-out group-hover:scale-105 group-active:scale-90"/>
-        <div 
+        <AiOutlineRobot color='currentColor' size={24} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[20px] h-[20px] transition-transform duration-300 ease-in-out group-hover:scale-105 group-active:scale-90" />
+        <div
           className={cn(
-            "absolute -right-2.5 -top-2.5 w-4 h-4 rounded-full bg-gray-200 shadow flex items-center justify-center text-gray-700 font-bold cursor-pointer transition-transform scale-0 hover:bg-gray-300 text-[10px]",
+            "absolute -right-2.5 -top-2.5 w-4 h-4 rounded-full shadow flex items-center justify-center font-bold cursor-pointer transition-transform scale-0 text-[10px]",
+            isDark ? "bg-neutral-900 text-gray-200 hover:bg-gray-600" : "bg-gray-200 text-gray-700 hover:bg-gray-300",
             isMenuOpen && "scale-100"
           )}
-          onMouseDown={(e) => e.stopPropagation()} 
+          onMouseDown={(e) => e.stopPropagation()}
           onClick={handleOpenSettings}
         >
           -
         </div>
+        {loading && (
+          <div className="absolute left-[48px] top-1/2 -translate-y-1/2 flex items-center gap-1 rounded-md bg-black/80 text-white px-2 py-1 text-[11px] shadow animate-fade-in">
+            <div className="w-3 h-3 rounded-full border-2 border-white/60 border-t-transparent animate-spin"></div>
+            <span>{loadingType === "full" || loadingType === "selection" ? "AI处理中…" : "保存中…"}</span>
+          </div>
+        )}
       </div>
 
+      {/* 打开设置面板 */}
       {isSettingsOpen && (
-        <div 
+        <div
           className="absolute top-6 right-5 w-[180px] bg-gray-800 text-gray-200 rounded-[10px] shadow-xl py-1.5 z-[2147483647] text-[13px] leading-snug"
           onMouseDown={(e) => e.stopPropagation()}
         >
@@ -552,6 +902,7 @@ const floatButton = () => {
           <div className="px-3 py-1.5 text-gray-400 text-xs">您可以在此处重新启用 设置</div>
         </div>
       )}
+
 
     </div>
   );
@@ -564,3 +915,4 @@ export const getStyle = () => {
 };
 
 export default floatButton;
+

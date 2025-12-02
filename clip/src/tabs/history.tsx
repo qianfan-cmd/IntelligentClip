@@ -51,8 +51,8 @@ const themes = {
     gradientCard: "from-indigo-500/5 to-purple-500/5",
     
     // Scrollbar
-    scrollThumb: "scrollbar-thumb-white/10",
-    scrollTrack: "scrollbar-track-transparent",
+    scrollThumb: "scrollbar-thumb-gray-400",
+    scrollTrack: "scrollbar-track-gray-800",
     
     // Special
     fadeGradient: "from-black/80 to-transparent",
@@ -108,7 +108,8 @@ type ThemeContextType = {
 }
 
 const ThemeContext = createContext<ThemeContextType | null>(null)
-
+const windowsTheme = () => window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';//系统默认主题
+const defaultTheme = windowsTheme() === 'dark' ? 'dark' : 'light';//系统默认主题
 const useTheme = () => {
   const context = useContext(ThemeContext)
   if (!context) throw new Error("useTheme must be used within ThemeProvider")
@@ -118,17 +119,34 @@ const useTheme = () => {
 const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("clip-history-theme")
-      return (saved as Theme) || "dark"
+      const saved = localStorage.getItem("clip-history-theme")//获取对应主题的键值对
+      return (saved as Theme) || defaultTheme
     }
-    return "dark"
+    return defaultTheme
   })
 
   useEffect(() => {
-    localStorage.setItem("clip-history-theme", theme)
+    localStorage.setItem("clip-history-theme", theme)//本地存储键值对
+    try {
+      const root = document.documentElement
+      if (theme === "dark") {
+        root.classList.add("dark")
+      } else {
+        root.classList.remove("dark")
+      }
+    } catch {}
   }, [theme])
 
-  const toggleTheme = () => setTheme(prev => prev === "dark" ? "light" : "dark")
+  const toggleTheme = () => {
+    const next = theme === "dark" ? "light" : "dark"
+    setTheme(next)
+    try {
+      window.postMessage({ source: "clip-history", type: "theme-change", theme: next }, "*")
+    } catch (e) {
+      console.log("AI面板切换主题失败", e)
+    }
+  }
+  
   const t = themes[theme]
 
   return (
@@ -655,7 +673,7 @@ function HistoryLayout() {
           </div>
           
           {/* Clips List */}
-          <div className={`flex-1 overflow-y-auto scrollbar-thin ${t.scrollThumb} ${t.scrollTrack}`}>
+          <div className={`flex-1 overflow-y-auto custom-scrollbar ${theme === 'dark' ? 'dark' : ''}`}>
             {processedClips.length === 0 ? (
               <div className="p-12 text-center">
                 <div className={`w-16 h-16 mx-auto mb-4 ${t.inputBg} rounded-2xl flex items-center justify-center`}>
@@ -957,7 +975,7 @@ function HistoryLayout() {
               </div>
 
               {/* Content with custom scrollbar */}
-              <div className={`flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin ${t.scrollThumb} ${t.scrollTrack}`}>
+              <div className={`flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar ${theme === 'dark' ? 'dark' : ''}`}>
                 
                 {/* My Notes Section - Glassmorphism style */}
                 <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500/5 to-orange-500/5 p-5 ring-1 ring-amber-500/20">
@@ -1230,7 +1248,7 @@ function HistoryLayout() {
                 </div>
               </div>
               <div className="flex-1 overflow-hidden relative">
-                <Chat className="h-full border-0" />
+                <Chat className="h-full border-0" theme={theme} />
               </div>
             </>
           ) : (

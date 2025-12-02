@@ -28,9 +28,10 @@ import { usePort } from "@plasmohq/messaging/hook"
 
 interface PromptFormProps {
   className?: string
+  theme?: 'dark' | 'light'
 }
 
-export default function PromptForm({ className }: PromptFormProps) {
+export default function PromptForm({ className, theme }: PromptFormProps) {
   const port = usePort("chat")
   const { extensionData, currentClipId } = useExtension()
   const openAIKey = useAtomValue(openAIKeyAtom)
@@ -241,10 +242,11 @@ export default function PromptForm({ className }: PromptFormProps) {
   return (
     <form
       ref={formRef}
+      data-theme={theme}
       className={cn("p-3 bg-white dark:bg-[#0f0f0f]", className)}
       onSubmit={handleSubmit}
     >
-      <div className="relative flex items-end gap-2 w-full bg-gray-50 dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-zinc-700 focus-within:border-indigo-400 dark:focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-100 dark:focus-within:ring-indigo-900/30 transition-all">
+      <div className="relative flex items-end gap-2 w-full bg-gray-50 text-black dark:text-white dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-zinc-700 focus-within:border-indigo-400 dark:focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-100 dark:focus-within:ring-indigo-900/30 transition-all">
         <Textarea
           ref={inputRef}
           tabIndex={0}

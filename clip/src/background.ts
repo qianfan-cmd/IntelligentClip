@@ -25,4 +25,21 @@ chrome.runtime.onMessage.addListener(async (msg, sender, sendResponse) => {
   if (msg.type === "clip:open-options") {
     chrome.runtime.openOptionsPage()
   }
+  if (msg.type === "clip:capture-screen") {
+    chrome.tabs.captureVisibleTab({ format: "png" }, (dataUrl) => {
+      if (chrome.runtime.lastError) {
+        console.error("Capture failed:", chrome.runtime.lastError)
+        sendResponse({ error: chrome.runtime.lastError.message })
+      } else {
+        sendResponse({ dataUrl })
+      }
+    })
+    return true // Keep channel open for async response
+  }
+  if (msg.type === "clip:start-screenshot") {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+    if (tab?.id) {
+      chrome.tabs.sendMessage(tab.id, { type: "clip:start-screenshot" })
+    }
+  }
 })
