@@ -60,14 +60,41 @@ export default function MoveToFolderDropdown({
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
-  // 计算下拉框位置
+  // 计算下拉框位置，并在打开时刷新文件夹列表
   useEffect(() => {
     if (isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect()
-      setDropdownPosition({
-        top: rect.bottom + 4,
-        left: rect.right - 192 // 192 = w-48 (12rem)
-      })
+      const dropdownWidth = 192 // w-48 (12rem)
+      const windowWidth = window.innerWidth
+      const windowHeight = window.innerHeight
+      const dropdownHeight = 256 // max-h-64 估算
+      
+      // 计算左侧位置：优先按钮左对齐，如果超出屏幕右边则右对齐
+      let left = rect.left
+      if (left + dropdownWidth > windowWidth - 16) {
+        // 如果超出右边界，改为右对齐
+        left = rect.right - dropdownWidth
+      }
+      // 确保不超出左边界
+      if (left < 16) {
+        left = 16
+      }
+      
+      // 计算顶部位置：优先在按钮下方，如果空间不够则在上方
+      let top = rect.bottom + 4
+      if (top + dropdownHeight > windowHeight - 16) {
+        // 如果下方空间不够，显示在按钮上方
+        top = rect.top - dropdownHeight - 4
+      }
+      
+      setDropdownPosition({ top, left })
+      
+      // 打开下拉菜单时重新加载文件夹列表
+      const refreshFolders = async () => {
+        const data = await FolderStore.getAll()
+        setFolders(data.sort((a, b) => a.createdAt - b.createdAt))
+      }
+      refreshFolders()
     }
   }, [isOpen])
 
