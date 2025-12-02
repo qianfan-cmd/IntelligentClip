@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react"
+import { createPortal } from "react-dom"
 import { FolderStore, ClipStore, type Folder } from "@/lib/clip-store"
 import { Folder as FolderIcon, FolderOpen, ChevronDown, Check, Inbox } from "lucide-react"
 
@@ -21,6 +22,8 @@ export default function MoveToFolderDropdown({
   const [folders, setFolders] = useState<Folder[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const [isMoving, setIsMoving] = useState(false)
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 })
+  const buttonRef = useRef<HTMLButtonElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   // 加载文件夹
@@ -35,13 +38,29 @@ export default function MoveToFolderDropdown({
   // 点击外部关闭
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      if (
+        dropdownRef.current && 
+        !dropdownRef.current.contains(e.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(e.target as Node)
+      ) {
         setIsOpen(false)
       }
     }
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
+
+  // 计算下拉框位置
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect()
+      setDropdownPosition({
+        top: rect.bottom + 4,
+        left: rect.right - 192 // 192 = w-48 (12rem)
+      })
+    }
+  }, [isOpen])
 
   // 移动到文件夹
   const handleMove = async (folderId: string | undefined) => {
@@ -81,9 +100,10 @@ export default function MoveToFolderDropdown({
   }
 
   return (
-    <div ref={dropdownRef} className="relative">
+    <div className="relative">
       {/* Trigger Button */}
       <button
+        ref={buttonRef}
         onClick={(e) => {
           e.stopPropagation()
           setIsOpen(!isOpen)
@@ -117,14 +137,20 @@ export default function MoveToFolderDropdown({
         )}
       </button>
 
-      {/* Dropdown Menu */}
-      {isOpen && (
+      {/* Dropdown Menu - 使用 Portal 渲染到 body */}
+      {isOpen && createPortal(
         <div 
-          className={`absolute right-0 top-full mt-1 z-20 w-48 rounded-xl shadow-xl py-1 max-h-64 overflow-y-auto ${
+          ref={dropdownRef}
+          className={`fixed w-48 rounded-xl shadow-2xl py-1 max-h-64 overflow-y-auto ${
             isDark 
               ? "bg-[#1a1a24] ring-1 ring-white/10" 
               : "bg-white ring-1 ring-gray-200 shadow-lg"
           }`}
+          style={{
+            top: dropdownPosition.top,
+            left: dropdownPosition.left,
+            zIndex: 99999
+          }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* 未归类选项 */}
@@ -167,7 +193,8 @@ export default function MoveToFolderDropdown({
               暂无文件夹
             </div>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
