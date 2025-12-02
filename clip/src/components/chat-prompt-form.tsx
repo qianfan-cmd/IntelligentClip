@@ -15,12 +15,12 @@ import { Button } from "@/components/ui/button"
 import { TooltipWrapper } from "@/components/ui/tooltip-wrapper"
 import { useChat } from "@/contexts/chat-context"
 import { useExtension } from "@/contexts/extension-context"
-import { openAIKeyAtom } from "@/lib/atoms/openai"
+// 【修复】使用统一的 API 配置模块，解决跨页面不同步问题
+import { useApiConfig } from "@/lib/api-config-store"
 import { cn } from "@/lib/utils"
 import { ClipStore } from "@/lib/clip-store"
 import { extractClipTags, removeClipTagsFromResponse, mergeClipTags } from "@/lib/clip-tagging"
 import { Send, Loader2 } from "lucide-react"
-import { useAtomValue } from "jotai"
 import React, { useEffect, useRef, useCallback } from "react"
 import Textarea from "react-textarea-autosize"
 
@@ -34,7 +34,8 @@ interface PromptFormProps {
 export default function PromptForm({ className, theme }: PromptFormProps) {
   const port = usePort("chat")
   const { extensionData, currentClipId } = useExtension()
-  const openAIKey = useAtomValue(openAIKeyAtom)
+  // 【修复】使用统一的 API 配置模块，包含加载状态
+  const { apiKey: openAIKey, isLoading: isApiKeyLoading } = useApiConfig()
 
   const {
     chatMessages,
@@ -84,6 +85,21 @@ export default function PromptForm({ className, theme }: PromptFormProps) {
         {
           role: "assistant",
           content: "❌ 当前视频没有字幕，无法进行对话。请选择一个有字幕的视频。"
+        }
+      ])
+      return
+    }
+
+    // 【修复】正确区分"加载中"和"真正未设置"
+    if (isApiKeyLoading) {
+      console.log("API config is still loading, please wait...")
+      setChatIsError(true)
+      setChatIsGenerating(false)
+      setChatMessages([
+        ...chatMessages,
+        {
+          role: "assistant",
+          content: "⏳ 正在加载 API 配置，请稍候重试..."
         }
       ])
       return

@@ -1,9 +1,10 @@
 /**
  * OpenAISetup - API Key 设置组件
  * 用于首次设置或更新 LLM API Key
+ * 
+ * 【修复】使用统一的 API 配置模块，解决跨页面不同步问题
  */
-import { openAIKeyAtom } from "@/lib/atoms/openai"
-import { useSetAtom } from "jotai"
+import { useApiConfig } from "@/lib/api-config-store"
 import React from "react"
 import { Key, Sparkles } from "lucide-react"
 
@@ -14,19 +15,35 @@ import { Label } from "./ui/label"
 interface OpenAISetupProps {}
 
 export default function OpenAISetup({}: OpenAISetupProps) {
-  const setOpenAIKey = useSetAtom(openAIKeyAtom)
+  // 【修复】使用统一的配置保存函数
+  const { saveConfig } = useApiConfig()
   const inputRef = React.useRef<HTMLInputElement>(null)
   const [isLoading, setIsLoading] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
 
   const onClick = async () => {
     const input = inputRef.current
     if (!input || !input.value.trim()) return
     
     setIsLoading(true)
-    // 模拟验证延迟
-    await new Promise(resolve => setTimeout(resolve, 300))
-    setOpenAIKey(input.value.trim())
-    setIsLoading(false)
+    setError(null)
+    
+    try {
+      // 【修复】使用统一的保存函数，确保所有地方都能读取到
+      const success = await saveConfig({
+        apiKey: input.value.trim(),
+        provider: "openai",
+        updatedAt: Date.now()
+      })
+      
+      if (!success) {
+        setError("保存失败，请重试")
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "保存失败")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -76,6 +93,12 @@ export default function OpenAISetup({}: OpenAISetupProps) {
             <p className="text-xs text-gray-400 dark:text-gray-500">
               您的 API Key 将安全地存储在本地
             </p>
+            {/* 【新增】显示错误信息 */}
+            {error && (
+              <p className="text-xs text-red-500 mt-1">
+                ❌ {error}
+              </p>
+            )}
           </div>
 
           <Button 
@@ -86,7 +109,7 @@ export default function OpenAISetup({}: OpenAISetupProps) {
             {isLoading ? (
               <span className="flex items-center gap-2">
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                验证中...
+                保存中...
               </span>
             ) : (
               "保存并开始使用"

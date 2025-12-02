@@ -9,8 +9,8 @@ import { RiMessage2Line, RiMagicLine, RiRobot2Line } from "react-icons/ri"
 import { VscFileCode } from "react-icons/vsc"
 import { extractContent } from "@/core/index"
 import { usePort } from "@plasmohq/messaging/hook"
-import { useAtomValue } from "jotai"
-import { openAIKeyAtom } from "@/lib/atoms/openai"
+// 【修复】使用统一的 API 配置模块，解决跨页面不同步问题
+import { useApiConfig } from "@/lib/api-config-store"
 import { models, type Message, type Model } from "@/lib/constants"
 import Markdown from "@/components/markdown"
 
@@ -112,8 +112,8 @@ function PanelContent({ onClose, onRefresh, initialChatText }: { onClose: () => 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   
-  // Get OpenAI API key
-  const openAIKey = useAtomValue(openAIKeyAtom)
+  // 【修复】使用统一的 API 配置模块，包含加载状态
+  const { apiKey: openAIKey, isLoading: isApiKeyLoading, hasApiKey } = useApiConfig()
   
   // Port for chat
   const port = usePort("chat")
@@ -226,6 +226,17 @@ function PanelContent({ onClose, onRefresh, initialChatText }: { onClose: () => 
       }
 
       console.log("[ClipPlugin] Sending message:", trimmedInput.slice(0, 50) + "...")
+
+      // 【修复】正确区分"加载中"和"真正未设置"
+      if (isApiKeyLoading) {
+        setChatMessages(prev => [
+          ...prev,
+          { role: "user", content: trimmedInput },
+          { role: "assistant", content: "⏳ 正在加载 API 配置，请稍候..." }
+        ])
+        setInputValue("")
+        return
+      }
 
       if (!openAIKey || openAIKey.trim() === "") {
         setChatMessages(prev => [

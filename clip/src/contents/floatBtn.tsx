@@ -11,8 +11,8 @@ import { TooltipWrapper } from "@/components/ui/tooltip-wrapper"
 import { ClipStore } from "@/lib/clip-store"
 import { extractContent, extractSelectedContent } from "@/core/index"
 import type { ExtractedContent } from "@/core/types"
-import { useAtomValue } from "jotai"
-import { openAIKeyAtom } from "@/lib/atoms/openai"
+// 【修复】使用统一的 API 配置模块，解决跨页面不同步问题
+import { useApiConfig } from "@/lib/api-config-store"
 import { usePort } from "@plasmohq/messaging/hook"
 import { cn } from "@/lib/utils"
 import { RiExchangeBoxLine } from "react-icons/ri";
@@ -132,7 +132,8 @@ const floatButton = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false)
   const [loadingType, setLoadingType] = useState<"full" | "selection" | "direct-full" | "direct-selection" | null>(null)
-  const openAIKey = useAtomValue(openAIKeyAtom)
+  // 【修复】使用统一的 API 配置模块，包含加载状态
+  const { apiKey: openAIKey, isLoading: isApiKeyLoading } = useApiConfig()
   const port = usePort("page-completion")
   const extractedContentRef = useRef<ExtractedContent | null>(null)
   const requestTypeRef = useRef<"full" | "selection" | null>(null)
@@ -700,9 +701,26 @@ const floatButton = () => {
     setIsEnabled(false);
   };
 
+  // 【修复】改进 API Key 获取逻辑，优先使用 hook 中的值
   const getOpenAIKeySafely = async (): Promise<string | null> => {
+    // 优先使用 hook 中已加载的值
     if (openAIKey) return openAIKey
+    
+    // 如果 hook 还在加载中，等待一小段时间
+    if (isApiKeyLoading) {
+      await new Promise(resolve => setTimeout(resolve, 500))
+      // 重新检查
+      if (openAIKey) return openAIKey
+    }
+    
+    // 兜底：直接从存储读取（不推荐，但作为备用）
     try {
+      const result = await chrome.storage.local.get("clipper_api_config")
+      const config = result.clipper_api_config
+      if (config && config.apiKey) {
+        return config.apiKey
+      }
+      // 再尝试旧的 SecureStorage
       const v = await secureStorage.get("openAIKey")
       return (v as string) ?? null
     } catch {

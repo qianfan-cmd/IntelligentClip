@@ -1,19 +1,50 @@
 import { Provider, useAtom } from "jotai"
 import { feishuConfigAtom } from "@/lib/atoms/feishu"
-import { openAIKeyAtom } from "@/lib/atoms/openai"
-import { Save, AlertTriangle } from "lucide-react"
-import { useState } from "react"
+import { useApiConfig } from "@/lib/api-config-store"
+import { Save, AlertTriangle, Loader2, CheckCircle } from "lucide-react"
+import { useState, useEffect } from "react"
 import "./style.css"
 
 function OptionsPanel() {
   const [feishuConfig, setFeishuConfig] = useAtom(feishuConfigAtom)
-  const [openAIKey, setOpenAIKey] = useAtom(openAIKeyAtom)
+  
+  // 【修复】使用统一的 API 配置模块，解决跨页面不同步问题
+  const { config, isLoading, saveConfig, hasApiKey } = useApiConfig()
+  
+  // 本地编辑状态（允许用户输入，提交时才保存）
+  const [localApiKey, setLocalApiKey] = useState("")
   const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
-  const handleSave = () => {
-    // Atoms automatically persist to storage
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+  // 当配置加载完成后，同步到本地状态
+  useEffect(() => {
+    if (!isLoading && config?.apiKey) {
+      setLocalApiKey(config.apiKey)
+    }
+  }, [isLoading, config?.apiKey])
+
+  const handleSave = async () => {
+    setSaving(true)
+    setSaveError(null)
+    
+    try {
+      // 【修复】使用统一的保存函数，确保所有地方都能读取到
+      if (localApiKey.trim()) {
+        await saveConfig({
+          apiKey: localApiKey.trim(),
+          provider: "openai",
+          updatedAt: Date.now()
+        })
+      }
+      
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "保存失败")
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -31,22 +62,44 @@ function OptionsPanel() {
           <section className="bg-white dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-zinc-800 p-6 shadow-sm">
             <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
               🤖 OpenAI Configuration
+              {/* 【新增】显示配置状态 */}
+              {isLoading ? (
+                <span className="ml-2 flex items-center gap-1 text-sm text-gray-400">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  加载中...
+                </span>
+              ) : hasApiKey ? (
+                <span className="ml-2 flex items-center gap-1 text-sm text-green-500">
+                  <CheckCircle className="h-4 w-4" />
+                  已配置
+                </span>
+              ) : null}
             </h2>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1.5">
                   OpenAI API Key
                 </label>
-                <input
-                  type="password"
-                  value={openAIKey || ""}
-                  onChange={(e) => setOpenAIKey(e.target.value)}
-                  placeholder="sk-..."
-                  className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                />
+                {isLoading ? (
+                  <div className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 h-10 animate-pulse" />
+                ) : (
+                  <input
+                    type="password"
+                    value={localApiKey}
+                    onChange={(e) => setLocalApiKey(e.target.value)}
+                    placeholder="sk-..."
+                    className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                  />
+                )}
                 <p className="text-xs text-gray-500 mt-1">
                   Required for AI summarization and chat features.
                 </p>
+                {/* 【新增】显示保存错误 */}
+                {saveError && (
+                  <p className="text-xs text-red-500 mt-1">
+                    ❌ {saveError}
+                  </p>
+                )}
               </div>
             </div>
           </section>
@@ -138,10 +191,15 @@ function OptionsPanel() {
           <div className="flex justify-end pt-4">
             <button
               onClick={handleSave}
-              className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all shadow-lg shadow-blue-500/20 active:scale-95"
+              disabled={saving || isLoading}
+              className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-all shadow-lg shadow-blue-500/20 active:scale-95"
             >
-              <Save className="h-4 w-4" />
-              {saved ? "Saved!" : "Save Settings"}
+              {saving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              {saving ? "Saving..." : saved ? "Saved!" : "Save Settings"}
             </button>
           </div>
         </div>

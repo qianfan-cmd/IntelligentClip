@@ -7,8 +7,9 @@
 import type { PlasmoCSConfig, PlasmoGetShadowHostId } from "plasmo"
 import { useState, useEffect, useRef, type CSSProperties } from "react"
 import { ClipStore } from "@/lib/clip-store"
-import { Provider, useAtomValue } from "jotai"
-import { openAIKeyAtom } from "@/lib/atoms/openai"
+import { Provider } from "jotai"
+// 【修复】使用统一的 API 配置模块，解决跨页面不同步问题
+import { useApiConfig } from "@/lib/api-config-store"
 import { usePort } from "@plasmohq/messaging/hook"
 
 // Plasmo 配置
@@ -129,7 +130,8 @@ function SelectionClipper() {
   const [loading, setLoading] = useState(false)
   const [savingDirect, setSavingDirect] = useState(false)
   
-  const openAIKey = useAtomValue(openAIKeyAtom)
+  // 【修复】使用统一的 API 配置模块，包含加载状态
+  const { apiKey: openAIKey, isLoading: isApiKeyLoading } = useApiConfig()
   const port = usePort("selection-completion")
   const isProcessingRef = useRef(false)
   const justShowedRef = useRef(false)
@@ -279,6 +281,11 @@ function SelectionClipper() {
   const handleSaveWithAI = () => {
     if (!checkContext()) {
       showNotification("⚠️ 扩展已重载，请刷新页面", "warning")
+      return
+    }
+    // 【修复】正确区分"加载中"和"真正未设置"
+    if (isApiKeyLoading) {
+      showNotification("⏳ 正在加载配置，请稍候重试", "warning")
       return
     }
     if (!openAIKey) {
