@@ -1,7 +1,7 @@
-import { openAIKeyAtom } from "@/lib/atoms/openai"
+// 【修复】使用统一的 API 配置模块，解决跨页面不同步问题
+import { useApiConfig } from "@/lib/api-config-store"
 import { models, prompts, type Model, type Prompt } from "@/lib/constants"
 import { ClipStore } from "@/lib/clip-store"
-import { useAtomValue } from "jotai"
 import * as React from "react"
 
 import { usePort } from "@plasmohq/messaging/hook"
@@ -40,7 +40,8 @@ interface SummaryProviderProps {
 
 export function SummaryProvider({ children }: SummaryProviderProps) {
   const port = usePort("completion")
-  const openAIKey = useAtomValue(openAIKeyAtom)
+  // 【修复】使用统一的 API 配置模块，包含加载状态
+  const { apiKey: openAIKey, isLoading: isApiKeyLoading } = useApiConfig()
 
   const [summaryModel, setSummaryModel] = React.useState<Model>(models[0])
   const [summaryPrompt, setSummaryPrompt] = React.useState<Prompt>(prompts[0])
@@ -62,6 +63,15 @@ export function SummaryProvider({ children }: SummaryProviderProps) {
       console.error("Cannot generate summary: No transcript data available")
       setSummaryIsError(true)
       setSummaryErrorMessage("No transcript data available")
+      setSummaryContent(null)
+      return
+    }
+
+    // 【修复】正确区分"加载中"和"真正未设置"
+    if (isApiKeyLoading) {
+      console.log("API config is still loading, please wait...")
+      setSummaryIsError(true)
+      setSummaryErrorMessage("正在加载 API 配置，请稍候重试...")
       setSummaryContent(null)
       return
     }

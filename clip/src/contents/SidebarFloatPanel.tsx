@@ -1,6 +1,6 @@
 // @ts-ignore
 import cssText from "data-text:~style.css"
-import React, { useEffect, useState, useRef, useCallback } from "react"
+import React, { useEffect, useState, useRef, useCallback, Component, ErrorInfo, ReactNode } from "react"
 import { ClipStore, type Clip } from "@/lib/clip-store"
 import { Button } from "../components"
 import { FiRefreshCcw, FiGrid, FiSettings, FiX, FiHelpCircle, FiSave, FiCheck, FiSend, FiTrash2, FiCrop, FiMoon, FiSun } from "react-icons/fi"
@@ -9,8 +9,8 @@ import { RiMessage2Line, RiMagicLine, RiRobot2Line } from "react-icons/ri"
 import { VscFileCode } from "react-icons/vsc"
 import { extractContent } from "@/core/index"
 import { usePort } from "@plasmohq/messaging/hook"
-import { useAtomValue } from "jotai"
-import { openAIKeyAtom } from "@/lib/atoms/openai"
+// 【修复】使用统一的 API 配置模块，解决跨页面不同步问题
+import { useApiConfig } from "@/lib/api-config-store"
 import { models, type Message, type Model } from "@/lib/constants"
 import Markdown from "@/components/markdown"
 
@@ -22,6 +22,56 @@ export const getStyle = () => {
   const style = document.createElement("style")
   style.textContent = cssText
   return style
+}
+
+// [BUG FIX] 添加 Error Boundary 组件，防止子组件错误导致整个浮窗崩溃
+interface ErrorBoundaryProps {
+  children: ReactNode
+  onReset?: () => void
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean
+  error?: Error
+}
+
+class PanelErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    console.error("[ClipPlugin] Error Boundary caught error:", error)
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("[ClipPlugin] Error details:", error, errorInfo)
+  }
+
+  handleReset = () => {
+    this.setState({ hasError: false, error: undefined })
+    this.props.onReset?.()
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-6 text-center">
+          <p className="text-red-500 font-medium mb-2">出现了一些问题</p>
+          <p className="text-slate-500 text-sm mb-4">{this.state.error?.message || "未知错误"}</p>
+          <button 
+            onClick={this.handleReset}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+          >
+            重试
+          </button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
 }
 
 function PanelContent({ onClose, onRefresh, initialChatText }: { onClose: () => void, onRefresh: () => void, initialChatText?: string }) {
@@ -62,22 +112,28 @@ function PanelContent({ onClose, onRefresh, initialChatText }: { onClose: () => 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   
-  // Get OpenAI API key
-  const openAIKey = useAtomValue(openAIKeyAtom)
+  // 【修复】使用统一的 API 配置模块，包含加载状态
+  const { apiKey: openAIKey, isLoading: isApiKeyLoading, hasApiKey } = useApiConfig()
   
   // Port for chat
   const port = usePort("chat")
 
   // 过滤 AI 返回内容中的 clip_tags 和 END 标记
+  // [BUG FIX] 增加类型检查，防止非字符串输入导致崩溃
   const cleanAIResponse = (content: string): string => {
-    if (!content) return content
-    // 移除 <clip_tags>...</clip_tags> 标签及其内容
-    let cleaned = content.replace(/<clip_tags>[\s\S]*?<\/clip_tags>/gi, "")
-    // 移除结尾的 END 标记
-    cleaned = cleaned.replace(/\s*END\s*$/g, "")
-    // 移除多余的空行
-    cleaned = cleaned.replace(/\n{3,}/g, "\n\n")
-    return cleaned.trim()
+    try {
+      if (!content || typeof content !== 'string') return content || ''
+      // 移除 <clip_tags>...</clip_tags> 标签及其内容
+      let cleaned = content.replace(/<clip_tags>[\s\S]*?<\/clip_tags>/gi, "")
+      // 移除结尾的 END 标记
+      cleaned = cleaned.replace(/\s*END\s*$/g, "")
+      // 移除多余的空行
+      cleaned = cleaned.replace(/\n{3,}/g, "\n\n")
+      return cleaned.trim()
+    } catch (e) {
+      console.error("[ClipPlugin] cleanAIResponse error:", e)
+      return content || ''
+    }
   }
 
   // Auto scroll to bottom when new messages arrive
@@ -154,47 +210,120 @@ function PanelContent({ onClose, onRefresh, initialChatText }: { onClose: () => 
   }, [openAIKey])
 
   // Send message
-  const handleSendMessage = async () => {
-    if (!inputValue.trim() || isGenerating) return
-
-    if (!openAIKey || openAIKey.trim() === "") {
-      setChatMessages(prev => [
-        ...prev,
-        { role: "user", content: inputValue },
-        { role: "assistant", content: "❌ API 密钥未设置，请在扩展设置中添加您的 API 密钥。" }
-      ])
-      setInputValue("")
-      return
+  // [BUG FIX] 增加完整的 try/catch 保护，防止发送消息时异常导致浮窗崩溃
+  const handleSendMessage = async (e?: React.MouseEvent | React.KeyboardEvent) => {
+    // [BUG FIX] 阻止事件冒泡和默认行为，防止触发父元素的点击事件（可能关闭面板）
+    if (e) {
+      e.preventDefault()
+      e.stopPropagation()
     }
 
-    const userMessage: Message = { role: "user", content: inputValue }
-    const newMessages = [...chatMessages, userMessage, { role: "assistant", content: "" }]
-    setChatMessages(newMessages)
-    setInputValue("")
-    setIsGenerating(true)
-    setIsError(false)
+    try {
+      const trimmedInput = inputValue?.trim() || ''
+      if (!trimmedInput || isGenerating) {
+        console.log("[ClipPlugin] Send blocked: empty input or already generating")
+        return
+      }
 
-    inputRef.current?.focus()
+      console.log("[ClipPlugin] Sending message:", trimmedInput.slice(0, 50) + "...")
 
-    const context = getPageContext()
-    
-    port.send({
-      model: selectedModel.content,
-      messages: newMessages.slice(0, -1),
-      context
-    })
+      // 【修复】正确区分"加载中"和"真正未设置"
+      if (isApiKeyLoading) {
+        setChatMessages(prev => [
+          ...prev,
+          { role: "user", content: trimmedInput },
+          { role: "assistant", content: "⏳ 正在加载 API 配置，请稍候..." }
+        ])
+        setInputValue("")
+        return
+      }
+
+      if (!openAIKey || openAIKey.trim() === "") {
+        setChatMessages(prev => [
+          ...prev,
+          { role: "user", content: trimmedInput },
+          { role: "assistant", content: "❌ API 密钥未设置，请在扩展设置中添加您的 API 密钥。" }
+        ])
+        setInputValue("")
+        return
+      }
+
+      const userMessage: Message = { role: "user", content: trimmedInput }
+      const newMessages = [...chatMessages, userMessage, { role: "assistant", content: "" }]
+      setChatMessages(newMessages)
+      setInputValue("")
+      setIsGenerating(true)
+      setIsError(false)
+
+      // [BUG FIX] 延迟聚焦，确保状态更新完成
+      setTimeout(() => {
+        try {
+          inputRef.current?.focus()
+        } catch (focusErr) {
+          console.warn("[ClipPlugin] Focus error (non-critical):", focusErr)
+        }
+      }, 0)
+
+      // [BUG FIX] 安全获取页面上下文
+      let context
+      try {
+        context = getPageContext()
+      } catch (contextErr) {
+        console.error("[ClipPlugin] getPageContext error:", contextErr)
+        context = {
+          openAIKey,
+          metadata: { title: "未知页面" },
+          clipMode: true,
+          summary: "",
+          rawText: ""
+        }
+      }
+      
+      // [BUG FIX] 包裹 port.send 调用，捕获可能的序列化/通信错误
+      try {
+        port.send({
+          model: selectedModel?.content || models[0].content,
+          messages: newMessages.slice(0, -1),
+          context
+        })
+        console.log("[ClipPlugin] Message sent successfully")
+      } catch (sendErr) {
+        console.error("[ClipPlugin] port.send error:", sendErr)
+        setIsGenerating(false)
+        setIsError(true)
+        setChatMessages(prev => {
+          const newMsgs = [...prev]
+          if (newMsgs.length > 0 && newMsgs[newMsgs.length - 1].role === "assistant") {
+            newMsgs[newMsgs.length - 1].content = `❌ 发送失败: ${sendErr instanceof Error ? sendErr.message : String(sendErr)}`
+          }
+          return newMsgs
+        })
+      }
+    } catch (err) {
+      // [BUG FIX] 全局捕获，确保任何异常都不会导致组件崩溃
+      console.error("[ClipPlugin] handleSendMessage unexpected error:", err)
+      setIsGenerating(false)
+      setIsError(true)
+    }
   }
 
   // Handle key press
+  // [BUG FIX] 统一调用 handleSendMessage 并传递事件对象
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
-      handleSendMessage()
+      e.stopPropagation()
+      handleSendMessage(e)
     }
   }
 
   // Clear chat
-  const handleClearChat = () => {
+  // [BUG FIX] 增加事件阻止，防止冒泡
+  const handleClearChat = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
     setChatMessages([])
     setIsError(false)
   }
@@ -524,7 +653,8 @@ function PanelContent({ onClose, onRefresh, initialChatText }: { onClose: () => 
                 ))}
               </select>
               <button
-                onClick={handleClearChat}
+                type="button"
+                onClick={(e) => handleClearChat(e)}
                 className={`p-2 rounded-lg transition-colors ${
                   isDarkMode ? "hover:bg-red-900/20 text-slate-500 hover:text-red-400" : "hover:bg-red-50 text-slate-400 hover:text-red-500"
                 }`}
@@ -548,11 +678,31 @@ function PanelContent({ onClose, onRefresh, initialChatText }: { onClose: () => 
                     <p className="text-xs text-slate-400 mt-1">随时为您解答问题</p>
                   </div>
                   {/* Quick prompts */}
+                  {/* [BUG FIX] 为模板按钮增加事件阻止，防止冒泡导致面板关闭 */}
                   <div className="flex flex-wrap gap-2 justify-center mt-2">
                     {["帮我总结这个页面", "解释一下这段内容", "有什么建议?"].map((prompt, idx) => (
                       <button
                         key={idx}
-                        onClick={() => setInputValue(prompt)}
+                        type="button"
+                        onClick={(e) => {
+                          // [BUG FIX] 阻止事件冒泡，防止触发父元素事件导致面板关闭
+                          e.preventDefault()
+                          e.stopPropagation()
+                          try {
+                            console.log("[ClipPlugin] Quick prompt clicked:", prompt)
+                            setInputValue(prompt)
+                            // 延迟聚焦输入框
+                            setTimeout(() => {
+                              try {
+                                inputRef.current?.focus()
+                              } catch (focusErr) {
+                                console.warn("[ClipPlugin] Focus error:", focusErr)
+                              }
+                            }, 50)
+                          } catch (err) {
+                            console.error("[ClipPlugin] Quick prompt click error:", err)
+                          }
+                        }}
                         className={`px-3 py-1.5 text-xs border rounded-full transition-all ${
                           isDarkMode 
                             ? "bg-slate-800 border-slate-600 text-slate-300 hover:bg-blue-900/30 hover:border-blue-700 hover:text-blue-400" 
@@ -604,9 +754,13 @@ function PanelContent({ onClose, onRefresh, initialChatText }: { onClose: () => 
             </div>
 
             {/* Input Area */}
-            <div className={`flex gap-2 p-1 rounded-xl border focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-300 transition-all ${
-              isDarkMode ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200"
-            }`}>
+            {/* [BUG FIX] 将输入区域包裹在 form 中但阻止表单提交，确保按钮点击不会触发意外行为 */}
+            <div 
+              className={`flex gap-2 p-1 rounded-xl border focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-300 transition-all ${
+                isDarkMode ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200"
+              }`}
+              onClick={(e) => e.stopPropagation()}
+            >
               <textarea
                 ref={inputRef}
                 value={inputValue}
@@ -619,11 +773,16 @@ function PanelContent({ onClose, onRefresh, initialChatText }: { onClose: () => 
                 rows={1}
                 disabled={isGenerating}
               />
+              {/* [BUG FIX] 发送按钮增加 type="button" 防止触发表单提交，并明确传递事件对象 */}
               <button
-                onClick={handleSendMessage}
-                disabled={!inputValue.trim() || isGenerating}
+                type="button"
+                onClick={(e) => {
+                  console.log("[ClipPlugin] Send button clicked")
+                  handleSendMessage(e)
+                }}
+                disabled={!inputValue?.trim() || isGenerating}
                 className={`self-end mb-1 mr-1 p-2 rounded-lg transition-all ${
-                  inputValue.trim() && !isGenerating
+                  inputValue?.trim() && !isGenerating
                     ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-200"
                     : isDarkMode ? "bg-slate-700 text-slate-500 cursor-not-allowed" : "bg-slate-100 text-slate-400 cursor-not-allowed"
                 }`}
@@ -749,16 +908,19 @@ function FloatClip() {
 
   if (!visible) return null
 
+  // [BUG FIX] 使用 Error Boundary 包裹 PanelContent，防止内部错误导致整个扩展崩溃
   return (
-    <PanelContent 
-      key={refreshKey} 
-      onClose={() => {
-        setVisible(false)
-        setPendingChatText(undefined)
-      }} 
-      onRefresh={handleRefresh}
-      initialChatText={pendingChatText}
-    />
+    <PanelErrorBoundary onReset={handleRefresh}>
+      <PanelContent 
+        key={refreshKey} 
+        onClose={() => {
+          setVisible(false)
+          setPendingChatText(undefined)
+        }} 
+        onRefresh={handleRefresh}
+        initialChatText={pendingChatText}
+      />
+    </PanelErrorBoundary>
   )
 }
 
