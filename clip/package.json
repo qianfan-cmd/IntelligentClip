@@ -75,9 +75,11 @@
     "permissions": [
       "tabs",
       "storage",
-      "unlimitedStorage"
+      "unlimitedStorage",
+      "activeTab"
     ],
     "host_permissions": [
+      "<all_urls>",
       "https://*/*",
       "https://apis.iflow.cn/*"
     ],

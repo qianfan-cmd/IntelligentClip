@@ -3,7 +3,7 @@ import cssText from "data-text:~style.css"
 import React, { useEffect, useState, useRef, useCallback } from "react"
 import { ClipStore, type Clip } from "@/lib/clip-store"
 import { Button } from "../components"
-import { FiRefreshCcw, FiGrid, FiSettings, FiX, FiHelpCircle, FiSave, FiCheck, FiSend, FiTrash2 } from "react-icons/fi"
+import { FiRefreshCcw, FiGrid, FiSettings, FiX, FiHelpCircle, FiSave, FiCheck, FiSend, FiTrash2, FiCrop, FiMoon, FiSun } from "react-icons/fi"
 import { AiFillAliwangwang } from "react-icons/ai"
 import { RiMessage2Line, RiMagicLine, RiRobot2Line } from "react-icons/ri"
 import { VscFileCode } from "react-icons/vsc"
@@ -33,7 +33,26 @@ function PanelContent({ onClose, onRefresh, initialChatText }: { onClose: () => 
   
   // Panel mode: "clips" | "chat" - 如果有初始文本则默认显示聊天模式
   const [panelMode, setPanelMode] = useState<"clips" | "chat">(initialChatText ? "chat" : "clips")
+  const [isScreenshotMode, setIsScreenshotMode] = useState(false)
   
+  // Theme & Drag state
+  const [isDarkMode, setIsDarkMode] = useState(false)
+  
+  useEffect(() => {
+    chrome.storage.local.get("clip_darkMode", (res) => {
+      if (res.clip_darkMode !== undefined) {
+        setIsDarkMode(res.clip_darkMode)
+      }
+    })
+  }, [])
+
+  const toggleTheme = () => {
+    const newMode = !isDarkMode
+    setIsDarkMode(newMode)
+    chrome.storage.local.set({ clip_darkMode: newMode })
+  }
+
+
   // Chat state
   const [chatMessages, setChatMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState(initialChatText || "")
@@ -201,6 +220,43 @@ function PanelContent({ onClose, onRefresh, initialChatText }: { onClose: () => 
     return () => chrome.storage.onChanged.removeListener(handleStorageChange)
   }, [])
 
+  useEffect(() => {
+    const handleMessage = (msg: any) => {
+      if (msg.type === "clip:notify") {
+        setNotification({ message: msg.message, type: msg.status || "success" })
+        // If it's a success notification, reload clips just in case
+        if (msg.status === "success" || !msg.status) {
+          loadClips()
+        }
+      }
+      if (msg.type === "clip:screenshot-closed") {
+        setIsScreenshotMode(false)
+        loadClips()
+      }
+    }
+    
+    const handleCustomEvent = () => {
+      setIsScreenshotMode(false)
+      loadClips()
+    }
+
+    const handleSavedEvent = () => {
+      // Screenshot saved successfully, reload clips and ensure screenshot mode is off
+      loadClips()
+      setIsScreenshotMode(false)
+    }
+
+    chrome.runtime.onMessage.addListener(handleMessage)
+    window.addEventListener("clip-plugin:screenshot-closed", handleCustomEvent)
+    window.addEventListener("clip-plugin:screenshot-saved", handleSavedEvent)
+    
+    return () => {
+      chrome.runtime.onMessage.removeListener(handleMessage)
+      window.removeEventListener("clip-plugin:screenshot-closed", handleCustomEvent)
+      window.removeEventListener("clip-plugin:screenshot-saved", handleSavedEvent)
+    }
+  }, [])
+
   const loadClips = async () => {
     const data = await ClipStore.getAll()
     setClips(data.sort((a, b) => b.createdAt - a.createdAt))
@@ -244,16 +300,12 @@ function PanelContent({ onClose, onRefresh, initialChatText }: { onClose: () => 
       })
       
       const imgCount = content?.images?.length || 0
-      // showNotification(`✅ 已直接保存整页！${imgCount > 0 ? `（含${imgCount}张图片）` : ""}`, "success")
-      // alert(`✅ 已直接保存整页！${imgCount > 0 ? `（含${imgCount}张图片）` : ""}`)
       setNotification({
         message: `已直接保存整页！${imgCount > 0 ? `（含${imgCount}张图片）` : ""}`,
         type: "success"
       })
     } catch (e) {
       console.error("❌ Direct save error:", e)
-      // showNotification("❌ 保存失败", "error")
-      // alert("❌ 保存失败")
       setNotification({
         message: "保存失败",
         type: "error"
@@ -264,12 +316,17 @@ function PanelContent({ onClose, onRefresh, initialChatText }: { onClose: () => 
   return (
     <div 
       ref={ref}
-      className="fixed z-[2147483647] flex flex-col bg-white/95 backdrop-blur-md shadow-2xl rounded-2xl border border-white/20 font-sans text-slate-800 animate-scale-up origin-top-right"
+      className={`fixed z-[2147483647] flex flex-col shadow-2xl rounded-2xl border font-sans transition-all duration-200 origin-top-right animate-scale-up ${
+        isDarkMode 
+          ? "bg-slate-900/95 border-slate-700 text-slate-100" 
+          : "bg-white/95 border-white/20 text-slate-800"
+      }`}
       style={{
         top: "24px",
         right: "24px",
         bottom: "24px",
-        width: "340px"
+        width: "340px",
+        maxHeight: "calc(100vh - 48px)"
       }}
     >
       
@@ -286,10 +343,16 @@ function PanelContent({ onClose, onRefresh, initialChatText }: { onClose: () => 
       )}
 
       {/* Header */}
-      <div className="FloatPanelHeader flex items-center justify-between px-5 h-16 border-b border-slate-100/50">
+      <div className={`FloatPanelHeader flex items-center justify-between px-5 h-14 border-b ${
+        isDarkMode ? "border-slate-700/50" : "border-slate-100/50"
+      }`}>
         <div className="flex items-center gap-3">
           <button 
-            className="w-9 h-9 flex items-center justify-center bg-blue-50 text-black-600 rounded-xl shadow-sm ring-1 ring-blue-100/50 hover:bg-blue-100 transition-all active:scale-95"
+            className={`w-9 h-9 flex items-center justify-center rounded-xl shadow-sm ring-1 transition-all active:scale-95 ${
+              isDarkMode 
+                ? "bg-blue-900/20 text-blue-400 ring-blue-800/50 hover:bg-blue-900/40" 
+                : "bg-blue-50 text-black-600 ring-blue-100/50 hover:bg-blue-100"
+            }`}
             onClick={openHomepage}
             title="Open Homepage"
           >
@@ -299,28 +362,45 @@ function PanelContent({ onClose, onRefresh, initialChatText }: { onClose: () => 
             <input 
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="bg-transparent text-sm font-bold text-slate-800 outline-none w-24 placeholder-slate-400"
+              className={`bg-transparent text-sm font-bold outline-none w-24 ${
+                isDarkMode ? "text-slate-100 placeholder-slate-600" : "text-slate-800 placeholder-slate-400"
+              }`}
             />
             <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Workspace</span>
           </div>
         </div>
         <div className="flex items-center gap-1">
+           <button 
+            className={`p-2 rounded-lg transition-colors ${
+              isDarkMode ? "hover:bg-slate-800 text-slate-500 hover:text-slate-300" : "hover:bg-slate-100 text-slate-400 hover:text-slate-600"
+            }`}
+            onClick={toggleTheme}
+            title={isDarkMode ? "Light Mode" : "Dark Mode"}
+          >
+            {isDarkMode ? <FiSun className="w-4 h-4" /> : <FiMoon className="w-4 h-4" />}
+          </button>
           <button 
-            className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+            className={`p-2 rounded-lg transition-colors ${
+              isDarkMode ? "hover:bg-slate-800 text-slate-500 hover:text-slate-300" : "hover:bg-slate-100 text-slate-400 hover:text-slate-600"
+            }`}
             onClick={() => window.open("https://github.com/your-repo", "_blank", "noopener,noreferrer")}
             title="Help"
           >
             <FiHelpCircle className="w-4 h-4" />
           </button>
           <button 
-            className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+            className={`p-2 rounded-lg transition-colors ${
+              isDarkMode ? "hover:bg-slate-800 text-slate-500 hover:text-slate-300" : "hover:bg-slate-100 text-slate-400 hover:text-slate-600"
+            }`}
             onClick={onRefresh}
             title="Refresh"
           >
             <FiRefreshCcw className="w-4 h-4" />
           </button>
           <button 
-            className="p-2 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
+            className={`p-2 rounded-lg transition-colors ${
+              isDarkMode ? "hover:bg-red-900/20 text-slate-500 hover:text-red-400" : "hover:bg-red-50 text-slate-400 hover:text-red-500"
+            }`}
             onClick={onClose}
             title="Close"
           >
@@ -337,13 +417,17 @@ function PanelContent({ onClose, onRefresh, initialChatText }: { onClose: () => 
             {/* Input Area */}
             <div className="flex flex-col gap-2">
               <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1">Quick Save</label>
-              <div className="flex gap-2 p-1 bg-slate-50 rounded-xl border border-slate-100 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+              <div className={`flex gap-2 p-1 rounded-xl border focus-within:ring-2 focus-within:ring-blue-100 transition-all ${
+                isDarkMode ? "bg-slate-800/50 border-slate-700" : "bg-slate-50 border-slate-100"
+              }`}>
                 <input 
                   type="text" 
                   value={quickSaveValue}
                   onChange={(e) => setQuickSaveValue(e.target.value)}
                   placeholder="Paste link or note..." 
-                  className="flex-1 bg-transparent px-3 text-sm outline-none text-slate-700 placeholder:text-slate-400"
+                  className={`flex-1 bg-transparent px-3 text-sm outline-none ${
+                    isDarkMode ? "text-slate-200 placeholder:text-slate-600" : "text-slate-700 placeholder:text-slate-400"
+                  }`}
                 />
                 <button className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-4 py-2 rounded-lg shadow-md shadow-blue-200 transition-all active:scale-95">
                   Save
@@ -353,9 +437,13 @@ function PanelContent({ onClose, onRefresh, initialChatText }: { onClose: () => 
 
             {/* Content List */}
             {clips.length === 0 ? (
-              <div className="FloatPanelBodyContentPlaceholder flex-1 border-2 border-dashed border-slate-100 rounded-xl flex flex-col items-center justify-center text-slate-300 gap-2 min-h-[200px]">
-                <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center">
-                  <RiMagicLine className="w-6 h-6 text-slate-300" />
+              <div className={`FloatPanelBodyContentPlaceholder flex-1 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-2 min-h-[200px] ${
+                isDarkMode ? "border-slate-800 text-slate-600" : "border-slate-100 text-slate-300"
+              }`}>
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                  isDarkMode ? "bg-slate-800" : "bg-slate-50"
+                }`}>
+                  <RiMagicLine className={`w-6 h-6 ${isDarkMode ? "text-slate-600" : "text-slate-300"}`} />
                 </div>
                 <span className="text-xs font-medium">No clips yet</span>
               </div>
@@ -368,17 +456,25 @@ function PanelContent({ onClose, onRefresh, initialChatText }: { onClose: () => 
                    return (
                    <div 
                      key={clip.id} 
-                     className="p-3 bg-slate-50 hover:bg-blue-50 rounded-xl border border-slate-100 hover:border-blue-100 transition-all cursor-pointer group"
+                     className={`p-3 rounded-xl border transition-all cursor-pointer group ${
+                        isDarkMode 
+                          ? "bg-slate-800/50 hover:bg-blue-900/20 border-slate-700 hover:border-blue-800" 
+                          : "bg-slate-50 hover:bg-blue-50 border-slate-100 hover:border-blue-100"
+                     }`}
                      onClick={() => chrome.runtime.sendMessage({ type: "clip:open-history", clipId: clip.id })}
                    >
                      <div className="flex gap-3">
                        <div className="flex-1 min-w-0 flex flex-col justify-between">
-                         <div className="font-medium text-sm text-slate-700 line-clamp-2 group-hover:text-blue-600 mb-1.5 leading-snug">
+                         <div className={`font-medium text-sm line-clamp-2 mb-1.5 leading-snug ${
+                            isDarkMode ? "text-slate-200 group-hover:text-blue-400" : "text-slate-700 group-hover:text-blue-600"
+                         }`}>
                            {clip.title || clip.summary || "Untitled Clip"}
                          </div>
                          <div className="flex items-center justify-between mt-auto">
                            <div className="text-[10px] text-slate-400 flex items-center gap-2">
-                              <span className="capitalize px-1.5 py-0.5 bg-white rounded border border-slate-100 text-[9px] font-medium tracking-wide">{clip.source}</span>
+                              <span className={`capitalize px-1.5 py-0.5 rounded border text-[9px] font-medium tracking-wide ${
+                                isDarkMode ? "bg-slate-700 border-slate-600 text-slate-300" : "bg-white border-slate-100 text-slate-500"
+                              }`}>{clip.source}</span>
                               <span>{new Date(clip.createdAt).toLocaleDateString()}</span>
                            </div>
                            {clip.rating && clip.rating > 0 && (
@@ -390,7 +486,9 @@ function PanelContent({ onClose, onRefresh, initialChatText }: { onClose: () => 
                        </div>
 
                        {firstImage && (
-                         <div className="w-20 h-14 flex-shrink-0 rounded-lg bg-white overflow-hidden border border-slate-200/60 shadow-sm">
+                         <div className={`w-20 h-14 flex-shrink-0 rounded-lg overflow-hidden border shadow-sm ${
+                            isDarkMode ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200/60"
+                         }`}>
                            <img 
                              src={firstImage} 
                              alt="thumbnail" 
@@ -415,7 +513,11 @@ function PanelContent({ onClose, onRefresh, initialChatText }: { onClose: () => 
               <select
                 value={selectedModel.value}
                 onChange={(e) => setSelectedModel(models.find(m => m.value === e.target.value) || models[0])}
-                className="flex-1 px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-all"
+                className={`flex-1 px-3 py-2 text-xs border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-all ${
+                  isDarkMode 
+                    ? "bg-slate-800 border-slate-700 text-slate-200" 
+                    : "bg-slate-50 border-slate-200 text-slate-700"
+                }`}
               >
                 {models.map(model => (
                   <option key={model.value} value={model.value}>{model.label}</option>
@@ -423,7 +525,9 @@ function PanelContent({ onClose, onRefresh, initialChatText }: { onClose: () => 
               </select>
               <button
                 onClick={handleClearChat}
-                className="p-2 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
+                className={`p-2 rounded-lg transition-colors ${
+                  isDarkMode ? "hover:bg-red-900/20 text-slate-500 hover:text-red-400" : "hover:bg-red-50 text-slate-400 hover:text-red-500"
+                }`}
                 title="清空对话"
               >
                 <FiTrash2 className="w-4 h-4" />
@@ -431,7 +535,9 @@ function PanelContent({ onClose, onRefresh, initialChatText }: { onClose: () => 
             </div>
 
             {/* Chat Messages Area */}
-            <div className="flex-1 overflow-y-auto rounded-xl bg-slate-50 border border-slate-100 p-3 space-y-3 min-h-[200px] custom-scrollbar">
+            <div className={`flex-1 overflow-y-auto rounded-xl border p-3 space-y-3 min-h-[200px] custom-scrollbar ${
+              isDarkMode ? "bg-slate-800/50 border-slate-700" : "bg-slate-50 border-slate-100"
+            }`}>
               {chatMessages.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-3">
                   <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
@@ -447,7 +553,11 @@ function PanelContent({ onClose, onRefresh, initialChatText }: { onClose: () => 
                       <button
                         key={idx}
                         onClick={() => setInputValue(prompt)}
-                        className="px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-full text-slate-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600 transition-all"
+                        className={`px-3 py-1.5 text-xs border rounded-full transition-all ${
+                          isDarkMode 
+                            ? "bg-slate-800 border-slate-600 text-slate-300 hover:bg-blue-900/30 hover:border-blue-700 hover:text-blue-400" 
+                            : "bg-white border-slate-200 text-slate-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600"
+                        }`}
                       >
                         {prompt}
                       </button>
@@ -465,12 +575,16 @@ function PanelContent({ onClose, onRefresh, initialChatText }: { onClose: () => 
                         className={`max-w-[85%] px-3 py-2 rounded-xl text-sm ${
                           msg.role === "user"
                             ? "bg-blue-600 text-white rounded-br-sm"
-                            : "bg-white border border-slate-200 text-slate-700 rounded-bl-sm shadow-sm"
+                            : isDarkMode 
+                                ? "bg-slate-700 border border-slate-600 text-slate-200 rounded-bl-sm shadow-sm"
+                                : "bg-white border border-slate-200 text-slate-700 rounded-bl-sm shadow-sm"
                         }`}
                       >
                         {msg.role === "assistant" ? (
                           msg.content ? (
-                            <Markdown markdown={msg.content} className="text-sm [&_p]:mb-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:text-sm [&_code]:text-xs [&_code]:bg-slate-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded" />
+                            <Markdown markdown={msg.content} className={`text-sm [&_p]:mb-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:text-sm [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded ${
+                              isDarkMode ? "[&_code]:bg-slate-800 [&_code]:text-slate-200" : "[&_code]:bg-slate-100 [&_code]:text-slate-800"
+                            }`} />
                           ) : (
                             <div className="flex items-center gap-2">
                               <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
@@ -490,14 +604,18 @@ function PanelContent({ onClose, onRefresh, initialChatText }: { onClose: () => 
             </div>
 
             {/* Input Area */}
-            <div className="flex gap-2 p-1 bg-white rounded-xl border border-slate-200 focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-300 transition-all">
+            <div className={`flex gap-2 p-1 rounded-xl border focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-300 transition-all ${
+              isDarkMode ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200"
+            }`}>
               <textarea
                 ref={inputRef}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="输入消息... (Enter 发送)"
-                className="flex-1 bg-transparent px-3 py-2 text-sm outline-none text-slate-700 placeholder:text-slate-400 resize-none min-h-[40px] max-h-[100px]"
+                className={`flex-1 bg-transparent px-3 py-2 text-sm outline-none resize-none min-h-[40px] max-h-[100px] ${
+                  isDarkMode ? "text-slate-200 placeholder:text-slate-500" : "text-slate-700 placeholder:text-slate-400"
+                }`}
                 rows={1}
                 disabled={isGenerating}
               />
@@ -507,7 +625,7 @@ function PanelContent({ onClose, onRefresh, initialChatText }: { onClose: () => 
                 className={`self-end mb-1 mr-1 p-2 rounded-lg transition-all ${
                   inputValue.trim() && !isGenerating
                     ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-200"
-                    : "bg-slate-100 text-slate-400 cursor-not-allowed"
+                    : isDarkMode ? "bg-slate-700 text-slate-500 cursor-not-allowed" : "bg-slate-100 text-slate-400 cursor-not-allowed"
                 }`}
               >
                 {isGenerating ? (
@@ -523,11 +641,21 @@ function PanelContent({ onClose, onRefresh, initialChatText }: { onClose: () => 
 
       {/* Footer / Toolbar */}
       <div className="FloatPanelFooter px-5 pb-5 pt-2">
-        <div className="flex items-center justify-between bg-slate-50 p-1.5 rounded-xl border border-slate-100">
+        <div className={`flex items-center justify-between p-1.5 rounded-xl border ${
+          isDarkMode ? "bg-slate-800 border-slate-700" : "bg-slate-50 border-slate-100"
+        }`}>
           {[
             { icon: FiSave, label: "Save", action: handleDirectSaveFullPage, active: false },
             { icon: RiMessage2Line, label: "Chat", action: () => setPanelMode(panelMode === "chat" ? "clips" : "chat"), active: panelMode === "chat" },
-            { icon: RiMagicLine, label: "AI", action: () => {}, active: false },
+            { 
+              icon: FiCrop, 
+              label: "Screenshot", 
+              action: () => {
+                setIsScreenshotMode(true)
+                chrome.runtime.sendMessage({ type: "clip:start-screenshot" })
+              }, 
+              active: isScreenshotMode 
+            },
             { icon: FiGrid, label: "Clips", action: () => setPanelMode("clips"), active: panelMode === "clips" },
             { icon: FiSettings, label: "Settings", action: () => chrome.runtime.sendMessage({ type: "clip:open-options" }), active: false }
           ].map((Item, idx) => (
@@ -536,7 +664,9 @@ function PanelContent({ onClose, onRefresh, initialChatText }: { onClose: () => 
               className={`w-10 h-10 flex items-center justify-center rounded-lg transition-all active:scale-95 ${
                 Item.active 
                   ? "bg-blue-600 text-white shadow-md shadow-blue-200" 
-                  : "text-slate-500 hover:bg-white hover:text-blue-600 hover:shadow-sm"
+                  : isDarkMode 
+                    ? "text-slate-400 hover:bg-slate-700 hover:text-blue-400" 
+                    : "text-slate-500 hover:bg-white hover:text-blue-600 hover:shadow-sm"
               }`}
               title={Item.label}
               onClick={Item.action}

@@ -16,7 +16,7 @@ export interface ClipImage {
 
 export interface Clip {
   id: string
-  source: "youtube" | "bilibili" | "webpage" | "chat" | "other"
+  source: "youtube" | "bilibili" | "webpage" | "chat" | "other" | "screenshot"
   url: string
   title: string
   createdAt: number
