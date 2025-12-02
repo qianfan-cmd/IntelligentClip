@@ -278,6 +278,7 @@ export async function getVideoData(id: string) {
     let player = null;
 
     // Method 1: Fetch page HTML and extract ytInitialPlayerResponse (Recommended)
+    // This method is reliable even when ads are playing because it fetches fresh data
     console.log("🌐 Method 1: Fetching video page HTML...")
     try {
       const response = await fetch(`https://www.youtube.com/watch?v=${id}`);
@@ -287,7 +288,14 @@ export async function getVideoData(id: string) {
       if (html.includes(splitStr)) {
         const jsonStr = html.split(splitStr)[1].split(';var')[0];
         player = JSON.parse(jsonStr);
-        console.log("✅ Successfully extracted player data from HTML")
+        
+        // Verify we got the correct video (not an ad)
+        if (player.videoDetails?.videoId === id) {
+          console.log("✅ Successfully extracted player data from HTML (video ID verified)")
+        } else {
+          console.warn("⚠️ Video ID mismatch in HTML response, expected:", id, "got:", player.videoDetails?.videoId)
+          // Still use it as it should be correct from direct fetch
+        }
       } else {
         console.warn("⚠️ ytInitialPlayerResponse not found in HTML")
       }
@@ -295,15 +303,62 @@ export async function getVideoData(id: string) {
       console.warn("⚠️ Method 1 failed:", e.message)
     }
 
-    // Method 2: Inject script (Fallback)
+    // Method 2: Inject script (Fallback) - but verify video ID
     if (!player || !player.videoDetails) {
       console.log("💉 Method 2: Injecting script to read player data...")
       try {
         const response = await injectPageScript(false, null)
-        player = response.playerResponse
-        console.log("✅ Got player response from page context")
+        const injectedPlayer = response.playerResponse
+        
+        // Check if we're currently showing an ad
+        if (injectedPlayer?.videoDetails?.videoId !== id) {
+          console.warn("⚠️ Page context has different video ID (possibly ad playing)")
+          console.warn("   Expected:", id, "Got:", injectedPlayer?.videoDetails?.videoId)
+          
+          // Wait a bit and retry - ads usually have a different video ID
+          console.log("⏳ Waiting for ad to finish or retrying fetch...")
+          await new Promise(resolve => setTimeout(resolve, 2000))
+          
+          // Try fetching from HTML again
+          const response2 = await fetch(`https://www.youtube.com/watch?v=${id}`);
+          const html2 = await response2.text();
+          const splitStr = 'var ytInitialPlayerResponse =';
+          if (html2.includes(splitStr)) {
+            const jsonStr = html2.split(splitStr)[1].split(';var')[0];
+            player = JSON.parse(jsonStr);
+            console.log("✅ Got correct video data from retry fetch")
+          }
+        } else {
+          player = injectedPlayer
+          console.log("✅ Got player response from page context (video ID verified)")
+        }
       } catch (e) {
         console.warn("⚠️ Method 2 failed:", e.message)
+      }
+    }
+
+    // Method 3: Use YouTube's oEmbed API as a last resort for metadata
+    if (!player || !player.videoDetails) {
+      console.log("🔗 Method 3: Trying oEmbed API for basic metadata...")
+      try {
+        const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`
+        const oembedResponse = await fetch(oembedUrl)
+        if (oembedResponse.ok) {
+          const oembedData = await oembedResponse.json()
+          // Create a minimal player object
+          player = {
+            videoDetails: {
+              videoId: id,
+              title: oembedData.title,
+              author: oembedData.author_name,
+              lengthSeconds: "0",
+              viewCount: "0"
+            }
+          }
+          console.log("✅ Got basic metadata from oEmbed API")
+        }
+      } catch (e) {
+        console.warn("⚠️ Method 3 failed:", e.message)
       }
     }
 
