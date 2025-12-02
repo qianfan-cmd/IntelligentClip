@@ -14,6 +14,17 @@ export interface ClipImage {
   height?: number
 }
 
+/**
+ * 文件夹类型定义
+ */
+export interface Folder {
+  id: string
+  name: string
+  createdAt: number
+  color?: string  // 可选：文件夹颜色
+  icon?: string   // 可选：文件夹图标
+}
+
 export interface Clip {
   id: string
   source: "youtube" | "bilibili" | "webpage" | "chat" | "other"
@@ -32,6 +43,7 @@ export interface Clip {
   feishuRecordId?: string
   notes?: string  // User's personal notes and thoughts
   updatedAt?: number  // Last update timestamp
+  folderId?: string  // 所属文件夹 ID
   
   // ===== AI 交互式打标字段 =====
   /** 内容分类，如"公司介绍""技术文档""教程"等 */
@@ -66,6 +78,7 @@ export interface ClipTagsResult {
 }
 
 const STORAGE_KEY = "clips"
+const FOLDERS_STORAGE_KEY = "folders"
 
 function generateUUID() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -168,9 +181,173 @@ export const ClipStore = {
   },
 
   /**
+   * 添加图片到剪藏
+   */
+  async addImage(clipId: string, image: ClipImage): Promise<Clip | null> {
+    return safeStorageOperation(async () => {
+      const clips = await this.getAll()
+      const index = clips.findIndex((c) => c.id === clipId)
+      if (index === -1) return null
+
+      const clip = clips[index]
+      const images = clip.images || []
+      images.push(image)
+      
+      const updatedClip = { ...clip, images, updatedAt: Date.now() }
+      clips[index] = updatedClip
+      await chrome.storage.local.set({ [STORAGE_KEY]: clips })
+      return updatedClip
+    }, null)
+  },
+
+  /**
+   * 从剪藏删除图片
+   */
+  async removeImage(clipId: string, imageIndex: number): Promise<Clip | null> {
+    return safeStorageOperation(async () => {
+      const clips = await this.getAll()
+      const index = clips.findIndex((c) => c.id === clipId)
+      if (index === -1) return null
+
+      const clip = clips[index]
+      const images = [...(clip.images || [])]
+      if (imageIndex < 0 || imageIndex >= images.length) return null
+      
+      images.splice(imageIndex, 1)
+      
+      const updatedClip = { ...clip, images, updatedAt: Date.now() }
+      clips[index] = updatedClip
+      await chrome.storage.local.set({ [STORAGE_KEY]: clips })
+      return updatedClip
+    }, null)
+  },
+
+  /**
+   * 移动剪藏到文件夹
+   */
+  async moveToFolder(clipId: string, folderId: string | undefined): Promise<Clip | null> {
+    return this.update(clipId, { folderId, updatedAt: Date.now() })
+  },
+
+  /**
+   * 批量移动剪藏到文件夹
+   */
+  async moveManyToFolder(clipIds: string[], folderId: string | undefined): Promise<void> {
+    return safeStorageOperation(async () => {
+      const clips = await this.getAll()
+      const idSet = new Set(clipIds)
+      const now = Date.now()
+      
+      const updatedClips = clips.map(clip => {
+        if (idSet.has(clip.id)) {
+          return { ...clip, folderId, updatedAt: now }
+        }
+        return clip
+      })
+      
+      await chrome.storage.local.set({ [STORAGE_KEY]: updatedClips })
+    }, undefined)
+  },
+
+  /**
    * 检查扩展是否可用
    */
   isAvailable(): boolean {
     return isExtensionContextValid()
+  }
+}
+
+/**
+ * 文件夹存储操作
+ */
+export const FolderStore = {
+  /**
+   * 获取所有文件夹
+   */
+  async getAll(): Promise<Folder[]> {
+    return safeStorageOperation(async () => {
+      const result = await chrome.storage.local.get(FOLDERS_STORAGE_KEY)
+      return result[FOLDERS_STORAGE_KEY] || []
+    }, [])
+  },
+
+  /**
+   * 创建文件夹
+   */
+  async create(name: string, color?: string): Promise<Folder> {
+    return safeStorageOperation(async () => {
+      const folders = await this.getAll()
+      const newFolder: Folder = {
+        id: generateUUID(),
+        name,
+        createdAt: Date.now(),
+        color
+      }
+      folders.push(newFolder)
+      await chrome.storage.local.set({ [FOLDERS_STORAGE_KEY]: folders })
+      return newFolder
+    }, { id: "", name, createdAt: 0 } as Folder)
+  },
+
+  /**
+   * 重命名文件夹
+   */
+  async rename(id: string, newName: string): Promise<Folder | null> {
+    return safeStorageOperation(async () => {
+      const folders = await this.getAll()
+      const index = folders.findIndex(f => f.id === id)
+      if (index === -1) return null
+
+      folders[index] = { ...folders[index], name: newName }
+      await chrome.storage.local.set({ [FOLDERS_STORAGE_KEY]: folders })
+      return folders[index]
+    }, null)
+  },
+
+  /**
+   * 更新文件夹
+   */
+  async update(id: string, updates: Partial<Folder>): Promise<Folder | null> {
+    return safeStorageOperation(async () => {
+      const folders = await this.getAll()
+      const index = folders.findIndex(f => f.id === id)
+      if (index === -1) return null
+
+      folders[index] = { ...folders[index], ...updates }
+      await chrome.storage.local.set({ [FOLDERS_STORAGE_KEY]: folders })
+      return folders[index]
+    }, null)
+  },
+
+  /**
+   * 删除文件夹（同时将该文件夹下的所有剪藏移到"未归类"）
+   */
+  async delete(id: string): Promise<void> {
+    return safeStorageOperation(async () => {
+      // 1. 删除文件夹
+      const folders = await this.getAll()
+      const newFolders = folders.filter(f => f.id !== id)
+      await chrome.storage.local.set({ [FOLDERS_STORAGE_KEY]: newFolders })
+      
+      // 2. 将该文件夹下的所有剪藏的 folderId 置为 undefined
+      const clips = await ClipStore.getAll()
+      const updatedClips = clips.map(clip => {
+        if (clip.folderId === id) {
+          return { ...clip, folderId: undefined }
+        }
+        return clip
+      })
+      await chrome.storage.local.set({ [STORAGE_KEY]: updatedClips })
+    }, undefined)
+  },
+
+  /**
+   * 获取文件夹下的剪藏数量
+   */
+  async getClipCount(folderId: string): Promise<number> {
+    return safeStorageOperation(async () => {
+      const clips = await ClipStore.getAll()
+      return clips.filter(c => c.folderId === folderId).length
+    }, 0)
   }
 }

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo, createContext, useContext } from "react"
-import { ClipStore, type Clip } from "@/lib/clip-store"
-import { Trash2, ExternalLink, Search, Calendar, Tag, Save, MessageSquare, Share, Loader2, CheckSquare, Square, Edit3, X, Check, ChevronDown, ChevronUp, Star, Filter, Clock, FileText, Image as ImageIcon, Sparkles, BookOpen, LayoutGrid, List, SortAsc, SortDesc, Zap, Globe, TrendingUp, Sun, Moon } from "lucide-react"
+import { ClipStore, FolderStore, type Clip, type Folder } from "@/lib/clip-store"
+import { Trash2, ExternalLink, Search, Calendar, Tag, Save, MessageSquare, Share, Loader2, CheckSquare, Square, Edit3, X, Check, ChevronDown, ChevronUp, Star, Filter, Clock, FileText, Image as ImageIcon, Sparkles, BookOpen, LayoutGrid, List, SortAsc, SortDesc, Zap, Globe, TrendingUp, Sun, Moon, FolderIcon, Pencil } from "lucide-react"
 import { ChatProvider, useChat } from "@/contexts/chat-context"
 import { ExtensionProvider, useExtension } from "@/contexts/extension-context"
 import { createRecordFromClip } from "@/lib/feishuBitable"
@@ -9,6 +9,9 @@ import type { FeishuConfig } from "@/lib/atoms/feishu"
 import Chat from "@/components/chat"
 import Markdown from "@/components/markdown"
 import ClipTagsPanel from "@/components/clip-tags-panel"
+import ClipEditModal from "@/components/clip-edit-modal"
+import FolderSidebar from "@/components/folder-sidebar"
+import MoveToFolderDropdown from "@/components/move-to-folder-dropdown"
 import "../style.css"
 
 // Theme configuration
@@ -149,7 +152,9 @@ export default function HistoryPage() {
 
 function HistoryLayout() {
   const { theme, toggleTheme, t } = useTheme()
+  const isDark = theme === "dark"
   const [clips, setClips] = useState<Clip[]>([])
+  const [folders, setFolders] = useState<Folder[]>([])
   const [selectedClipId, setSelectedClipId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [exportingId, setExportingId] = useState<string | null>(null)
@@ -158,6 +163,7 @@ function HistoryLayout() {
   const [viewMode, setViewMode] = useState<"list" | "grid">("list")
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest")
   const [filterSource, setFilterSource] = useState<string>("all")
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
   
   // Batch selection state
   const [isSelectMode, setIsSelectMode] = useState(false)
@@ -174,16 +180,21 @@ function HistoryLayout() {
   // Hover effect for cards
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   
+  // Edit modal state
+  const [editingClip, setEditingClip] = useState<Clip | null>(null)
+  
   const { setExtensionData, setCurrentClipId } = useExtension()
   const { chatMessages } = useChat()
 
   useEffect(() => {
     loadClips()
+    loadFolders()
     
     // Listen for storage changes to update the list in real-time
     const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
-      if (areaName === "local" && changes.clips) {
-        loadClips()
+      if (areaName === "local") {
+        if (changes.clips) loadClips()
+        if (changes.folders) loadFolders()
       }
     }
     
@@ -207,6 +218,11 @@ function HistoryLayout() {
     // Sort by createdAt in descending order (newest first)
     const sorted = data.sort((a, b) => b.createdAt - a.createdAt)
     setClips(sorted)
+  }
+
+  const loadFolders = async () => {
+    const data = await FolderStore.getAll()
+    setFolders(data)
   }
 
   const handleDelete = async (id: string) => {
@@ -372,6 +388,13 @@ function HistoryLayout() {
   const processedClips = useMemo(() => {
     let result = [...filteredClips]
     
+    // Filter by folder
+    if (selectedFolderId === "uncategorized") {
+      result = result.filter(c => !c.folderId)
+    } else if (selectedFolderId) {
+      result = result.filter(c => c.folderId === selectedFolderId)
+    }
+    
     // Filter by source
     if (filterSource !== "all") {
       result = result.filter(c => c.source === filterSource)
@@ -387,12 +410,25 @@ function HistoryLayout() {
     })
     
     return result
-  }, [filteredClips, filterSource, sortOrder])
+  }, [filteredClips, filterSource, sortOrder, selectedFolderId])
 
   // Get unique sources for filter
   const uniqueSources = useMemo(() => {
     const sources = new Set(clips.map(c => c.source))
     return Array.from(sources)
+  }, [clips])
+
+  // Folder clip counts
+  const folderClipCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    folders.forEach(f => {
+      counts[f.id] = clips.filter(c => c.folderId === f.id).length
+    })
+    return counts
+  }, [clips, folders])
+
+  const uncategorizedCount = useMemo(() => {
+    return clips.filter(c => !c.folderId).length
   }, [clips])
 
   // Stats
@@ -445,6 +481,16 @@ function HistoryLayout() {
 
   return (
     <div className={`flex h-screen w-full ${t.pageBg} ${t.textSecondary} font-sans overflow-hidden transition-colors duration-300`}>
+       {/* Edit Modal */}
+       {editingClip && (
+         <ClipEditModal
+           clip={editingClip}
+           onClose={() => setEditingClip(null)}
+           onSaved={loadClips}
+           theme={theme}
+         />
+       )}
+
        {/* Sidebar - 25% width */}
        <div className={`w-[25%] min-w-[320px] border-r ${t.borderColor} flex flex-col ${t.sidebarBg} transition-colors duration-300`}>
           {/* Header with gradient accent */}
@@ -548,48 +594,62 @@ function HistoryLayout() {
                   onChange={e => setSearchTerm(e.target.value)}
                 />
               </div>
-              
-              {/* Filters & View Toggle */}
-              <div className="flex items-center justify-between mt-4 gap-2">
-                <div className="flex items-center gap-1.5">
-                  {/* Source Filter */}
-                  <select
-                    value={filterSource}
-                    onChange={e => setFilterSource(e.target.value)}
-                    className={`px-2.5 py-1.5 text-xs ${t.inputBg} border-0 rounded-lg ${t.textMuted} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer ${t.inputBgHover} transition-colors appearance-none`}
-                    style={{ backgroundImage: 'none' }}
-                  >
-                    <option value="all" className={t.optionBg}>全部来源</option>
-                    {uniqueSources.map(source => (
-                      <option key={source} value={source} className={t.optionBg}>{source}</option>
-                    ))}
-                  </select>
-                  
-                  {/* Sort Toggle */}
-                  <button
-                    onClick={() => setSortOrder(sortOrder === "newest" ? "oldest" : "newest")}
-                    className={`p-1.5 ${t.textDim} hover:text-indigo-400 ${t.inputBg} ${t.inputBgHover} rounded-lg transition-all`}
-                    title={sortOrder === "newest" ? "最新优先" : "最早优先"}
-                  >
-                    {sortOrder === "newest" ? <SortDesc className="h-4 w-4" /> : <SortAsc className="h-4 w-4" />}
-                  </button>
-                </div>
+            </div>
+          </div>
+          
+          {/* Folders Section */}
+          <div className={`p-4 border-b ${t.borderColor}`}>
+            <FolderSidebar
+              selectedFolderId={selectedFolderId}
+              onSelectFolder={setSelectedFolderId}
+              clipCounts={folderClipCounts}
+              totalCount={stats.total}
+              uncategorizedCount={uncategorizedCount}
+              theme={theme}
+            />
+          </div>
+
+          {/* Filters & View Toggle */}
+          <div className="px-4 py-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5">
+                {/* Source Filter */}
+                <select
+                  value={filterSource}
+                  onChange={e => setFilterSource(e.target.value)}
+                  className={`px-2.5 py-1.5 text-xs ${t.inputBg} border-0 rounded-lg ${t.textMuted} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer ${t.inputBgHover} transition-colors appearance-none`}
+                  style={{ backgroundImage: 'none' }}
+                >
+                  <option value="all" className={t.optionBg}>全部来源</option>
+                  {uniqueSources.map(source => (
+                    <option key={source} value={source} className={t.optionBg}>{source}</option>
+                  ))}
+                </select>
                 
-                {/* View Mode Toggle */}
-                <div className={`flex items-center ${t.inputBg} rounded-lg p-0.5`}>
-                  <button
-                    onClick={() => setViewMode("list")}
-                    className={`p-1.5 rounded-md transition-all ${viewMode === "list" ? "bg-indigo-500 text-white" : `${t.textDim} hover:text-indigo-400`}`}
-                  >
-                    <List className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode("grid")}
-                    className={`p-1.5 rounded-md transition-all ${viewMode === "grid" ? "bg-indigo-500 text-white" : `${t.textDim} hover:text-indigo-400`}`}
-                  >
-                    <LayoutGrid className="h-4 w-4" />
-                  </button>
-                </div>
+                {/* Sort Toggle */}
+                <button
+                  onClick={() => setSortOrder(sortOrder === "newest" ? "oldest" : "newest")}
+                  className={`p-1.5 ${t.textDim} hover:text-indigo-400 ${t.inputBg} ${t.inputBgHover} rounded-lg transition-all`}
+                  title={sortOrder === "newest" ? "最新优先" : "最早优先"}
+                >
+                  {sortOrder === "newest" ? <SortDesc className="h-4 w-4" /> : <SortAsc className="h-4 w-4" />}
+                </button>
+              </div>
+              
+              {/* View Mode Toggle */}
+              <div className={`flex items-center ${t.inputBg} rounded-lg p-0.5`}>
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={`p-1.5 rounded-md transition-all ${viewMode === "list" ? "bg-indigo-500 text-white" : `${t.textDim} hover:text-indigo-400`}`}
+                >
+                  <List className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode("grid")}
+                  className={`p-1.5 rounded-md transition-all ${viewMode === "grid" ? "bg-indigo-500 text-white" : `${t.textDim} hover:text-indigo-400`}`}
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </button>
               </div>
             </div>
           </div>
@@ -704,7 +764,40 @@ function HistoryLayout() {
                               ✓ 已同步
                             </span>
                           )}
+                          
+                          {/* Folder indicator */}
+                          {clip.folderId && folders.find(f => f.id === clip.folderId) && (
+                            <span className={`flex items-center gap-1 text-[10px] ${t.textDim} ${t.inputBg} px-1.5 py-0.5 rounded-full`}>
+                              <FolderIcon className="h-2.5 w-2.5" />
+                              {folders.find(f => f.id === clip.folderId)?.name}
+                            </span>
+                          )}
                         </div>
+                        
+                        {/* Actions row - only show on hover when not in select mode */}
+                        {!isSelectMode && hoveredId === clip.id && (
+                          <div className="flex items-center gap-1 mt-2" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setEditingClip(clip)
+                              }}
+                              className={`p-1.5 rounded-lg transition-colors ${
+                                isDark ? "hover:bg-white/10 text-gray-400 hover:text-indigo-400" : "hover:bg-gray-100 text-gray-500 hover:text-indigo-600"
+                              }`}
+                              title="编辑"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <MoveToFolderDropdown
+                              clipId={clip.id}
+                              currentFolderId={clip.folderId}
+                              onMoved={loadClips}
+                              theme={theme}
+                              compact
+                            />
+                          </div>
+                        )}
                         
                         {/* Tags preview */}
                         {clip.tags && clip.tags.length > 0 && (
@@ -812,6 +905,23 @@ function HistoryLayout() {
                   
                   {/* Action buttons */}
                   <div className="flex items-center gap-2 flex-shrink-0">
+                    {/* Edit Button */}
+                    <button
+                      onClick={() => setEditingClip(selectedClip)}
+                      className={`px-4 py-2 rounded-xl transition-all duration-300 flex items-center gap-2 text-sm font-medium ${t.textMuted} ${t.inputBg} hover:bg-indigo-500/20 hover:text-indigo-300 hover:ring-1 hover:ring-indigo-500/30`}
+                    >
+                      <Pencil className="h-4 w-4" />
+                      <span>编辑</span>
+                    </button>
+                    
+                    {/* Move to Folder */}
+                    <MoveToFolderDropdown
+                      clipId={selectedClip.id}
+                      currentFolderId={selectedClip.folderId}
+                      onMoved={loadClips}
+                      theme={theme}
+                    />
+                    
                     <button
                       onClick={() => handleExportToFeishu(selectedClip)}
                       disabled={exportingId === selectedClip.id || selectedClip.syncedToFeishu}
