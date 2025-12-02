@@ -785,7 +785,7 @@ const floatButton = () => {
                     </div>
                   }
                 >
-                  <div className="w-[40px] h-[40px] flex items-center justify-center cursor-pointer flex-shrink-0 hover:scale-110 active:scale-90 transition-transform text-gray-900 dark:text-white" onMouseEnter={() => { expandStartRef.current = Date.now(); captureSelection() }} 
+                  <div className={cn("w-[40px] h-[40px] flex items-center justify-center cursor-pointer flex-shrink-0 hover:scale-110 active:scale-90 transition-transform", isDark ? "text-white" : "text-gray-900")} onMouseEnter={() => { expandStartRef.current = Date.now(); captureSelection() }} 
                     onClick={handleSaveClick}
                   >
                     {bookMarkIcon}

@@ -18,14 +18,23 @@ import { ClipStore, type Clip } from "@/lib/clip-store"
 import { Sparkles } from "lucide-react"
 import React, { useEffect, useState } from "react"
 
+
 interface ChatProps {
   className?: string
+  theme?: 'dark' | 'light'
 }
 
-export default function Chat({ className }: ChatProps) {
+export default function Chat({ className, theme: themeProp }: ChatProps) {
   const { currentClipId } = useExtension()
   const [currentClip, setCurrentClip] = useState<Clip | null>(null)
-  
+  const [isTipOpen, setIsTipOpen] = useState(true);
+  const getPreferredColorScheme = () => (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+  const [theme, setTheme] = useState<string>(themeProp ?? getPreferredColorScheme());
+
+  useEffect(() => {
+    if (themeProp) setTheme(themeProp)
+  }, [themeProp])
+
   // 加载当前剪藏数据
   useEffect(() => {
     async function loadClip() {
@@ -53,41 +62,77 @@ export default function Chat({ className }: ChatProps) {
       chrome.storage.onChanged.removeListener(handleStorageChange)
     }
   }, [currentClipId])
+
+  const handleCloseTip = () => {
+    setIsTipOpen(false);
+  }
+  
+  // 接收主题切换并应用到本组件
+  useEffect(() => {
+    if (themeProp) return
+    try {
+      const saved = localStorage.getItem('clip-history-theme') as ("dark"|"light"|null)
+      if (saved) setTheme(saved)
+    } catch (e) {
+      console.error("主题切换失败：",e);
+    }
+    const handler = (e: MessageEvent) => {
+      const d = e?.data as { source?: string; type?: string; theme?: string } | undefined
+      if (!d || d.source !== 'clip-history') return
+      if (d.type === 'theme-change' || d.type === 'toggleTheme') {
+        if (d.theme === 'dark' || d.theme === 'light') setTheme(d.theme as 'dark' | 'light')
+      }
+    }
+    window.addEventListener('message', handler)
+    return () => window.removeEventListener('message', handler)
+  }, [])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('clip-history-theme', theme)
+    } catch {}
+    if (!themeProp) {
+      document.documentElement.classList.toggle('dark', theme === 'dark')
+    }
+  }, [theme])
   
   return (
-    <div className={cn(
-      "w-full h-full min-h-[400px] relative bg-white dark:bg-[#0f0f0f] flex flex-col overflow-hidden",
-      className
-    )}>
+    <div className={(themeProp ?? theme) === 'dark' ? 'dark w-full h-full' : 'w-full h-full'}>
+      <div className={cn(
+        "w-full h-full min-h-[400px] relative bg-white dark:bg-[#0f0f0f] flex flex-col overflow-hidden",
+        className
+      )}>
       {/* 顶部操作栏 - 固定 */}
-      <ChatActions className="flex-shrink-0 border-b border-gray-100 dark:border-zinc-800" />
+      <ChatActions className="flex-shrink-0 border-b border-gray-100 dark:border-zinc-800" theme={(themeProp ?? theme) as 'dark' | 'light'} />
       
       {/* AI 标注面板 - 仅在有剪藏时显示 */}
       {currentClipId && (
         <div className="flex-shrink-0 p-3 border-b border-gray-100 dark:border-zinc-800">
-          <ClipTagsPanel clip={currentClip} compact />
+          <ClipTagsPanel clip={currentClip} compact theme={(themeProp ?? theme) as 'dark' | 'light'} />
         </div>
       )}
       
       {/* 消息列表 - 可滚动 */}
-      <ChatList className="flex-1 min-h-0" />
+      <ChatList className="flex-1 min-h-0" theme={(themeProp ?? theme) as 'dark' | 'light'} />
       
       {/* 打标功能提示 */}
-      {currentClipId && (
+      {isTipOpen && currentClipId && (
         <div className="flex-shrink-0 px-3 py-2 bg-gradient-to-r from-indigo-50/50 to-purple-50/50 dark:from-indigo-950/20 dark:to-purple-950/20 border-t border-gray-100 dark:border-zinc-800">
-          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 justify-between">
             <Sparkles className="h-3.5 w-3.5 text-indigo-500" />
             <span>
               提示：你可以说
               <span className="text-indigo-600 dark:text-indigo-400 font-medium">"帮我打标签和评分"</span>
               来更新当前剪藏的标注
             </span>
+            <span onClick={handleCloseTip} className="cursor-pointer">x</span>
           </div>
         </div>
       )}
       
       {/* 底部输入框 - 固定 */}
-      <PromptForm className="flex-shrink-0 border-t border-gray-100 dark:border-zinc-800" />
+      <PromptForm className="flex-shrink-0 border-t border-gray-100 dark:border-zinc-800" theme={(themeProp ?? theme) as 'dark' | 'light'} />
+      </div>
     </div>
   )
 }

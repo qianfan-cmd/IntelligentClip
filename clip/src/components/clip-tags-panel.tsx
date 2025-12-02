@@ -15,7 +15,8 @@ import type { Clip } from "@/lib/clip-store"
 interface ClipTagsPanelProps {
   clip: Partial<Clip> | null
   className?: string
-  compact?: boolean  // 紧凑模式，用于侧边栏
+  compact?: boolean
+  theme?: 'dark' | 'light'
 }
 
 /**
@@ -99,7 +100,7 @@ function TagSection({
   )
 }
 
-export default function ClipTagsPanel({ clip, className, compact = false }: ClipTagsPanelProps) {
+export default function ClipTagsPanel({ clip, className, compact = false, theme }: ClipTagsPanelProps) {
   // 检查是否有任何标注数据
   const hasCategories = clip?.categories && clip.categories.length > 0
   const hasScenarios = clip?.scenarios && clip.scenarios.length > 0
@@ -128,7 +129,7 @@ export default function ClipTagsPanel({ clip, className, compact = false }: Clip
   }
   
   return (
-    <div className={cn(
+    <div data-theme={theme} className={cn(
       "rounded-xl border border-gray-200 dark:border-zinc-700 bg-gradient-to-br from-gray-50/50 to-slate-50/50 dark:from-zinc-900/50 dark:to-slate-900/50",
       compact ? "p-3 space-y-3" : "p-4 space-y-4",
       className

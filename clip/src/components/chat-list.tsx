@@ -15,9 +15,10 @@ import EmptyScreen from "./chat-empty-screen"
 
 interface ChatListProps {
   className?: string
+  theme?: 'dark' | 'light'
 }
 
-export default function ChatList({ className }: ChatListProps) {
+export default function ChatList({ className, theme }: ChatListProps) {
   const { chatMessages, chatIsGenerating, setChatPrompt } = useChat()
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -45,7 +46,7 @@ export default function ChatList({ className }: ChatListProps) {
   const hasMessages = chatMessages && chatMessages.length > 0
 
   return (
-    <div className={cn("flex-1 overflow-hidden", className)}>
+    <div data-theme={theme} className={cn("flex-1 overflow-hidden", className)}>
       {!hasMessages ? (
         <EmptyScreen setPromptInput={setChatPrompt} />
       ) : (
