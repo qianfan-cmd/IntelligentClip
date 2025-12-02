@@ -183,6 +183,7 @@ function HistoryLayout() {
   const [filterSource, setFilterSource] = useState<string>("all")
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
   const [folderSidebarCollapsed, setFolderSidebarCollapsed] = useState(false)
+  const [statsFilter, setStatsFilter] = useState<"all" | "today" | "withImages" | "synced">("all")
   
   // Batch selection state
   const [isSelectMode, setIsSelectMode] = useState(false)
@@ -407,6 +408,17 @@ function HistoryLayout() {
   const processedClips = useMemo(() => {
     let result = [...filteredClips]
     
+    // Filter by stats card selection
+    if (statsFilter === "today") {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      result = result.filter(c => c.createdAt >= today.getTime())
+    } else if (statsFilter === "withImages") {
+      result = result.filter(c => c.images && c.images.length > 0)
+    } else if (statsFilter === "synced") {
+      result = result.filter(c => c.syncedToFeishu)
+    }
+    
     // Filter by folder
     if (selectedFolderId === "uncategorized") {
       result = result.filter(c => !c.folderId)
@@ -429,7 +441,7 @@ function HistoryLayout() {
     })
     
     return result
-  }, [filteredClips, filterSource, sortOrder, selectedFolderId])
+  }, [filteredClips, filterSource, sortOrder, selectedFolderId, statsFilter])
 
   // Get unique sources for filter
   const uniqueSources = useMemo(() => {
@@ -553,22 +565,50 @@ function HistoryLayout() {
               
               {/* Stats Cards */}
               <div className="grid grid-cols-4 gap-2 mb-5">
-                <div className={`${t.inputBg} backdrop-blur rounded-lg p-2.5 text-center ${t.inputBgHover} transition-colors cursor-default group`}>
-                  <div className={`text-lg font-bold ${t.textPrimary} group-hover:text-indigo-400 transition-colors`}>{stats.total}</div>
-                  <div className={`text-[10px] ${t.textFaint}`}>全部</div>
-                </div>
-                <div className={`${t.inputBg} backdrop-blur rounded-lg p-2.5 text-center ${t.inputBgHover} transition-colors cursor-default group`}>
-                  <div className="text-lg font-bold text-emerald-400 group-hover:text-emerald-300 transition-colors">{stats.today}</div>
-                  <div className={`text-[10px] ${t.textFaint}`}>今日</div>
-                </div>
-                <div className={`${t.inputBg} backdrop-blur rounded-lg p-2.5 text-center ${t.inputBgHover} transition-colors cursor-default group`}>
-                  <div className="text-lg font-bold text-cyan-400 group-hover:text-cyan-300 transition-colors">{stats.withImages}</div>
-                  <div className={`text-[10px] ${t.textFaint}`}>含图</div>
-                </div>
-                <div className={`${t.inputBg} backdrop-blur rounded-lg p-2.5 text-center ${t.inputBgHover} transition-colors cursor-default group`}>
-                  <div className="text-lg font-bold text-amber-400 group-hover:text-amber-300 transition-colors">{stats.synced}</div>
-                  <div className={`text-[10px] ${t.textFaint}`}>已同步</div>
-                </div>
+                <button 
+                  onClick={() => setStatsFilter(statsFilter === "all" ? "all" : "all")}
+                  className={`${t.inputBg} backdrop-blur rounded-lg p-2.5 text-center transition-all cursor-pointer group ${
+                    statsFilter === "all" 
+                      ? "ring-2 ring-indigo-500 ring-offset-1 ring-offset-transparent" 
+                      : t.inputBgHover
+                  }`}
+                >
+                  <div className={`text-lg font-bold transition-colors ${statsFilter === "all" ? "text-indigo-400" : `${t.textPrimary} group-hover:text-indigo-400`}`}>{stats.total}</div>
+                  <div className={`text-[10px] ${statsFilter === "all" ? "text-indigo-300" : t.textFaint}`}>全部</div>
+                </button>
+                <button 
+                  onClick={() => setStatsFilter(statsFilter === "today" ? "all" : "today")}
+                  className={`${t.inputBg} backdrop-blur rounded-lg p-2.5 text-center transition-all cursor-pointer group ${
+                    statsFilter === "today" 
+                      ? "ring-2 ring-emerald-500 ring-offset-1 ring-offset-transparent" 
+                      : t.inputBgHover
+                  }`}
+                >
+                  <div className={`text-lg font-bold transition-colors ${statsFilter === "today" ? "text-emerald-300" : "text-emerald-400 group-hover:text-emerald-300"}`}>{stats.today}</div>
+                  <div className={`text-[10px] ${statsFilter === "today" ? "text-emerald-300" : t.textFaint}`}>今日</div>
+                </button>
+                <button 
+                  onClick={() => setStatsFilter(statsFilter === "withImages" ? "all" : "withImages")}
+                  className={`${t.inputBg} backdrop-blur rounded-lg p-2.5 text-center transition-all cursor-pointer group ${
+                    statsFilter === "withImages" 
+                      ? "ring-2 ring-cyan-500 ring-offset-1 ring-offset-transparent" 
+                      : t.inputBgHover
+                  }`}
+                >
+                  <div className={`text-lg font-bold transition-colors ${statsFilter === "withImages" ? "text-cyan-300" : "text-cyan-400 group-hover:text-cyan-300"}`}>{stats.withImages}</div>
+                  <div className={`text-[10px] ${statsFilter === "withImages" ? "text-cyan-300" : t.textFaint}`}>含图</div>
+                </button>
+                <button 
+                  onClick={() => setStatsFilter(statsFilter === "synced" ? "all" : "synced")}
+                  className={`${t.inputBg} backdrop-blur rounded-lg p-2.5 text-center transition-all cursor-pointer group ${
+                    statsFilter === "synced" 
+                      ? "ring-2 ring-amber-500 ring-offset-1 ring-offset-transparent" 
+                      : t.inputBgHover
+                  }`}
+                >
+                  <div className={`text-lg font-bold transition-colors ${statsFilter === "synced" ? "text-amber-300" : "text-amber-400 group-hover:text-amber-300"}`}>{stats.synced}</div>
+                  <div className={`text-[10px] ${statsFilter === "synced" ? "text-amber-300" : t.textFaint}`}>已同步</div>
+                </button>
               </div>
             
               {/* Batch actions bar */}
