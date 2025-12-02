@@ -524,96 +524,94 @@ function HistoryLayout() {
 
        {/* Sidebar - 25% width */}
        <div className={`w-[25%] min-w-[320px] border-r ${t.borderColor} flex flex-col ${t.sidebarBg} transition-colors duration-300`}>
-          {/* Header with gradient accent */}
-          <div className={`p-6 border-b ${t.borderColor} relative overflow-hidden`}>
-            {/* Animated gradient background */}
-            <div className={`absolute inset-0 bg-gradient-to-br ${t.gradientAccent}`} />
-            <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl ${t.gradientGlow} rounded-full blur-3xl`} />
-            
-            <div className="relative">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                    <BookOpen className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h2 className={`text-xl font-bold ${t.textPrimary}`}>我的剪藏</h2>
-                    <p className={`text-xs ${t.textFaint}`}>知识库 · {stats.total} 条</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {/* Theme Toggle Button */}
-                  <button
-                    onClick={toggleTheme}
-                    className={`p-2 rounded-lg transition-all duration-300 ${t.inputBg} ${t.inputBgHover} ${t.textDim} hover:text-indigo-400`}
-                    title={theme === "dark" ? "切换到浅色模式" : "切换到深色模式"}
-                  >
-                    {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                  </button>
-                  <button
-                    onClick={toggleSelectMode}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-300 ${
-                      isSelectMode 
-                        ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/30" 
-                        : `${t.inputBg} ${t.textDim} ${t.inputBgHover} hover:text-indigo-400`
-                    }`}
-                  >
-                    {isSelectMode ? "✓ 完成" : "管理"}
-                  </button>
-                </div>
+          {/* Fixed Mini Header */}
+          <div className={`p-3 border-b ${t.borderColor} flex items-center justify-between shrink-0`}>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                <BookOpen className="w-4 h-4 text-white" />
               </div>
-              
-              {/* Stats Cards */}
-              <div className="grid grid-cols-4 gap-2 mb-5">
+              <div>
+                <h2 className={`text-sm font-bold ${t.textPrimary}`}>我的剪藏</h2>
+                <p className={`text-[10px] ${t.textFaint}`}>{stats.total} 条</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={toggleTheme}
+                className={`p-1.5 rounded-lg transition-all duration-300 ${t.inputBg} ${t.inputBgHover} ${t.textDim} hover:text-indigo-400`}
+                title={theme === "dark" ? "切换到浅色模式" : "切换到深色模式"}
+              >
+                {theme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+              </button>
+              <button
+                onClick={toggleSelectMode}
+                className={`px-2 py-1 text-[10px] font-medium rounded-lg transition-all duration-300 ${
+                  isSelectMode 
+                    ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/30" 
+                    : `${t.inputBg} ${t.textDim} ${t.inputBgHover} hover:text-indigo-400`
+                }`}
+              >
+                {isSelectMode ? "✓ 完成" : "管理"}
+              </button>
+            </div>
+          </div>
+
+          {/* Scrollable Content Area */}
+          <div className={`flex-1 overflow-y-auto custom-scrollbar ${theme === 'dark' ? 'dark' : ''}`}>
+            {/* Stats Cards */}
+            <div className="p-4 pb-2">
+              <div className="grid grid-cols-4 gap-2">
                 <button 
                   onClick={() => setStatsFilter(statsFilter === "all" ? "all" : "all")}
-                  className={`${t.inputBg} backdrop-blur rounded-lg p-2.5 text-center transition-all cursor-pointer group ${
+                  className={`${t.inputBg} backdrop-blur rounded-lg p-2 text-center transition-all cursor-pointer group ${
                     statsFilter === "all" 
                       ? "ring-2 ring-indigo-500 ring-offset-1 ring-offset-transparent" 
                       : t.inputBgHover
                   }`}
                 >
-                  <div className={`text-lg font-bold transition-colors ${statsFilter === "all" ? "text-indigo-400" : `${t.textPrimary} group-hover:text-indigo-400`}`}>{stats.total}</div>
+                  <div className={`text-base font-bold transition-colors ${statsFilter === "all" ? "text-indigo-400" : `${t.textPrimary} group-hover:text-indigo-400`}`}>{stats.total}</div>
                   <div className={`text-[10px] ${statsFilter === "all" ? "text-indigo-300" : t.textFaint}`}>全部</div>
                 </button>
                 <button 
                   onClick={() => setStatsFilter(statsFilter === "today" ? "all" : "today")}
-                  className={`${t.inputBg} backdrop-blur rounded-lg p-2.5 text-center transition-all cursor-pointer group ${
+                  className={`${t.inputBg} backdrop-blur rounded-lg p-2 text-center transition-all cursor-pointer group ${
                     statsFilter === "today" 
                       ? "ring-2 ring-emerald-500 ring-offset-1 ring-offset-transparent" 
                       : t.inputBgHover
                   }`}
                 >
-                  <div className={`text-lg font-bold transition-colors ${statsFilter === "today" ? "text-emerald-300" : "text-emerald-400 group-hover:text-emerald-300"}`}>{stats.today}</div>
+                  <div className={`text-base font-bold transition-colors ${statsFilter === "today" ? "text-emerald-300" : "text-emerald-400 group-hover:text-emerald-300"}`}>{stats.today}</div>
                   <div className={`text-[10px] ${statsFilter === "today" ? "text-emerald-300" : t.textFaint}`}>今日</div>
                 </button>
                 <button 
                   onClick={() => setStatsFilter(statsFilter === "withImages" ? "all" : "withImages")}
-                  className={`${t.inputBg} backdrop-blur rounded-lg p-2.5 text-center transition-all cursor-pointer group ${
+                  className={`${t.inputBg} backdrop-blur rounded-lg p-2 text-center transition-all cursor-pointer group ${
                     statsFilter === "withImages" 
                       ? "ring-2 ring-cyan-500 ring-offset-1 ring-offset-transparent" 
                       : t.inputBgHover
                   }`}
                 >
-                  <div className={`text-lg font-bold transition-colors ${statsFilter === "withImages" ? "text-cyan-300" : "text-cyan-400 group-hover:text-cyan-300"}`}>{stats.withImages}</div>
+                  <div className={`text-base font-bold transition-colors ${statsFilter === "withImages" ? "text-cyan-300" : "text-cyan-400 group-hover:text-cyan-300"}`}>{stats.withImages}</div>
                   <div className={`text-[10px] ${statsFilter === "withImages" ? "text-cyan-300" : t.textFaint}`}>含图</div>
                 </button>
                 <button 
                   onClick={() => setStatsFilter(statsFilter === "synced" ? "all" : "synced")}
-                  className={`${t.inputBg} backdrop-blur rounded-lg p-2.5 text-center transition-all cursor-pointer group ${
+                  className={`${t.inputBg} backdrop-blur rounded-lg p-2 text-center transition-all cursor-pointer group ${
                     statsFilter === "synced" 
                       ? "ring-2 ring-amber-500 ring-offset-1 ring-offset-transparent" 
                       : t.inputBgHover
                   }`}
                 >
-                  <div className={`text-lg font-bold transition-colors ${statsFilter === "synced" ? "text-amber-300" : "text-amber-400 group-hover:text-amber-300"}`}>{stats.synced}</div>
+                  <div className={`text-base font-bold transition-colors ${statsFilter === "synced" ? "text-amber-300" : "text-amber-400 group-hover:text-amber-300"}`}>{stats.synced}</div>
                   <div className={`text-[10px] ${statsFilter === "synced" ? "text-amber-300" : t.textFaint}`}>已同步</div>
                 </button>
               </div>
-            
-              {/* Batch actions bar */}
-              {isSelectMode && (
-                <div className={`flex items-center justify-between mb-4 p-3 bg-indigo-500/10 backdrop-blur rounded-xl border border-indigo-500/20`}>
+            </div>
+          
+            {/* Batch actions bar */}
+            {isSelectMode && (
+              <div className="px-4 pb-2">
+                <div className={`flex items-center justify-between p-2.5 bg-indigo-500/10 backdrop-blur rounded-xl border border-indigo-500/20`}>
                   <button
                     onClick={toggleSelectAll}
                     className="flex items-center gap-2 text-xs font-medium text-indigo-300 hover:text-indigo-200 transition-colors"
@@ -631,7 +629,7 @@ function HistoryLayout() {
                   <button
                     onClick={handleBatchDelete}
                     disabled={selectedIds.size === 0}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                    className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg transition-all ${
                       selectedIds.size === 0
                         ? `${t.textFaint} ${t.inputBg} cursor-not-allowed`
                         : "text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30"
@@ -641,108 +639,109 @@ function HistoryLayout() {
                     删除
                   </button>
                 </div>
-              )}
-              
-              {/* Search */}
+              </div>
+            )}
+            
+            {/* Search */}
+            <div className="px-4 pb-3">
               <div className="relative group">
                 <Search className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 ${t.textFaint} group-focus-within:text-indigo-400 transition-colors`} />
                 <input 
                   placeholder="搜索剪藏..." 
-                  className={`pl-10 pr-4 py-2.5 border-0 rounded-xl w-full text-sm ${t.inputBg} ${t.textPrimary} ${t.placeholderText} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${t.inputBgFocus} transition-all`}
+                  className={`pl-10 pr-4 py-2 border-0 rounded-xl w-full text-sm ${t.inputBg} ${t.textPrimary} ${t.placeholderText} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${t.inputBgFocus} transition-all`}
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
                 />
               </div>
             </div>
-          </div>
           
-          {/* Folders Section */}
-          <div className={`p-4 border-b ${t.borderColor}`}>
-            <FolderSidebar
-              selectedFolderId={selectedFolderId}
-              onSelectFolder={setSelectedFolderId}
-              clipCounts={folderClipCounts}
-              totalCount={stats.total}
-              uncategorizedCount={uncategorizedCount}
-              theme={theme}
-              collapsed={folderSidebarCollapsed}
-              onToggleCollapse={() => setFolderSidebarCollapsed(!folderSidebarCollapsed)}
-            />
-          </div>
+            {/* Folders Section */}
+            <div className={`px-4 pb-3 border-b ${t.borderColor}`}>
+              <FolderSidebar
+                selectedFolderId={selectedFolderId}
+                onSelectFolder={setSelectedFolderId}
+                clipCounts={folderClipCounts}
+                totalCount={stats.total}
+                uncategorizedCount={uncategorizedCount}
+                theme={theme}
+                collapsed={folderSidebarCollapsed}
+                onToggleCollapse={() => setFolderSidebarCollapsed(!folderSidebarCollapsed)}
+              />
+            </div>
 
-          {/* Filters & View Toggle */}
-          <div className="px-4 py-3">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5">
-                {/* Source Filter */}
-                <select
-                  value={filterSource}
-                  onChange={e => setFilterSource(e.target.value)}
-                  className={`px-2.5 py-1.5 text-xs ${t.inputBg} border-0 rounded-lg ${t.textMuted} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer ${t.inputBgHover} transition-colors appearance-none`}
-                  style={{ backgroundImage: 'none' }}
-                >
-                  <option value="all" className={t.optionBg}>全部来源</option>
-                  {uniqueSources.map(source => (
-                    <option key={source} value={source} className={t.optionBg}>{source}</option>
-                  ))}
-                </select>
+            {/* Filters & View Toggle */}
+            <div className="px-4 py-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5">
+                  {/* Source Filter */}
+                  <select
+                    value={filterSource}
+                    onChange={e => setFilterSource(e.target.value)}
+                    className={`px-2 py-1 text-xs ${t.inputBg} border-0 rounded-lg ${t.textMuted} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer ${t.inputBgHover} transition-colors appearance-none`}
+                    style={{ backgroundImage: 'none' }}
+                  >
+                    <option value="all" className={t.optionBg}>全部来源</option>
+                    {uniqueSources.map(source => (
+                      <option key={source} value={source} className={t.optionBg}>{source}</option>
+                    ))}
+                  </select>
+                  
+                  {/* Sort Toggle */}
+                  <button
+                    onClick={() => setSortOrder(sortOrder === "newest" ? "oldest" : "newest")}
+                    className={`p-1.5 ${t.textDim} hover:text-indigo-400 ${t.inputBg} ${t.inputBgHover} rounded-lg transition-all`}
+                    title={sortOrder === "newest" ? "最新优先" : "最早优先"}
+                  >
+                    {sortOrder === "newest" ? <SortDesc className="h-4 w-4" /> : <SortAsc className="h-4 w-4" />}
+                  </button>
+                </div>
                 
-                {/* Sort Toggle */}
-                <button
-                  onClick={() => setSortOrder(sortOrder === "newest" ? "oldest" : "newest")}
-                  className={`p-1.5 ${t.textDim} hover:text-indigo-400 ${t.inputBg} ${t.inputBgHover} rounded-lg transition-all`}
-                  title={sortOrder === "newest" ? "最新优先" : "最早优先"}
-                >
-                  {sortOrder === "newest" ? <SortDesc className="h-4 w-4" /> : <SortAsc className="h-4 w-4" />}
-                </button>
-              </div>
-              
-              {/* View Mode Toggle */}
-              <div className={`flex items-center ${t.inputBg} rounded-lg p-0.5`}>
-                <button
-                  onClick={() => setViewMode("list")}
-                  className={`p-1.5 rounded-md transition-all ${viewMode === "list" ? "bg-indigo-500 text-white" : `${t.textDim} hover:text-indigo-400`}`}
-                >
-                  <List className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode("grid")}
-                  className={`p-1.5 rounded-md transition-all ${viewMode === "grid" ? "bg-indigo-500 text-white" : `${t.textDim} hover:text-indigo-400`}`}
-                >
-                  <LayoutGrid className="h-4 w-4" />
-                </button>
+                {/* View Mode Toggle */}
+                <div className={`flex items-center ${t.inputBg} rounded-lg p-0.5`}>
+                  <button
+                    onClick={() => setViewMode("list")}
+                    className={`p-1.5 rounded-md transition-all ${viewMode === "list" ? "bg-indigo-500 text-white" : `${t.textDim} hover:text-indigo-400`}`}
+                  >
+                    <List className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode("grid")}
+                    className={`p-1.5 rounded-md transition-all ${viewMode === "grid" ? "bg-indigo-500 text-white" : `${t.textDim} hover:text-indigo-400`}`}
+                  >
+                    <LayoutGrid className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
           
-          {/* Clips List */}
-          <div className={`flex-1 overflow-y-auto custom-scrollbar ${theme === 'dark' ? 'dark' : ''}`}>
-            {processedClips.length === 0 ? (
-              <div className="p-12 text-center">
-                <div className={`w-16 h-16 mx-auto mb-4 ${t.inputBg} rounded-2xl flex items-center justify-center`}>
-                  <Search className={`h-8 w-8 ${t.textDisabled}`} />
+            {/* Clips List */}
+            <div className="px-3 pb-3">
+              {processedClips.length === 0 ? (
+                <div className="p-12 text-center">
+                  <div className={`w-16 h-16 mx-auto mb-4 ${t.inputBg} rounded-2xl flex items-center justify-center`}>
+                    <Search className={`h-8 w-8 ${t.textDisabled}`} />
+                  </div>
+                  <p className={`${t.textDim} text-sm font-medium`}>暂无剪藏</p>
+                  <p className={`${t.textDisabled} text-xs mt-1`}>开始浏览并剪藏内容吧</p>
                 </div>
-                <p className={`${t.textDim} text-sm font-medium`}>暂无剪藏</p>
-                <p className={`${t.textDisabled} text-xs mt-1`}>开始浏览并剪藏内容吧</p>
-              </div>
-            ) : viewMode === "list" ? (
-              /* List View */
-              <div className="p-3 space-y-2">
-                {processedClips.map((clip, index) => (
-                  <div 
-                    key={clip.id} 
-                    onClick={() => !isSelectMode && setSelectedClipId(clip.id)}
-                    onMouseEnter={() => setHoveredId(clip.id)}
-                    onMouseLeave={() => setHoveredId(null)}
-                    className={`relative p-4 cursor-pointer rounded-xl transition-all duration-300 group ${
-                      selectedClipId === clip.id 
-                        ? 'bg-gradient-to-r from-indigo-500/20 to-purple-500/20 ring-1 ring-indigo-500/50' 
-                        : `${t.cardBg} ${t.cardBgHover}`
-                    }`}
-                    style={{
-                      animationDelay: `${index * 30}ms`
-                    }}
-                  >
+              ) : viewMode === "list" ? (
+                /* List View */
+                <div className="space-y-2">
+                  {processedClips.map((clip, index) => (
+                    <div 
+                      key={clip.id} 
+                      onClick={() => !isSelectMode && setSelectedClipId(clip.id)}
+                      onMouseEnter={() => setHoveredId(clip.id)}
+                      onMouseLeave={() => setHoveredId(null)}
+                      className={`relative p-3 cursor-pointer rounded-xl transition-all duration-300 group ${
+                        selectedClipId === clip.id 
+                          ? 'bg-gradient-to-r from-indigo-500/20 to-purple-500/20 ring-1 ring-indigo-500/50' 
+                          : `${t.cardBg} ${t.cardBgHover}`
+                      }`}
+                      style={{
+                        animationDelay: `${index * 30}ms`
+                      }}
+                    >
                     {/* Hover glow effect */}
                     {hoveredId === clip.id && selectedClipId !== clip.id && (
                       <div className={`absolute inset-0 rounded-xl bg-gradient-to-r ${t.gradientCard} pointer-events-none`} />
@@ -931,6 +930,7 @@ function HistoryLayout() {
                 ))}
               </div>
             )}
+            </div>
           </div>
        </div>
 
