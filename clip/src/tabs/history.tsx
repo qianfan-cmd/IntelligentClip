@@ -233,17 +233,21 @@ function HistoryLayout() {
     }
   }, [])
 
-  const loadClips = async () => {
+  const loadClips = useCallback(async () => {
     const data = await ClipStore.getAll()
     // Sort by createdAt in descending order (newest first)
     const sorted = data.sort((a, b) => b.createdAt - a.createdAt)
     setClips(sorted)
-  }
+  }, [])
 
-  const loadFolders = async () => {
+  const loadFolders = useCallback(async () => {
     const data = await FolderStore.getAll()
     setFolders(data)
-  }
+  }, [])
+
+  const closeEditModal = useCallback(() => {
+    setEditingClip(null)
+  }, [])
 
   const handleDelete = async (id: string) => {
     if (confirm("确定要删除这个剪藏吗？")) {
@@ -481,7 +485,9 @@ function HistoryLayout() {
     return text.slice(0, maxLength) + "..."
   }
 
-  const selectedClip = clips.find(c => c.id === selectedClipId)
+  const selectedClip = useMemo(() => {
+    return clips.find(c => c.id === selectedClipId) || null
+  }, [clips, selectedClipId])
 
   // Update extension context when clip changes
   useEffect(() => {
@@ -508,15 +514,16 @@ function HistoryLayout() {
     } else {
       setCurrentClipId(null)
     }
-  }, [selectedClip, setExtensionData, setCurrentClipId])
+  }, [selectedClipId, setExtensionData, setCurrentClipId])
 
   return (
     <div className={`flex h-screen w-full ${t.pageBg} ${t.textSecondary} font-sans overflow-hidden transition-colors duration-300`}>
        {/* Edit Modal */}
        {editingClip && (
          <ClipEditModal
+           key={editingClip.id}
            clip={editingClip}
-           onClose={() => setEditingClip(null)}
+           onClose={closeEditModal}
            onSaved={loadClips}
            theme={theme}
          />

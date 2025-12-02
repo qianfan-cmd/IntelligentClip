@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react"
+import React, { useState, useRef, useCallback } from "react"
 import { ClipStore, type Clip, type ClipImage } from "@/lib/clip-store"
 import { X, Save, Trash2, Plus, Image as ImageIcon, FileText, Link, Loader2, AlertCircle } from "lucide-react"
 
@@ -12,10 +12,18 @@ interface ClipEditModalProps {
 export default function ClipEditModal({ clip, onClose, onSaved, theme }: ClipEditModalProps) {
   const isDark = theme === "dark"
   
+  // 保存初始值的引用，避免在每次渲染时重新计算
+  const initialValues = useRef({
+    title: clip.title,
+    rawTextFull: clip.rawTextFull || clip.rawTextSnippet || "",
+    notes: clip.notes || "",
+    images: JSON.stringify(clip.images || [])
+  })
+  
   // 编辑状态
-  const [title, setTitle] = useState(clip.title)
-  const [rawTextFull, setRawTextFull] = useState(clip.rawTextFull || clip.rawTextSnippet || "")
-  const [notes, setNotes] = useState(clip.notes || "")
+  const [title, setTitle] = useState(initialValues.current.title)
+  const [rawTextFull, setRawTextFull] = useState(initialValues.current.rawTextFull)
+  const [notes, setNotes] = useState(initialValues.current.notes)
   const [images, setImages] = useState<ClipImage[]>(clip.images || [])
   
   // UI 状态
@@ -94,14 +102,14 @@ export default function ClipEditModal({ clip, onClose, onSaved, theme }: ClipEdi
   // 关闭时检查是否有未保存的更改
   const hasChanges = useCallback(() => {
     return (
-      title !== clip.title ||
-      rawTextFull !== (clip.rawTextFull || clip.rawTextSnippet || "") ||
-      notes !== (clip.notes || "") ||
-      JSON.stringify(images) !== JSON.stringify(clip.images || [])
+      title !== initialValues.current.title ||
+      rawTextFull !== initialValues.current.rawTextFull ||
+      notes !== initialValues.current.notes ||
+      JSON.stringify(images) !== initialValues.current.images
     )
-  }, [title, rawTextFull, notes, images, clip])
+  }, [title, rawTextFull, notes, images])
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (hasChanges()) {
       if (confirm("有未保存的更改，确定要关闭吗？")) {
         onClose()
@@ -109,10 +117,10 @@ export default function ClipEditModal({ clip, onClose, onSaved, theme }: ClipEdi
     } else {
       onClose()
     }
-  }
+  }, [hasChanges, onClose])
 
-  // ESC 关闭
-  useEffect(() => {
+  // ESC 关闭 - 使用 useCallback 稳定的 handleClose
+  React.useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         handleClose()
@@ -120,20 +128,20 @@ export default function ClipEditModal({ clip, onClose, onSaved, theme }: ClipEdi
     }
     window.addEventListener("keydown", handleEsc)
     return () => window.removeEventListener("keydown", handleEsc)
-  }, [hasChanges])
+  }, [handleClose])
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ isolation: 'isolate' }}>
       {/* 背景遮罩 */}
       <div 
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/70"
         onClick={handleClose}
       />
       
       {/* Modal 内容 */}
       <div className={`relative w-full max-w-3xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden ${
         isDark ? "bg-[#12121a]" : "bg-white"
-      }`}>
+      }`} style={{ transform: 'translateZ(0)' }}>
         {/* Header */}
         <div className={`flex items-center justify-between px-6 py-4 border-b ${
           isDark ? "border-white/10" : "border-gray-200"

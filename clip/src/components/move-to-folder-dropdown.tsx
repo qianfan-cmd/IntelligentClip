@@ -33,6 +33,15 @@ export default function MoveToFolderDropdown({
       setFolders(data.sort((a, b) => a.createdAt - b.createdAt))
     }
     loadFolders()
+    
+    // 监听存储变化，当文件夹列表更新时自动刷新
+    const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
+      if (areaName === "local" && changes.folders) {
+        loadFolders()
+      }
+    }
+    chrome.storage.onChanged.addListener(handleStorageChange)
+    return () => chrome.storage.onChanged.removeListener(handleStorageChange)
   }, [])
 
   // 点击外部关闭
