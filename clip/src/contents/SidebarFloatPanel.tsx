@@ -383,7 +383,7 @@ function PanelContent({ onClose, onRefresh, initialChatText }: { onClose: () => 
             className={`p-2 rounded-lg transition-colors ${
               isDarkMode ? "hover:bg-slate-800 text-slate-500 hover:text-slate-300" : "hover:bg-slate-100 text-slate-400 hover:text-slate-600"
             }`}
-            onClick={() => window.open("https://github.com/your-repo", "_blank", "noopener,noreferrer")}
+            onClick={() => window.open("https://gitee.com/qyf150128/clip-plugin", "_blank", "noopener,noreferrer")}
             title="Help"
           >
             <FiHelpCircle className="w-4 h-4" />
