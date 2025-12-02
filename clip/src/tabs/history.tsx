@@ -182,6 +182,7 @@ function HistoryLayout() {
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest")
   const [filterSource, setFilterSource] = useState<string>("all")
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
+  const [folderSidebarCollapsed, setFolderSidebarCollapsed] = useState(false)
   
   // Batch selection state
   const [isSelectMode, setIsSelectMode] = useState(false)
@@ -624,6 +625,8 @@ function HistoryLayout() {
               totalCount={stats.total}
               uncategorizedCount={uncategorizedCount}
               theme={theme}
+              collapsed={folderSidebarCollapsed}
+              onToggleCollapse={() => setFolderSidebarCollapsed(!folderSidebarCollapsed)}
             />
           </div>
 

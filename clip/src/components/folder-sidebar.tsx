@@ -5,6 +5,7 @@ import {
   FolderPlus, 
   FolderOpen, 
   ChevronRight,
+  ChevronDown,
   MoreHorizontal,
   Edit3,
   Trash2,
@@ -20,6 +21,8 @@ interface FolderSidebarProps {
   totalCount: number
   uncategorizedCount: number
   theme: "dark" | "light"
+  collapsed?: boolean
+  onToggleCollapse?: () => void
 }
 
 // 预设颜色
@@ -40,7 +43,9 @@ export default function FolderSidebar({
   clipCounts,
   totalCount,
   uncategorizedCount,
-  theme
+  theme,
+  collapsed = false,
+  onToggleCollapse
 }: FolderSidebarProps) {
   const isDark = theme === "dark"
   const [folders, setFolders] = useState<Folder[]>([])
@@ -132,15 +137,37 @@ export default function FolderSidebar({
 
   return (
     <div className={`w-full ${isDark ? "text-gray-300" : "text-gray-700"}`}>
-      {/* 标题 */}
-      <div className="flex items-center justify-between mb-3 px-1">
-        <h3 className={`text-xs font-semibold uppercase tracking-wider ${
-          isDark ? "text-gray-500" : "text-gray-400"
-        }`}>
-          文件夹
-        </h3>
+      {/* 标题 - 可点击折叠 */}
+      <div 
+        className={`flex items-center justify-between mb-2 px-1 py-1.5 rounded-lg cursor-pointer transition-colors ${
+          isDark ? "hover:bg-white/5" : "hover:bg-gray-50"
+        }`}
+        onClick={onToggleCollapse}
+      >
+        <div className="flex items-center gap-2">
+          {collapsed ? (
+            <ChevronRight className={`w-3.5 h-3.5 ${isDark ? "text-gray-500" : "text-gray-400"}`} />
+          ) : (
+            <ChevronDown className={`w-3.5 h-3.5 ${isDark ? "text-gray-500" : "text-gray-400"}`} />
+          )}
+          <h3 className={`text-xs font-semibold uppercase tracking-wider ${
+            isDark ? "text-gray-500" : "text-gray-400"
+          }`}>
+            文件夹
+          </h3>
+          {collapsed && (
+            <span className={`text-xs px-1.5 py-0.5 rounded ${
+              isDark ? "bg-white/10 text-gray-400" : "bg-gray-200 text-gray-500"
+            }`}>
+              {folders.length + 2}
+            </span>
+          )}
+        </div>
         <button
-          onClick={() => setIsCreating(true)}
+          onClick={(e) => {
+            e.stopPropagation()
+            setIsCreating(true)
+          }}
           className={`p-1 rounded-lg transition-colors ${
             isDark 
               ? "hover:bg-white/10 text-gray-500 hover:text-indigo-400" 
@@ -152,7 +179,32 @@ export default function FolderSidebar({
         </button>
       </div>
 
-      {/* 创建文件夹表单 */}
+      {/* 折叠时显示当前选中的文件夹 */}
+      {collapsed && selectedFolderId !== null && (
+        <div className={`px-3 py-2 mb-2 rounded-xl text-sm ${
+          isDark ? "bg-indigo-500/20 text-indigo-300" : "bg-indigo-50 text-indigo-700"
+        }`}>
+          <div className="flex items-center gap-2">
+            {selectedFolderId === "uncategorized" ? (
+              <>
+                <FolderIcon className="w-4 h-4" />
+                <span>未归类</span>
+              </>
+            ) : (
+              <>
+                <div className={`w-4 h-4 rounded ${getColorClass(
+                  folders.find(f => f.id === selectedFolderId)?.color
+                )}`} />
+                <span className="truncate">
+                  {folders.find(f => f.id === selectedFolderId)?.name || "未知"}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 创建文件夹表单 - 不受折叠影响 */}
       {isCreating && (
         <div className={`mb-3 p-3 rounded-xl ${
           isDark ? "bg-white/5" : "bg-gray-50"
@@ -208,9 +260,10 @@ export default function FolderSidebar({
         </div>
       )}
 
-      {/* 文件夹列表 */}
-      <div className="space-y-1">
-        {/* 全部剪藏 */}
+      {/* 文件夹列表 - 可折叠 */}
+      {!collapsed && (
+        <div className="space-y-1">
+          {/* 全部剪藏 */}
         <button
           onClick={() => onSelectFolder(null)}
           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
@@ -371,7 +424,8 @@ export default function FolderSidebar({
             )}
           </div>
         ))}
-      </div>
+        </div>
+      )}
 
       {/* 删除确认对话框 */}
       {deletingId && (
