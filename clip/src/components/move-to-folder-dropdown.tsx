@@ -23,8 +23,15 @@ export default function MoveToFolderDropdown({
   const [isOpen, setIsOpen] = useState(false)
   const [isMoving, setIsMoving] = useState(false)
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 })
+  const [dropdownHeight, setDropdownHeight] = useState(0) // 存储动态计算的下拉框高度
   const buttonRef = useRef<HTMLButtonElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  
+  // 计算下拉框项的高度
+  const ITEM_HEIGHT = 40 // 每个选项的高度 (py-2.5 = 10px padding top + bottom + 20px content ~ 40px)
+  const SEPARATOR_HEIGHT = 8 // 分隔线高度 (my-1 = 4px margin top + bottom ~ 8px)
+  const NO_FOLDERS_HEIGHT = 64 // 无文件夹提示的高度 (py-4 = 16px padding top + bottom ~ 64px)
+  const MAX_HEIGHT = 320 // 设置最大高度，防止下拉框过高
 
   // 加载文件夹
   useEffect(() => {
@@ -60,14 +67,38 @@ export default function MoveToFolderDropdown({
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
+  // 根据文件夹数量动态计算下拉框高度
+  // 测试指导：
+  // 1. 无文件夹场景：创建一个空文件夹列表，验证下拉框高度是否为NO_FOLDERS_HEIGHT (64px)
+  // 2. 少量文件夹场景：添加1-5个文件夹，验证下拉框高度是否按比例增加
+  // 3. 大量文件夹场景：添加超过20个文件夹，验证下拉框高度是否限制在MAX_HEIGHT (320px)
+  // 4. 临界值测试：添加刚好让高度接近MAX_HEIGHT的文件夹数量，验证是否正确限制
+  useEffect(() => {
+    if (isOpen) {
+      let calculatedHeight: number
+      
+      if (folders.length === 0) {
+        // 无文件夹时只显示提示信息
+        calculatedHeight = NO_FOLDERS_HEIGHT
+      } else {
+        // 计算所有文件夹选项的总高度
+        // 1个分隔线 + 文件夹数量个选项 + 未归类选项
+        calculatedHeight = ITEM_HEIGHT + SEPARATOR_HEIGHT + (folders.length * ITEM_HEIGHT)
+        // 确保高度不超过最大值
+        calculatedHeight = Math.min(calculatedHeight, MAX_HEIGHT)
+      }
+      
+      setDropdownHeight(calculatedHeight)
+    }
+  }, [folders.length, isOpen])
+
   // 计算下拉框位置，并在打开时刷新文件夹列表
   useEffect(() => {
-    if (isOpen && buttonRef.current) {
+    if (isOpen && buttonRef.current && dropdownHeight > 0) {
       const rect = buttonRef.current.getBoundingClientRect()
       const dropdownWidth = 192 // w-48 (12rem)
       const windowWidth = window.innerWidth
       const windowHeight = window.innerHeight
-      const dropdownHeight = 256 // max-h-64 估算
       
       // 计算左侧位置：优先按钮左对齐，如果超出屏幕右边则右对齐
       let left = rect.left
@@ -96,7 +127,7 @@ export default function MoveToFolderDropdown({
       }
       refreshFolders()
     }
-  }, [isOpen])
+  }, [isOpen, dropdownHeight])
 
   // 移动到文件夹
   const handleMove = async (folderId: string | undefined) => {
@@ -177,7 +208,8 @@ export default function MoveToFolderDropdown({
       {isOpen && createPortal(
         <div 
           ref={dropdownRef}
-          className={`fixed w-48 rounded-xl shadow-2xl py-1 max-h-64 overflow-y-auto ${
+          style={{ height: dropdownHeight }} 
+          className={`fixed w-48 rounded-xl shadow-2xl py-1 overflow-y-auto ${
             isDark 
               ? "bg-[#1a1a24] ring-1 ring-white/10" 
               : "bg-white ring-1 ring-gray-200 shadow-lg"
