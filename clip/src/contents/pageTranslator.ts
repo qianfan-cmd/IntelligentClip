@@ -308,7 +308,12 @@ function requestTranslation(text: string, lang: string): Promise<string> {
         __clipTrace.direct_gtx++
         return (out || "").trim() || text
       } catch { return text }
-    })().then((v) => { if (!finished) finish(v) }).catch(() => {})
+    })().then((v) => {
+      if (finished) return
+      const isZhTarget = /^zh/i.test(targetLang)
+      const hasTarget = isZhTarget ? /[\u4e00-\u9fa5]/.test(v) : /[A-Za-z]/.test(v)
+      if (hasTarget && v !== text) finish(v)
+    }).catch(() => {})
 
     try {
       if (chrome.runtime?.id) {
