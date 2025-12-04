@@ -407,7 +407,7 @@ function PanelContent({ onClose, onRefresh, initialChatText }: { onClose: () => 
   }, [])
 
   const openHomepage = () => {
-    chrome.runtime.sendMessage({ type: "clip:open-history" })
+    chrome.runtime.sendMessage({ type: "clip:open-history" }, () => {})
   }
 
   const handleDirectSaveFullPage = async () => {
@@ -590,7 +590,7 @@ function PanelContent({ onClose, onRefresh, initialChatText }: { onClose: () => 
                           ? "bg-slate-800/50 hover:bg-blue-900/20 border-slate-700 hover:border-blue-800" 
                           : "bg-slate-50 hover:bg-blue-50 border-slate-100 hover:border-blue-100"
                      }`}
-                     onClick={() => chrome.runtime.sendMessage({ type: "clip:open-history", clipId: clip.id })}
+                     onClick={() => chrome.runtime.sendMessage({ type: "clip:open-history", clipId: clip.id }, () => {})}
                    >
                      <div className="flex gap-3">
                        <div className="flex-1 min-w-0 flex flex-col justify-between">
@@ -811,12 +811,12 @@ function PanelContent({ onClose, onRefresh, initialChatText }: { onClose: () => 
               label: "Screenshot", 
               action: () => {
                 setIsScreenshotMode(true)
-                chrome.runtime.sendMessage({ type: "clip:start-screenshot" })
+                chrome.runtime.sendMessage({ type: "clip:start-screenshot" }, () => {})
               }, 
               active: isScreenshotMode 
             },
             { icon: FiGrid, label: "Clips", action: () => setPanelMode("clips"), active: panelMode === "clips" },
-            { icon: FiSettings, label: "Settings", action: () => chrome.runtime.sendMessage({ type: "clip:open-options" }), active: false }
+            { icon: FiSettings, label: "Settings", action: () => chrome.runtime.sendMessage({ type: "clip:open-options" }, () => {}), active: false }
           ].map((Item, idx) => (
             <button 
               key={idx}
@@ -903,7 +903,7 @@ function FloatClip() {
   useEffect(() => {
     const type = visible ? "clip:panel-open" : "clip:panel-close"
     try { window.postMessage({ source: "clip", type }, "*") } catch {}
-    try { chrome.runtime.sendMessage({ type }) } catch {}
+    try { chrome.runtime.sendMessage({ type }, () => {}) } catch {}
   }, [visible])
 
   if (!visible) return null

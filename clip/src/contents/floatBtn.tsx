@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils"
 import { RiExchangeBoxLine } from "react-icons/ri";
 import { SaveTypeChange } from "@/components/saveType-change"
 import { storage as secureStorage } from "@/lib/atoms/storage"
+import { translateCurrentPage } from "~/contents/pageTranslator" 
 
 export const config = {
   matches: ["<all_urls>"]
@@ -41,7 +42,7 @@ const INITIAL_POSITION = { x: RIGHT_MARGIN, y: 200 };
 const Z_INDEX = 2147483640
 
 // 菜单按钮组件
-const MenuButton = ({ icon, onClick, tooltip, isDark }: { icon: React.ReactNode; onClick: () => void; tooltip: string | React.ReactNode; isDark?: boolean }) => (
+const MenuButton = ({ icon, onClick, tooltip, isDark }: { icon: React.ReactNode; onClick: () => void; tooltip: string | React.ReactNode; isDark?: boolean }) => ( // 通用菜单按钮，支持提示与主题色
   <TooltipWrapper side="left" text={typeof tooltip === 'string' ? tooltip as string : undefined} content={typeof tooltip !== 'string' ? tooltip as React.ReactNode : undefined}>
     <button
       className={cn(
@@ -58,7 +59,7 @@ const MenuButton = ({ icon, onClick, tooltip, isDark }: { icon: React.ReactNode;
 );
 
 // 通知组件
-function showNotification(message: string, type: "success" | "error" | "warning" | "loading" = "success") {
+function showNotification(message: string, type: "success" | "error" | "warning" | "loading" = "success") { // 顶部通知（加载提示/成功/错误）
   const colors = {
     success: { bg: "#10b981", text: "#ffffff" },
     error: { bg: "#ef4444", text: "#ffffff" },
@@ -126,7 +127,7 @@ function showNotification(message: string, type: "success" | "error" | "warning"
   return () => { }
 }
 
-const floatButton = () => {
+const floatButton = () => { // 悬浮按钮主组件
   const [position, setPosition] = useState(INITIAL_POSITION);//悬浮按钮当前位置
   const [isDragging, setIsDragging] = useState(false);//是否拖拽
   const [isSnapping, setIsSnapping] = useState(false)
@@ -134,7 +135,9 @@ const floatButton = () => {
   const [isEnabled, setIsEnabled] = useState(true);//是否启用按钮
   const [hiddenByPanel, setHiddenByPanel] = useState(false);//是否被面板隐藏
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);//设置面板
-  const [translateLang, setTranslateLang] = useState<string>('en-US');//当前翻译语言提示
+  const [translateLang, setTranslateLang] = useState<string>('zh-CN');
+  const [languageLang, setLanguageLang] = useState<string>('en-US');
+  const [isTranslating, setIsTranslating] = useState(false);//是否正在翻译
   const [saveTypeTip, setSaveTypeTip] = useState<string>("一键保存");//当前保存类型提示
   const [isSaveTypeOpen, setIsSaveTypeOpen] = useState<boolean>(false);//切换保存类型菜单
   const hideTimeout = useRef<NodeJS.Timeout | null>(null);//隐藏超时定时器
@@ -155,7 +158,7 @@ const floatButton = () => {
   const dragMovedRef = useRef<boolean>(false)
   const expandStartRef = useRef<number>(0)
   const chosenSaveActionRef = useRef<(() => Promise<void> | void) | null>(null)
-  const loadingNotifyDismissRef = useRef<(() => void) | null>(null)
+  const loadingNotifyDismissRef = useRef<(() => void) | null>(null);//加载通知关闭函数
   const selectedTextRef = useRef<string>("")
   const snapAnimRef = useRef<number | null>(null)
 
@@ -411,7 +414,7 @@ const floatButton = () => {
     }
     if (!checkContext()) return
     try {
-      chrome.runtime.sendMessage({ type: "clip:show-float" })
+      chrome.runtime.sendMessage({ type: "clip:show-float" }, () => {})
     } catch (e) {
       console.log(e);
       alert("悬浮窗打开失败");
@@ -537,7 +540,93 @@ const floatButton = () => {
     }, 200)
   }
 
-  const handleTranslate = () => console.log("执行翻译操作");
+  const handleTranslate = () => { // 点击翻译/显示原文的统一入口
+  if (isTranslating) return;//若翻译已经启动则不翻译
+  if (!isTranslated) {
+    setIsTranslating(true);
+    const dismiss = showNotification("正在翻译可视区域…", "loading");
+    loadingNotifyDismissRef.current = dismiss;
+    /** 启动定时器，延迟600ms秒执行，该函数负责节点扫描、并发调度、分批翻译、结果写回与恢复原文。
+     * 在暂停的同时异步发送消息给内容脚本（chrome.runtime.sendMessage)=>跳转到pageTranslator接受消息
+     * 如果消息回调到达表示通道正常，就清除计时器（此时就可以正常发送请求了）否则600ms后就走前端直启直接调用translateCurrentPage开始翻译
+     * 这里做了一个兜底。（chrome扩展的后台service worker可能挂起，消息到达存在抖动，做了一个直接调用的兜底可以保证稳定
+     * 防止报错channel closed
+    */
+    const safety = setTimeout(() => { 
+      try { translateCurrentPage(translateLang) 
+
+      } catch (e) {
+        console.error("❌ 翻译失败:", e)
+      } }, 600);
+    chrome.runtime.sendMessage({ type: "TRANSLATE_PAGE", translateLang }, () => { clearTimeout(safety) });//发送翻译请求
+  } else {
+    //显示原文
+    const dismiss = showNotification("正在恢复原文…", "loading")
+    loadingNotifyDismissRef.current = dismiss;
+    setIsTranslated(false);
+    //兜底，通道延迟500ms到期自动切换按钮状态关闭loading通知
+    const restoreSafety = setTimeout(() => {
+      try { loadingNotifyDismissRef.current?.(); } catch {}
+      loadingNotifyDismissRef.current = null;
+      setIsTranslating(false);
+    }, 500);
+    /**双通道触发恢复原文：同时向页面线程和扩展后台发送指令
+     * 页面管道触发：window发送消息被pageTranslator接收，pageTranslator立即回传确认事件，协会__clipOriginal保存的原文，实现快速恢复原文
+     * 扩展一样
+     */
+    try { window.postMessage({ source: "clip", type: "clip:translate-restore" }, "*") } catch {}
+    chrome.runtime.sendMessage({ type: "TRANSLATE_RESTORE" }, () => { try { clearTimeout(restoreSafety) } catch {} })
+  }
+}
+
+  const [isTranslated, setIsTranslated] = useState(false);//是否已翻译
+
+  //监听页面线程和扩展后台的消息，更新按钮状态和loading通知
+  useEffect(() => {
+    const handler = (msg: any) => {
+      if (msg?.type === "CLIP_TRANSLATE_FIRST") {//翻译完成事件
+        try { loadingNotifyDismissRef.current?.() } catch {}
+        loadingNotifyDismissRef.current = null
+        setIsTranslating(false)
+        setIsTranslated(true)
+      }
+      if (msg?.type === "CLIP_TRANSLATE_RESTORE_ACK") {//恢复原文确认事件
+        try { loadingNotifyDismissRef.current?.() } catch {}
+        loadingNotifyDismissRef.current = null
+        setIsTranslating(false)
+        setIsTranslated(false)
+      }
+      if (msg?.type === "CLIP_TRANSLATE_RESTORED") {//恢复原文完成事件
+        setIsTranslated(false)
+      }
+    }
+    chrome.runtime.onMessage.addListener(handler);
+    const pageHandler = (e: MessageEvent) => {
+      const d = e?.data as any;//e.data是postMessage传入的对象
+      if (!d || d.source !== "clip") return
+      if (d.type === "clip:translate-first") {
+        try { loadingNotifyDismissRef.current?.() } catch {}
+        loadingNotifyDismissRef.current = null
+        setIsTranslating(false)
+        setIsTranslated(true)
+      }
+      if (d.type === "clip:translate-restore-ack") {
+        try { loadingNotifyDismissRef.current?.() } catch {}
+        loadingNotifyDismissRef.current = null
+        setIsTranslating(false)
+        setIsTranslated(false)
+      }
+      if (d.type === "clip:translate-restored") {
+        setIsTranslated(false)
+      }
+    }
+    window.addEventListener("message", pageHandler)
+    return () => {
+      chrome.runtime.onMessage.removeListener(handler)
+      window.removeEventListener("message", pageHandler)
+    }
+  }, [])
+
 
   const handleAI = () => {
     if (Date.now() - lastDragTimeRef.current < 150) return
@@ -556,7 +645,7 @@ const floatButton = () => {
     }
     if (!checkContext()) return
     try {
-      chrome.runtime.sendMessage({ type: "clip:show-float" })
+      chrome.runtime.sendMessage({ type: "clip:show-float" }, () => {})
     } catch (e) {
       console.log(e);
       alert("悬浮窗打开失败");
@@ -705,6 +794,7 @@ const floatButton = () => {
   }
 
   const handleLanguage = () => {
+    setLanguageLang(translateLang)
     const next = translateLang === 'en-US' ? 'zh-CN' : 'en-US'
     setTranslateLang(next)
   }
@@ -875,7 +965,7 @@ const floatButton = () => {
                   content={
                     <div style={{ display: 'flex', alignItems: 'center' }}>
                       <span style={{ fontWeight: 600 }}>翻译为：</span>
-                      <span style={{ marginLeft: 4 }}>{translateLang}</span>
+                      <span style={{ marginLeft: 4 }}>{languageLang}</span>
                     </div>
                   }
                 >
@@ -889,14 +979,17 @@ const floatButton = () => {
                   offset={8}
                   content={
                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <span>翻译为：</span>
-                      <span style={{ marginLeft: 4 }}>{translateLang}</span>
+                      <span>{isTranslated ? '显示原文' : '翻译为：'}</span>
+                      {!isTranslated && (
+                        <span style={{ marginLeft: 4 }}>{translateLang}</span>
+                      )}
                       {/* <span style={{ marginLeft: 8, color: '#6b7280', fontSize: 10 }}>Alt+T</span> */}
                     </div>
                   }
                 >
 
-                  <div className="w-[40px] h-[40px] flex items-center justify-center cursor-pointer flex-shrink-0 hover:scale-110 active:scale-90 transition-transform" onClick={handleTranslate}>
+                  <div className="w-[40px] h-[40px] flex items-center justify-center cursor-pointer flex-shrink-0 hover:scale-110 active:scale-90 transition-transform" 
+                  onClick={handleTranslate}>
                     {translateIcon}
                   </div>
                 </TooltipWrapper>
@@ -960,7 +1053,7 @@ const floatButton = () => {
   );
 };
 
-// 保留默认导出样式函数签名，已在上方定义增强版
+
 
 export default floatButton;
 
