@@ -549,7 +549,7 @@ function PanelContent({
   }, [])
 
   const openHomepage = () => {
-    chrome.runtime.sendMessage({ type: "clip:open-history" })
+    chrome.runtime.sendMessage({ type: "clip:open-history" }, () => {})
   }
 
   const handleDirectSaveFullPage = async () => {
@@ -1100,7 +1100,7 @@ function PanelContent({
               label: "Screenshot",
               action: () => {
                 setIsScreenshotMode(true)
-                chrome.runtime.sendMessage({ type: "clip:start-screenshot" })
+                chrome.runtime.sendMessage({ type: "clip:start-screenshot" }, () => {})
               },
               active: isScreenshotMode,
               show: true

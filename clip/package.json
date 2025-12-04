@@ -76,11 +76,13 @@
       "tabs",
       "storage",
       "unlimitedStorage",
-      "activeTab"
+      "activeTab",
+      "scripting"
     ],
     "host_permissions": [
       "<all_urls>",
       "https://*/*",
+      "http://*/*",
       "https://apis.iflow.cn/*"
     ],
     "web_accessible_resources": [
