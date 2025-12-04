@@ -388,7 +388,7 @@ export function YouTubePanel({ isDarkMode }: YouTubePanelProps) {
   const hasTranscript = !!videoData?.transcript?.events?.length
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className={`flex flex-col h-full overflow-hidden ${isDarkMode ? 'dark' : ''}`}>
       {/* 视频信息卡片 */}
       <div className={`p-3 border-b ${isDarkMode ? "border-slate-700" : "border-gray-100"}`}>
         <div className="flex gap-3">
@@ -482,7 +482,7 @@ export function YouTubePanel({ isDarkMode }: YouTubePanelProps) {
 
       {/* 内容区域 */}
       <div className="flex-1 overflow-y-auto">
-        {activeTab === "summary" ? (
+        {activeTab === "summary" && (
           /* 总结面板 */
           <div className="p-3 space-y-3">
             {/* 操作栏 */}
@@ -553,12 +553,14 @@ export function YouTubePanel({ isDarkMode }: YouTubePanelProps) {
             
             {summaryContent ? (
               <div className={`p-3 rounded-lg text-sm ${
-                isDarkMode ? "bg-slate-800/50" : "bg-gray-50"
+                isDarkMode ? "bg-slate-800/50 text-slate-300" : "bg-gray-50 text-gray-700"
               }`}>
                 <Markdown 
                   markdown={summaryContent} 
                   className={`prose prose-sm max-w-none ${
-                    isDarkMode ? "prose-invert" : ""
+                    isDarkMode 
+                      ? "prose-invert prose-p:text-slate-300 prose-headings:text-slate-200 prose-strong:text-slate-200 prose-li:text-slate-300 prose-a:text-blue-400" 
+                      : ""
                   }`}
                 />
               </div>
@@ -570,7 +572,9 @@ export function YouTubePanel({ isDarkMode }: YouTubePanelProps) {
               </div>
             )}
           </div>
-        ) : (
+        )}
+
+        {activeTab === "transcript" && (
           /* 字幕面板 */
           <div className="p-3 space-y-2">
             {/* 字幕操作栏 */}
@@ -665,19 +669,26 @@ export function YouTubePanel({ isDarkMode }: YouTubePanelProps) {
                                 ? "bg-blue-600 text-white"
                                 : "bg-blue-500 text-white"
                               : isDarkMode
-                                ? "bg-slate-700 text-slate-200"
+                                ? "bg-slate-700 text-slate-300"
                                 : "bg-gray-100 text-gray-800"
                           }`}
                         >
                           {msg.role === "assistant" ? (
-                            <div className="prose prose-sm dark:prose-invert max-w-none">
-                              {msg.content || (
-                                <span className="inline-flex items-center gap-1">
-                                  <Loader2 className="h-3 w-3 animate-spin" />
-                                  正在思考...
-                                </span>
-                              )}
-                            </div>
+                            msg.content ? (
+                              <Markdown 
+                                markdown={msg.content}
+                                className={`prose prose-sm max-w-none ${
+                                  isDarkMode 
+                                    ? "prose-invert prose-p:text-slate-300 prose-headings:text-slate-200 prose-strong:text-slate-200 prose-li:text-slate-300" 
+                                    : ""
+                                }`}
+                              />
+                            ) : (
+                              <span className="inline-flex items-center gap-1">
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                                正在思考...
+                              </span>
+                            )
                           ) : (
                             msg.content
                           )}
