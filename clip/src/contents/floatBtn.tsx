@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils"
 import { RiExchangeBoxLine } from "react-icons/ri";
 import { SaveTypeChange } from "@/components/saveType-change"
 import { storage as secureStorage } from "@/lib/atoms/storage"
+import { DialogOverlay } from '@radix-ui/react-dialog';
 
 export const config = {
   matches: ["<all_urls>"]
@@ -43,9 +44,10 @@ const Z_INDEX = 2147483640
 // 菜单按钮组件
 const MenuButton = ({ icon, onClick, tooltip, isDark }: { icon: React.ReactNode; onClick: () => void; tooltip: string | React.ReactNode; isDark?: boolean }) => (
   <TooltipWrapper side="left" text={typeof tooltip === 'string' ? tooltip as string : undefined} content={typeof tooltip !== 'string' ? tooltip as React.ReactNode : undefined}>
+    {/* 此处有修改（单位由默认的 rem 换算成 px）：p-[12px] */}
     <button
       className={cn(
-        "p-3 border-none rounded-full shadow-md cursor-pointer transition-colors duration-150 outline-none overflow-hidden w-[40px] h-[40px] flex items-center justify-center hover:scale-110 active:scale-90 group",
+        "p-[12px] border-none rounded-full shadow-md cursor-pointer transition-colors duration-150 outline-none overflow-hidden w-[40px] h-[40px] flex items-center justify-center hover:scale-110 active:scale-90 group",
         isDark ? "bg-neutral-900 text-white" : "bg-white text-gray-900"
       )}
       onClick={onClick}
@@ -797,10 +799,11 @@ const floatButton = () => {
                 width: 40, height: 40
               }}
             >
+              {/* 此处有修改（单位由默认的 rem 换算成了 px）： hover:px-[8px] */}
               <div className={cn(
-                "absolute right-0 top-0 w-[40px] h-[40px] rounded-[20px] shadow-md flex items-center justify-center overflow-hidden px-0 transition-[width,box-shadow,padding] duration-300 z-20 hover:w-[90px] hover:justify-between hover:shadow-lg hover:px-2 group",
+                "absolute right-0 top-0 w-[40px] h-[40px] rounded-[20px] shadow-md flex items-center justify-center overflow-hidden px-0 transition-[width,box-shadow,padding] duration-300 z-20 hover:w-[90px] hover:justify-between hover:shadow-lg hover:px-[8px] group",
                 isDark ? "bg-neutral-900 text-white" : "bg-white text-gray-900",
-                isSaveTypeOpen && "w-[90px] justify-between shadow-lg px-2"
+                isSaveTypeOpen && "w-[90px] justify-between shadow-lg px-[8px]"
               )}>
                 <TooltipWrapper
                   side="top"
@@ -832,7 +835,7 @@ const floatButton = () => {
                         allPageSave: "整页剪藏",
                         allPageAISave: "AI整页剪藏",
                         selectSave: "选中剪藏",
-                        selectAISave: "AI摘要剪藏"
+                        selectAISave: "AI选中剪藏"
                       } as Record<string, string>)[saveTypeTip] || "整页剪藏"}</span>
                     </div>
                   }
@@ -908,7 +911,7 @@ const floatButton = () => {
               className="absolute top-1/2 left-1/2 origin-center transition-all duration-300 ease-out delay-150"
               style={{ transform: getTransform('ai') }}
             >
-              <MenuButton icon={aiIcon} onClick={handleAI} tooltip='ai对话' isDark={isDark} />
+              <MenuButton icon={aiIcon} onClick={handleAI} tooltip='AI 对话' isDark={isDark} />
             </div>
           </div>
         </div>
@@ -922,9 +925,10 @@ const floatButton = () => {
         onClick={handleMain}
       >
         <AiOutlineRobot color='currentColor' size={24} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[20px] h-[20px] transition-transform duration-300 ease-in-out group-hover:scale-105 group-active:scale-90" />
+        {/* 此处有修改（单位由默认的 rem 换算成了 px）：-right-[10px] -top-[10px] w-[16px] h-[16px] */}
         <div
           className={cn(
-            "absolute -right-2.5 -top-2.5 w-4 h-4 rounded-full shadow flex items-center justify-center font-bold cursor-pointer transition-transform scale-0 text-[10px]",
+            "absolute -right-[10px] -top-[10px] w-[16px] h-[16px] rounded-full shadow flex items-center justify-center font-bold cursor-pointer transition-transform scale-0 text-[10px]",
             isDark ? "bg-neutral-900 text-gray-200 hover:bg-gray-600" : "bg-gray-200 text-gray-700 hover:bg-gray-300",
             isMenuOpen && "scale-100"
           )}
@@ -933,9 +937,10 @@ const floatButton = () => {
         >
           -
         </div>
+        {/* 下面几行有修改（单位由默认的 rem 换算成了 px）：gap-[4px] px-[8px] py-[4px] w-[12px] h-[12px]*/}
         {loading && (
-          <div className="absolute left-[48px] top-1/2 -translate-y-1/2 flex items-center gap-1 rounded-md bg-black/80 text-white px-2 py-1 text-[11px] shadow animate-fade-in">
-            <div className="w-3 h-3 rounded-full border-2 border-white/60 border-t-transparent animate-spin"></div>
+          <div className="absolute left-[48px] top-1/2 -translate-y-1/2 flex items-center gap-[4px] rounded-md bg-black/80 text-white px-[8px] py-[4px] text-[11px] shadow animate-fade-in">
+            <div className="w-[12px] h-[12px] rounded-full border-2 border-white/60 border-t-transparent animate-spin"></div>
             <span>{loadingType === "full" || loadingType === "selection" ? "AI处理中…" : "保存中…"}</span>
           </div>
         )}
@@ -944,14 +949,15 @@ const floatButton = () => {
       {/* 打开设置面板 */}
       {isSettingsOpen && (
         <div
-          className="absolute top-6 right-5 w-[180px] bg-gray-800 text-gray-200 rounded-[10px] shadow-xl py-1.5 z-[2147483647] text-[13px] leading-snug"
+          className="absolute top-[24px] right-[20px] w-[180px] bg-gray-800 text-gray-200 rounded-[10px] shadow-xl py-[6px] z-[2147483647] text-[13px] leading-snug"
           onMouseDown={(e) => e.stopPropagation()}
         >
-          <div className="px-3 py-2 cursor-pointer hover:bg-white/5 transition-colors" onClick={handleHideOnce}>隐藏直到下次访问</div>
-          <div className="px-3 py-2 cursor-pointer hover:bg-white/5 transition-colors" onClick={handleDisableSite}>在此网站禁用</div>
-          <div className="px-3 py-2 cursor-pointer hover:bg-white/5 transition-colors" onClick={handleDisableGlobal}>全局禁用</div>
-          <div className="h-px bg-white/10 my-1.5 mx-3"></div>
-          <div className="px-3 py-1.5 text-gray-400 text-xs">您可以在此处重新启用 设置</div>
+          {/* 此处有修改（单位由默认的 rem 换算成了 px）：px-3 py-4 => px-[12px] py-[8px] */}
+          <div className="px-[12px] py-[8px] cursor-pointer hover:bg-white/5 transition-colors" onClick={handleHideOnce}>隐藏直到下次访问</div>
+          <div className="px-[12px] py-[8px] cursor-pointer hover:bg-white/5 transition-colors" onClick={handleDisableSite}>在此网站禁用</div>
+          <div className="px-[12px] py-[8px] cursor-pointer hover:bg-white/5 transition-colors" onClick={handleDisableGlobal}>全局禁用</div>
+          <div className="h-px bg-white/10 my-[6px] mx-[12px]"></div>
+          <div className="px-[12px] py-[6px] text-gray-400 text-[12px]">您可以在此处重新启用 设置</div>
         </div>
       )}
 
