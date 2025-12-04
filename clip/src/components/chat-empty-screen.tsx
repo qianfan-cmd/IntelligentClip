@@ -7,23 +7,23 @@ import { useExtension } from "@/contexts/extension-context"
 import { cn } from "@/lib/utils"
 import { MessageCircle, ArrowRight, WifiOff } from "lucide-react"
 
-// 预设问题示例
+// 预设问题示例 - 使用通用表述，适用于各类剪藏内容（网页、视频、文章等）
 const exampleMessages = [
   {
-    heading: "📝 这个视频讲了什么？",
-    message: "请简要概括这个视频的主要内容"
+    heading: "📝 快速了解剪藏内容？",
+    message: "请简要概括剪藏内容的主要信息"
   },
   {
     heading: "💡 有哪些关键要点？",
-    message: "这个视频有哪些关键要点和核心观点？"
+    message: "这篇剪藏内容有哪些关键要点和核心观点？"
   },
   {
     heading: "🎯 总结主要收获",
-    message: "观看这个视频能获得哪些主要收获和启发？"
+    message: "阅读这篇剪藏内容能获得哪些主要收获和启发？"
   },
   {
     heading: "❓ 深入某个话题",
-    message: "能详细解释一下视频中提到的主要概念吗？"
+    message: "能详细解释一下剪藏内容中提到的主要概念吗？"
   }
 ]
 
@@ -37,7 +37,7 @@ export default function EmptyScreen({ className, setPromptInput }: EmptyScreenPr
   
   const hasTranscript = extensionData?.transcript?.events && extensionData.transcript.events.length > 0
 
-  // 无字幕状态
+  // 无内容状态
   if (!hasTranscript && !extensionLoading) {
     return (
       <div className={cn("flex flex-col items-center justify-center h-full px-6 py-8", className)}>
@@ -45,10 +45,10 @@ export default function EmptyScreen({ className, setPromptInput }: EmptyScreenPr
           <WifiOff className="h-8 w-8 text-amber-500" />
         </div>
         <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">
-          无法获取字幕
+          无法获取内容
         </h3>
         <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-[260px]">
-          当前视频没有可用的字幕/CC，对话功能需要字幕才能工作。请选择一个有字幕的视频。
+          当前剪藏没有可用的文本内容，对话功能需要内容才能工作。请选择一个有内容的剪藏。
         </p>
       </div>
     )
@@ -62,10 +62,10 @@ export default function EmptyScreen({ className, setPromptInput }: EmptyScreenPr
           <MessageCircle className="h-7 w-7 text-indigo-500" />
         </div>
         <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-1">
-          AI 视频助手
+          AI 剪藏助手
         </h3>
         <p className="text-xs text-gray-500 dark:text-gray-400 max-w-[240px] leading-relaxed">
-          基于视频内容进行智能问答，帮助你快速理解和探索视频中的知识
+          基于剪藏内容进行智能问答，帮助你快速理解和探索其中的知识
         </p>
       </div>
 

@@ -1,5 +1,6 @@
 // @ts-ignore
 import Markdown from "@/components/markdown"
+import { YouTubePanel } from "@/components/floating-dock/panels/youtube-panel"
 import { extractContent } from "@/core/index"
 // 【修复】使用统一的 API 配置模块，解决跨页面不同步问题
 import { useApiConfig } from "@/lib/api-config-store"
@@ -17,6 +18,7 @@ import React, {
   useState
 } from "react"
 import { AiFillAliwangwang } from "react-icons/ai"
+import { BsYoutube } from "react-icons/bs"
 import {
   FiCheck,
   FiCrop,
@@ -168,8 +170,11 @@ function PanelContent({
   } | null>(null)
   const ref = useRef<HTMLDivElement>(null)
 
-  // Panel mode: "clips" | "chat" - 如果有初始文本则默认显示聊天模式
-  const [panelMode, setPanelMode] = useState<"clips" | "chat">(
+  // 检测当前是否为 YouTube 页面
+  const isYouTubePage = window.location.hostname.includes("youtube.com")
+
+  // Panel mode: "clips" | "chat" | "youtube" - 如果有初始文本则默认显示聊天模式
+  const [panelMode, setPanelMode] = useState<"clips" | "chat" | "youtube">(
     initialChatText ? "chat" : "clips"
   )
   const [isScreenshotMode, setIsScreenshotMode] = useState(false)
@@ -702,7 +707,7 @@ function PanelContent({
 
       {/* Body */}
       <div className="FloatPanelBody flex-1 flex flex-col p-4 overflow-hidden gap-3">
-        {panelMode === "clips" ? (
+        {panelMode === "clips" && (
           /* Clips Mode */
           <div className="flex-1 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
             {/* Input Area */}
@@ -833,7 +838,9 @@ function PanelContent({
               </div>
             )}
           </div>
-        ) : (
+        )}
+
+        {panelMode === "chat" && (
           /* Chat Mode */
           <>
             {/* Model Selector & Clear Button */}
@@ -1048,6 +1055,11 @@ function PanelContent({
             </div>
           </>
         )}
+
+        {/* YouTube Mode */}
+        {panelMode === "youtube" && isYouTubePage && (
+          <YouTubePanel isDarkMode={isDarkMode} />
+        )}
       </div>
 
       {/* Footer / Toolbar */}
@@ -1063,14 +1075,25 @@ function PanelContent({
               icon: FiSave,
               label: "Save",
               action: handleDirectSaveFullPage,
-              active: false
+              active: false,
+              show: !isYouTubePage // YouTube 页面隐藏，该功能在 YouTube 面板内
             },
             {
               icon: RiMessage2Line,
               label: "Chat",
               action: () =>
                 setPanelMode(panelMode === "chat" ? "clips" : "chat"),
-              active: panelMode === "chat"
+              active: panelMode === "chat",
+              show: !isYouTubePage // YouTube 页面隐藏，该功能在 YouTube 面板内
+            },
+            // YouTube 按钮：只在 YouTube 页面显示
+            {
+              icon: BsYoutube,
+              label: "YouTube",
+              action: () =>
+                setPanelMode(panelMode === "youtube" ? "clips" : "youtube"),
+              active: panelMode === "youtube",
+              show: isYouTubePage
             },
             {
               icon: FiCrop,
@@ -1078,23 +1101,26 @@ function PanelContent({
               action: () => {
                 setIsScreenshotMode(true)
                 chrome.runtime.sendMessage({ type: "clip:start-screenshot" }, () => {})
-              }, 
-              active: isScreenshotMode 
+              },
+              active: isScreenshotMode,
+              show: true
             },
             {
               icon: FiGrid,
               label: "Clips",
               action: () => setPanelMode("clips"),
-              active: panelMode === "clips"
+              active: panelMode === "clips",
+              show: true
             },
             {
               icon: FiSettings,
               label: "Settings",
               action: () =>
                 chrome.runtime.sendMessage({ type: "clip:open-options" }),
-              active: false
+              active: false,
+              show: true
             }
-          ].map((Item, idx) => (
+          ].filter(item => item.show).map((Item, idx) => (
             <button
               key={idx}
               className={`w-10 h-10 flex items-center justify-center rounded-lg transition-all active:scale-95 ${
