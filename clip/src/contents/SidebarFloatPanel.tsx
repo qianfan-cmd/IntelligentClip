@@ -1076,7 +1076,7 @@ function PanelContent({
               label: "Save",
               action: handleDirectSaveFullPage,
               active: false,
-              show: true
+              show: !isYouTubePage // YouTube 页面隐藏，该功能在 YouTube 面板内
             },
             {
               icon: RiMessage2Line,
@@ -1084,7 +1084,7 @@ function PanelContent({
               action: () =>
                 setPanelMode(panelMode === "chat" ? "clips" : "chat"),
               active: panelMode === "chat",
-              show: true
+              show: !isYouTubePage // YouTube 页面隐藏，该功能在 YouTube 面板内
             },
             // YouTube 按钮：只在 YouTube 页面显示
             {

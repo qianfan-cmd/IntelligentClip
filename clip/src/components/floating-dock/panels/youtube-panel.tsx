@@ -6,6 +6,7 @@
  * - 字幕获取状态
  * - AI 总结视频
  * - 字幕浏览
+ * - 基于字幕的 AI 对话
  * 
  * 作为统一浮窗的一个 Tab/模块使用
  */
@@ -13,7 +14,7 @@ import React, { useEffect, useState, useRef } from "react"
 import { getVideoData } from "@/utils/functions"
 import { useApiConfig } from "@/lib/api-config-store"
 import { usePort } from "@plasmohq/messaging/hook"
-import { models, prompts, type Model, type Prompt } from "@/lib/constants"
+import { models, prompts, type Model, type Prompt, type Message } from "@/lib/constants"
 import { ClipStore } from "@/lib/clip-store"
 import Markdown from "@/components/markdown"
 import {
@@ -28,7 +29,11 @@ import {
   RefreshCw,
   Copy,
   Check,
-  AlertCircle
+  AlertCircle,
+  MessageCircle,
+  MessageSquare,
+  Send,
+  Trash2
 } from "lucide-react"
 
 interface YouTubePanelProps {
@@ -56,8 +61,8 @@ export function YouTubePanel({ isDarkMode }: YouTubePanelProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   
-  // 面板状态
-  const [activeTab, setActiveTab] = useState<"summary" | "transcript">("summary")
+  // 面板状态 - 增加 chat tab
+  const [activeTab, setActiveTab] = useState<"summary" | "transcript" | "chat">("summary")
   const [isTranscriptExpanded, setIsTranscriptExpanded] = useState(true)
   
   // 总结相关状态
@@ -67,14 +72,25 @@ export function YouTubePanel({ isDarkMode }: YouTubePanelProps) {
   const [selectedModel, setSelectedModel] = useState<Model>(models[0])
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt>(prompts[0])
   
+  // 对话相关状态
+  const [chatMessages, setChatMessages] = useState<Message[]>([])
+  const [chatInput, setChatInput] = useState("")
+  const [chatIsGenerating, setChatIsGenerating] = useState(false)
+  const [chatSelectedModel, setChatSelectedModel] = useState<Model>(models[0])
+  const chatMessagesEndRef = useRef<HTMLDivElement>(null)
+  const chatInputRef = useRef<HTMLTextAreaElement>(null)
+  
   // 复制状态
   const [isCopied, setIsCopied] = useState(false)
   
   // API 配置
   const { apiKey, isLoading: isApiKeyLoading, hasApiKey } = useApiConfig()
   
-  // Port for completion
+  // Port for completion (总结)
   const port = usePort("completion")
+  
+  // Port for chat (对话)
+  const chatPort = usePort("chat")
 
   // 获取当前视频 ID
   const getVideoIdFromUrl = (): string | null => {
@@ -167,6 +183,52 @@ export function YouTubePanel({ isDarkMode }: YouTubePanelProps) {
     }
   }, [port.data?.error])
 
+  // 处理对话消息
+  useEffect(() => {
+    if (!chatPort.data) return
+
+    if (chatPort.data?.message !== undefined && chatPort.data?.message !== null) {
+      if (chatPort.data.isEnd === true) {
+        const content = chatPort.data.message.replace(/\nEND$/, "").replace(/END$/, "")
+        setChatMessages(prev => {
+          const newMessages = [...prev]
+          if (newMessages.length > 0 && newMessages[newMessages.length - 1].role === "assistant") {
+            newMessages[newMessages.length - 1].content = content
+          }
+          return newMessages
+        })
+        setChatIsGenerating(false)
+      } else {
+        setChatMessages(prev => {
+          const newMessages = [...prev]
+          if (newMessages.length > 0 && newMessages[newMessages.length - 1].role === "assistant") {
+            newMessages[newMessages.length - 1].content = chatPort.data.message
+          }
+          return newMessages
+        })
+      }
+    }
+  }, [chatPort.data?.message, chatPort.data?.isEnd])
+
+  // 处理对话错误
+  useEffect(() => {
+    if (chatPort.data?.error) {
+      setChatMessages(prev => {
+        const newMessages = [...prev]
+        if (newMessages.length > 0 && newMessages[newMessages.length - 1].role === "assistant") {
+          newMessages[newMessages.length - 1].content = `❌ 错误: ${chatPort.data.error}`
+        }
+        return newMessages
+      })
+      setChatIsGenerating(false)
+    }
+  }, [chatPort.data?.error])
+
+  // 自动滚动到对话底部
+  useEffect(() => {
+    chatMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [chatMessages])
+
   // 获取字幕文本
   const getTranscriptText = (): string => {
     if (!videoData?.transcript?.events) return ""
@@ -178,6 +240,61 @@ export function YouTubePanel({ isDarkMode }: YouTubePanelProps) {
       .replace(/\s+/g, " ")
       .trim()
   }
+
+  // 发送对话消息
+  const sendChatMessage = () => {
+    const trimmedInput = chatInput.trim()
+    if (!trimmedInput || chatIsGenerating) return
+
+    if (!hasApiKey) {
+      setChatMessages(prev => [
+        ...prev,
+        { role: "user", content: trimmedInput },
+        { role: "assistant", content: "❌ 请先在设置中配置 API Key" }
+      ])
+      setChatInput("")
+      return
+    }
+
+    if (!videoData?.transcript?.events?.length) {
+      setChatMessages(prev => [
+        ...prev,
+        { role: "user", content: trimmedInput },
+        { role: "assistant", content: "❌ 当前视频没有字幕，无法进行对话" }
+      ])
+      setChatInput("")
+      return
+    }
+
+    const userMessage: Message = { role: "user", content: trimmedInput }
+    const newMessages = [...chatMessages, userMessage, { role: "assistant", content: "" }]
+    setChatMessages(newMessages)
+    setChatInput("")
+    setChatIsGenerating(true)
+
+    chatPort.send({
+      model: chatSelectedModel.content,
+      messages: newMessages.slice(0, -1), // 不发送空的 assistant 消息
+      context: {
+        metadata: videoData.metadata,
+        transcript: videoData.transcript,
+        openAIKey: apiKey
+      }
+    })
+  }
+
+  // 清空对话
+  const clearChat = () => {
+    setChatMessages([])
+    setChatIsGenerating(false)
+  }
+
+  // 对话快捷提示
+  const chatQuickPrompts = [
+    "这个视频讲了什么？",
+    "总结一下关键要点",
+    "有什么值得注意的地方？"
+  ]
 
   // 生成总结
   const generateSummary = () => {
@@ -346,6 +463,21 @@ export function YouTubePanel({ isDarkMode }: YouTubePanelProps) {
           <AlignLeft className="h-3.5 w-3.5" />
           字幕
         </button>
+        <button
+          onClick={() => setActiveTab("chat")}
+          className={`flex-1 py-2.5 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${
+            activeTab === "chat"
+              ? isDarkMode
+                ? "text-blue-400 border-b-2 border-blue-400 bg-blue-900/10"
+                : "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+              : isDarkMode
+                ? "text-slate-400 hover:text-slate-300"
+                : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          <MessageCircle className="h-3.5 w-3.5" />
+          对话
+        </button>
       </div>
 
       {/* 内容区域 */}
@@ -495,6 +627,108 @@ export function YouTubePanel({ isDarkMode }: YouTubePanelProps) {
               }`}>
                 此视频没有可用的字幕
               </div>
+            )}
+          </div>
+        )}
+
+        {/* 对话 Tab 内容 */}
+        {activeTab === "chat" && (
+          <div className="flex flex-col h-[500px]">
+            {!hasTranscript ? (
+              <div className={`flex-1 flex items-center justify-center text-xs ${
+                isDarkMode ? "text-slate-500" : "text-gray-400"
+              }`}>
+                需要字幕才能进行视频相关对话
+              </div>
+            ) : (
+              <>
+                {/* 消息列表 */}
+                <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                  {chatMessages.length === 0 ? (
+                    <div className={`text-center py-8 text-xs ${
+                      isDarkMode ? "text-slate-500" : "text-gray-400"
+                    }`}>
+                      <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p>基于视频内容进行对话</p>
+                      <p className="mt-1 opacity-75">AI 将根据字幕内容回答你的问题</p>
+                    </div>
+                  ) : (
+                    chatMessages.map((msg, idx) => (
+                      <div
+                        key={idx}
+                        className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                      >
+                        <div
+                          className={`max-w-[85%] rounded-lg px-3 py-2 text-xs ${
+                            msg.role === "user"
+                              ? isDarkMode
+                                ? "bg-blue-600 text-white"
+                                : "bg-blue-500 text-white"
+                              : isDarkMode
+                                ? "bg-slate-700 text-slate-200"
+                                : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {msg.role === "assistant" ? (
+                            <div className="prose prose-sm dark:prose-invert max-w-none">
+                              {msg.content || (
+                                <span className="inline-flex items-center gap-1">
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                  正在思考...
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            msg.content
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                  <div ref={chatMessagesEndRef} />
+                </div>
+
+                {/* 输入区域 */}
+                <div className={`p-3 border-t ${
+                  isDarkMode ? "border-slate-700" : "border-gray-200"
+                }`}>
+                  <div className="flex gap-2">
+                    <textarea
+                      ref={chatInputRef}
+                      value={chatInput}
+                      onChange={e => setChatInput(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault()
+                          sendChatMessage()
+                        }
+                      }}
+                      placeholder="询问关于这个视频的问题..."
+                      rows={2}
+                      className={`flex-1 resize-none rounded-lg px-3 py-2 text-xs outline-none ${
+                        isDarkMode
+                          ? "bg-slate-700 text-slate-200 placeholder:text-slate-500 border-slate-600"
+                          : "bg-gray-50 text-gray-800 placeholder:text-gray-400 border-gray-200"
+                      } border focus:ring-1 focus:ring-blue-500`}
+                    />
+                    <button
+                      onClick={sendChatMessage}
+                      disabled={!chatInput.trim() || chatIsGenerating}
+                      className={`px-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                        isDarkMode
+                          ? "bg-blue-600 hover:bg-blue-700 text-white"
+                          : "bg-blue-500 hover:bg-blue-600 text-white"
+                      }`}
+                    >
+                      {chatIsGenerating ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </>
             )}
           </div>
         )}
