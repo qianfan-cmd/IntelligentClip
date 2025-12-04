@@ -83,6 +83,11 @@ export function YouTubePanel({ isDarkMode }: YouTubePanelProps) {
   // 复制状态
   const [isCopied, setIsCopied] = useState(false)
   
+  // 保存状态
+  const [isSummarySaved, setIsSummarySaved] = useState(false)
+  const [isChatSaved, setIsChatSaved] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  
   // API 配置
   const { apiKey, isLoading: isApiKeyLoading, hasApiKey } = useApiConfig()
   
@@ -156,19 +161,7 @@ export function YouTubePanel({ isDarkMode }: YouTubePanelProps) {
         const content = port.data.message.replace(/\nEND$/, "").replace(/END$/, "")
         setSummaryContent(content)
         setSummaryIsGenerating(false)
-        
-        // 自动保存到 ClipStore
-        if (videoData?.metadata && content) {
-          ClipStore.add({
-            source: "youtube",
-            url: window.location.href,
-            title: videoData.metadata.title || document.title,
-            rawTextSnippet: getTranscriptText().slice(0, 500),
-            summary: content,
-            keyPoints: [],
-            tags: []
-          }).then(() => console.log("[YouTubePanel] Clip saved automatically"))
-        }
+        setIsSummarySaved(false) // 新生成的总结未保存
       } else {
         setSummaryContent(port.data.message)
       }
@@ -287,6 +280,60 @@ export function YouTubePanel({ isDarkMode }: YouTubePanelProps) {
   const clearChat = () => {
     setChatMessages([])
     setChatIsGenerating(false)
+    setIsChatSaved(false)
+  }
+
+  // 保存总结
+  const saveSummary = async () => {
+    if (!summaryContent || !videoData?.metadata || isSaving) return
+    
+    setIsSaving(true)
+    try {
+      await ClipStore.add({
+        source: "youtube",
+        url: window.location.href,
+        title: videoData.metadata.title || document.title,
+        rawTextSnippet: getTranscriptText().slice(0, 500),
+        summary: summaryContent,
+        keyPoints: [],
+        tags: []
+      })
+      setIsSummarySaved(true)
+      console.log("[YouTubePanel] Summary saved")
+    } catch (err) {
+      console.error("[YouTubePanel] Failed to save summary:", err)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  // 保存对话
+  const saveChat = async () => {
+    if (chatMessages.length === 0 || !videoData?.metadata || isSaving) return
+    
+    setIsSaving(true)
+    try {
+      // 将对话格式化为文本
+      const chatContent = chatMessages
+        .map(msg => `${msg.role === "user" ? "Q" : "A"}: ${msg.content}`)
+        .join("\n\n")
+      
+      await ClipStore.add({
+        source: "youtube",
+        url: window.location.href,
+        title: `[对话] ${videoData.metadata.title || document.title}`,
+        rawTextSnippet: getTranscriptText().slice(0, 500),
+        summary: chatContent,
+        keyPoints: [],
+        tags: ["chat"]
+      })
+      setIsChatSaved(true)
+      console.log("[YouTubePanel] Chat saved")
+    } catch (err) {
+      console.error("[YouTubePanel] Failed to save chat:", err)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   // 对话快捷提示
@@ -552,18 +599,43 @@ export function YouTubePanel({ isDarkMode }: YouTubePanelProps) {
             )}
             
             {summaryContent ? (
-              <div className={`p-3 rounded-lg text-sm ${
-                isDarkMode ? "bg-slate-800/50 text-slate-300" : "bg-gray-50 text-gray-700"
-              }`}>
-                <Markdown 
-                  markdown={summaryContent} 
-                  className={`prose prose-sm max-w-none ${
-                    isDarkMode 
-                      ? "prose-invert prose-p:text-slate-300 prose-headings:text-slate-200 prose-strong:text-slate-200 prose-li:text-slate-300 prose-a:text-blue-400" 
-                      : ""
+              <>
+                <div className={`p-3 rounded-lg text-sm ${
+                  isDarkMode ? "bg-slate-800/50 text-slate-300" : "bg-gray-50 text-gray-700"
+                }`}>
+                  <Markdown 
+                    markdown={summaryContent} 
+                    className={`prose prose-sm max-w-none ${
+                      isDarkMode 
+                        ? "prose-invert prose-p:text-slate-300 prose-headings:text-slate-200 prose-strong:text-slate-200 prose-li:text-slate-300 prose-a:text-blue-400" 
+                        : ""
+                    }`}
+                  />
+                </div>
+                {/* 保存按钮 */}
+                <button
+                  onClick={saveSummary}
+                  disabled={isSummarySaved || isSaving}
+                  className={`w-full mt-2 px-3 py-2 text-xs font-medium rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+                    isSummarySaved
+                      ? isDarkMode
+                        ? "bg-green-900/30 text-green-400 cursor-default"
+                        : "bg-green-100 text-green-600 cursor-default"
+                      : isDarkMode
+                        ? "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
-                />
-              </div>
+                >
+                  {isSaving ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : isSummarySaved ? (
+                    <Check className="h-3.5 w-3.5" />
+                  ) : (
+                    <Copy className="h-3.5 w-3.5" />
+                  )}
+                  {isSummarySaved ? "已保存" : "保存总结"}
+                </button>
+              </>
             ) : !summaryIsGenerating && (
               <div className={`text-center py-8 text-xs ${
                 isDarkMode ? "text-slate-500" : "text-gray-400"
@@ -576,9 +648,9 @@ export function YouTubePanel({ isDarkMode }: YouTubePanelProps) {
 
         {activeTab === "transcript" && (
           /* 字幕面板 */
-          <div className="p-3 space-y-2">
+          <div className="flex flex-col h-full p-3 space-y-2">
             {/* 字幕操作栏 */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-shrink-0">
               <span className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
                 {hasTranscript ? `${videoData?.transcript?.events?.length} 段字幕` : "暂无字幕"}
               </span>
@@ -599,7 +671,7 @@ export function YouTubePanel({ isDarkMode }: YouTubePanelProps) {
 
             {/* 字幕列表 */}
             {hasTranscript ? (
-              <div className="space-y-1 max-h-[400px] overflow-y-auto">
+              <div className="flex-1 space-y-1 overflow-y-auto">
                 {videoData?.transcript?.events
                   ?.filter(e => e.segs)
                   .map((event, idx) => (
@@ -637,7 +709,7 @@ export function YouTubePanel({ isDarkMode }: YouTubePanelProps) {
 
         {/* 对话 Tab 内容 */}
         {activeTab === "chat" && (
-          <div className="flex flex-col h-[500px]">
+          <div className="flex flex-col h-full">
             {!hasTranscript ? (
               <div className={`flex-1 flex items-center justify-center text-xs ${
                 isDarkMode ? "text-slate-500" : "text-gray-400"
@@ -703,6 +775,31 @@ export function YouTubePanel({ isDarkMode }: YouTubePanelProps) {
                 <div className={`p-3 border-t ${
                   isDarkMode ? "border-slate-700" : "border-gray-200"
                 }`}>
+                  {/* 保存对话按钮 */}
+                  {chatMessages.length > 0 && (
+                    <button
+                      onClick={saveChat}
+                      disabled={isChatSaved || isSaving}
+                      className={`w-full mb-2 px-3 py-1.5 text-xs font-medium rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+                        isChatSaved
+                          ? isDarkMode
+                            ? "bg-green-900/30 text-green-400 cursor-default"
+                            : "bg-green-100 text-green-600 cursor-default"
+                          : isDarkMode
+                            ? "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      {isSaving ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : isChatSaved ? (
+                        <Check className="h-3.5 w-3.5" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
+                      {isChatSaved ? "对话已保存" : "保存对话"}
+                    </button>
+                  )}
                   <div className="flex gap-2">
                     <textarea
                       ref={chatInputRef}
