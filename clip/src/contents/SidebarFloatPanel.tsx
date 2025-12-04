@@ -954,14 +954,24 @@ function PanelContent({
                         }`}>
                         {msg.role === "assistant" ? (
                           msg.content ? (
-                            <Markdown
-                              markdown={msg.content}
-                              className={`text-sm [&_p]:mb-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:text-sm [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded ${
+                            <div
+                              className={`markdown-wrapper text-sm [&_p]:mb-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:text-sm ${
                                 isDarkMode
-                                  ? "[&_code]:bg-slate-800 [&_code]:text-slate-200"
-                                  : "[&_code]:bg-slate-100 [&_code]:text-slate-800"
+                                  ? "[&_*:not(code)]:text-slate-200"
+                                  : "[&_*:not(code)]:text-slate-800"
                               }`}
-                            />
+                              style={{
+                                color: isDarkMode ? "#e2e8f0" : "#1e293b"
+                              }}>
+                              <Markdown
+                                markdown={msg.content}
+                                className={`[&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded ${
+                                  isDarkMode
+                                    ? "[&_code]:bg-slate-800 [&_code]:text-slate-200"
+                                    : "[&_code]:bg-slate-100 [&_code]:text-slate-800"
+                                }`}
+                              />
+                            </div>
                           ) : (
                             <div className="flex items-center gap-2">
                               <div
