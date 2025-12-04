@@ -11,6 +11,51 @@ interface MoveToFolderDropdownProps {
   compact?: boolean  // 紧凑模式，只显示图标
 }
 
+// 添加自定义滚动条样式
+const ScrollbarStyles = () => (
+  <style jsx global>{`
+    /* 深色主题滚动条样式 */
+    .scrollbar-dark::-webkit-scrollbar {
+      width: 6px;
+    }
+    .scrollbar-dark::-webkit-scrollbar-track {
+      background: #1a1a24; /* 与下拉框背景颜色一致 */
+      border-radius: 3px;
+    }
+    .scrollbar-dark::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2); /* 半透明白色，保持可见性 */
+      border-radius: 3px;
+    }
+    .scrollbar-dark::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.3); /* 悬停时稍微变亮 */
+    }
+    
+    /* 浅色主题滚动条样式 */
+    .scrollbar-light::-webkit-scrollbar {
+      width: 6px;
+    }
+    .scrollbar-light::-webkit-scrollbar-track {
+      background: white; /* 与下拉框背景颜色一致 */
+      border-radius: 3px;
+    }
+    .scrollbar-light::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.2); /* 半透明黑色，保持可见性 */
+      border-radius: 3px;
+    }
+    .scrollbar-light::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 0, 0, 0.3); /* 悬停时稍微变暗 */
+    }
+    
+    /* Firefox 滚动条样式通过scrollbar-color属性在style中设置 */
+    .scrollbar-dark {
+      scrollbar-color: rgba(255, 255, 255, 0.2) #1a1a24;
+    }
+    .scrollbar-light {
+      scrollbar-color: rgba(0, 0, 0, 0.2) white;
+    }
+  `}</style>
+);
+
 export default function MoveToFolderDropdown({
   clipId,
   currentFolderId,
@@ -31,7 +76,7 @@ export default function MoveToFolderDropdown({
   const ITEM_HEIGHT = 40 // 每个选项的高度 (py-2.5 = 10px padding top + bottom + 20px content ~ 40px)
   const SEPARATOR_HEIGHT = 8 // 分隔线高度 (my-1 = 4px margin top + bottom ~ 8px)
   const NO_FOLDERS_HEIGHT = 64 // 无文件夹提示的高度 (py-4 = 16px padding top + bottom ~ 64px)
-  const MAX_HEIGHT = 320 // 设置最大高度，防止下拉框过高
+  const MAX_HEIGHT = 200 // 设置最大高度，防止下拉框过高
 
   // 加载文件夹
   useEffect(() => {
@@ -71,8 +116,8 @@ export default function MoveToFolderDropdown({
   // 测试指导：
   // 1. 无文件夹场景：创建一个空文件夹列表，验证下拉框高度是否为NO_FOLDERS_HEIGHT (64px)
   // 2. 少量文件夹场景：添加1-5个文件夹，验证下拉框高度是否按比例增加
-  // 3. 大量文件夹场景：添加超过20个文件夹，验证下拉框高度是否限制在MAX_HEIGHT (320px)
-  // 4. 临界值测试：添加刚好让高度接近MAX_HEIGHT的文件夹数量，验证是否正确限制
+  // 3. 大量文件夹场景：添加超过多个文件夹，验证下拉框高度限制在MAX_HEIGHT (320px)并显示滚动条
+  // 4. 滚动测试：添加足够多的文件夹，验证能否通过滚动查看所有文件夹
   useEffect(() => {
     if (isOpen) {
       let calculatedHeight: number
@@ -168,6 +213,8 @@ export default function MoveToFolderDropdown({
 
   return (
     <div className="relative">
+      {/* 自定义滚动条样式 */}
+      <ScrollbarStyles />
       {/* Trigger Button */}
       <button
         ref={buttonRef}
@@ -207,18 +254,21 @@ export default function MoveToFolderDropdown({
       {/* Dropdown Menu - 使用 Portal 渲染到 body */}
       {isOpen && createPortal(
         <div 
-          ref={dropdownRef}
-          style={{ height: dropdownHeight }} 
-          className={`fixed w-48 rounded-xl shadow-2xl py-1 overflow-y-auto ${
-            isDark 
-              ? "bg-[#1a1a24] ring-1 ring-white/10" 
-              : "bg-white ring-1 ring-gray-200 shadow-lg"
-          }`}
-          style={{
-            top: dropdownPosition.top,
-            left: dropdownPosition.left,
-            zIndex: 99999
-          }}
+            ref={dropdownRef}
+            style={{
+              maxHeight: MAX_HEIGHT,
+              top: dropdownPosition.top,
+              left: dropdownPosition.left,
+              zIndex: 99999,
+              // 滚动条基础样式
+              scrollbarWidth: 'thin', // Firefox
+              // 针对Chrome、Edge等WebKit浏览器的自定义滚动条样式通过CSS实现
+            }}
+            className={`fixed w-48 rounded-xl shadow-2xl py-1 overflow-y-auto ${
+              isDark 
+                ? "bg-[#1a1a24] ring-1 ring-white/10 scrollbar-dark" 
+                : "bg-white ring-1 ring-gray-200 shadow-lg scrollbar-light"
+            }`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* 未归类选项 */}
