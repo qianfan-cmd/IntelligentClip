@@ -6,10 +6,10 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { useSummary } from "@/contexts/summary-context"
+import { ClipStore } from "@/lib/clip-store"
 import { models, prompts, type Model, type Prompt } from "@/lib/constants"
 import { useCopyToClipboard } from "@/lib/hooks/use-copy-to-clipboard"
-import { Check, Copy, RefreshCw, Save, Loader2 } from "lucide-react"
-import { ClipStore } from "@/lib/clip-store"
+import { Check, Copy, Loader2, RefreshCw, Save } from "lucide-react"
 
 import { Button } from "./ui/button"
 import { TooltipWrapper } from "./ui/tooltip-wrapper"
@@ -38,7 +38,7 @@ export default function SummaryActions({}: SummaryActionsProps) {
 
   async function handleSaveSummary() {
     if (!summaryContent || summaryIsGenerating) return
-    
+
     try {
       await ClipStore.add({
         source: "youtube",
@@ -63,15 +63,14 @@ export default function SummaryActions({}: SummaryActionsProps) {
         value={summaryModel.value}
         onValueChange={(value) =>
           setSummaryModel(models.find((model) => model.value === value))
-        }
-      >
-        <SelectTrigger className="w-auto min-w-[140px] h-9 text-xs bg-gray-50 dark:bg-zinc-800 border-gray-200 dark:border-zinc-700">
+        }>
+        <SelectTrigger className="w-auto min-w-[140px] h-9 text-xs bg-gray-50 text-gray-900 dark:text-gray-200 dark:bg-zinc-800 border-gray-200 dark:border-zinc-700">
           <SelectValue placeholder="选择模型" />
         </SelectTrigger>
         <SelectContent>
           {models.map((model: Model) => (
             <SelectItem key={model.value} value={model.value}>
-              <div className="flex flex-row items-center text-xs">
+              <div className="flex flex-row items-center text-xs text-gray-800 dark:text-gray-200">
                 <div className="mr-2 opacity-60">{model.icon}</div>
                 {model.label}
               </div>
@@ -89,9 +88,8 @@ export default function SummaryActions({}: SummaryActionsProps) {
             size="icon"
             onClick={handleSaveSummary}
             disabled={summaryIsGenerating || !summaryContent}
-            className="h-8 w-8"
-          >
-            <Save className="h-4 w-4 text-gray-500" />
+            className="h-8 w-8">
+            <Save className="h-4 w-4 text-gray-500 dark:text-gray-400" />
           </Button>
         </TooltipWrapper>
 
@@ -102,12 +100,11 @@ export default function SummaryActions({}: SummaryActionsProps) {
             size="icon"
             onClick={generateSummary}
             disabled={summaryIsGenerating}
-            className="h-8 w-8"
-          >
+            className="h-8 w-8">
             {summaryIsGenerating ? (
-              <Loader2 className="h-4 w-4 text-gray-500 animate-spin" />
+              <Loader2 className="h-4 w-4 text-gray-500 dark:text-gray-400 animate-spin" />
             ) : (
-              <RefreshCw className="h-4 w-4 text-gray-500" />
+              <RefreshCw className="h-4 w-4 text-gray-500 dark:text-gray-400" />
             )}
           </Button>
         </TooltipWrapper>
@@ -119,12 +116,11 @@ export default function SummaryActions({}: SummaryActionsProps) {
             size="icon"
             onClick={CopySummary}
             disabled={summaryIsGenerating || !summaryContent}
-            className="h-8 w-8"
-          >
+            className="h-8 w-8">
             {isCopied ? (
               <Check className="h-4 w-4 text-green-500" />
             ) : (
-              <Copy className="h-4 w-4 text-gray-500" />
+              <Copy className="h-4 w-4 text-gray-500 dark:text-gray-400" />
             )}
           </Button>
         </TooltipWrapper>
@@ -134,14 +130,16 @@ export default function SummaryActions({}: SummaryActionsProps) {
           value={summaryPrompt.value}
           onValueChange={(value) =>
             setSummaryPrompt(prompts.find((prompt) => prompt.value === value))
-          }
-        >
-          <SelectTrigger className="w-auto min-w-[100px] h-8 text-xs bg-gray-50 dark:bg-zinc-800 border-gray-200 dark:border-zinc-700 ml-1">
+          }>
+          <SelectTrigger className="w-auto min-w-[100px] h-8 text-xs bg-gray-50 text-gray-900 dark:text-gray-200 dark:bg-zinc-800 border-gray-200 dark:border-zinc-700 ml-1">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {prompts.map((prompt: Prompt) => (
-              <SelectItem key={prompt.value} value={prompt.value} className="text-xs">
+              <SelectItem
+                key={prompt.value}
+                value={prompt.value}
+                className="text-xs">
                 {prompt.label}
               </SelectItem>
             ))}

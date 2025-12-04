@@ -182,7 +182,7 @@ function HistoryLayout() {
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest")
   const [filterSource, setFilterSource] = useState<string>("all")
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
-  const [folderSidebarCollapsed, setFolderSidebarCollapsed] = useState(false)
+  const [folderSidebarCollapsed, setFolderSidebarCollapsed] = useState(true)
   const [statsFilter, setStatsFilter] = useState<"all" | "today" | "withImages" | "synced">("all")
   
   // Batch selection state
