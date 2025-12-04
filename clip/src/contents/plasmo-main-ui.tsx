@@ -1,3 +1,12 @@
+/**
+ * [已废弃] 原 YouTube 专属右侧面板
+ * 
+ * 此组件已被统一浮窗系统（SidebarFloatPanel）中的 YouTubePanel 取代。
+ * 保留文件供参考，但不再注入到页面中。
+ * 
+ * 如需恢复，将 matches 改回 ["https://www.youtube.com/*"]
+ * 有问题存在就是这边清空以后，manifest的对应match是空数组，这是不允许的这个需要修复
+ */
 import Extension from "~/components/extension"
 import Providers from "~/components/providers"
 import { Provider } from "jotai"
@@ -19,8 +28,9 @@ export const getStyle = () => {
   return style
 }
 
+// [禁用] 不再匹配页面，功能已整合到统一浮窗
 export const config: PlasmoCSConfig = {
-  matches: ["https://www.youtube.com/*"]
+ matches: ["*://never-trigger-this-clip-12345.invalid/*"] // 原为 ["https://www.youtube.com/*"]
 }
 
 export const getInlineAnchor: PlasmoGetInlineAnchor = async () => ({
