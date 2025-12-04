@@ -33,7 +33,9 @@ import {
   MessageCircle,
   MessageSquare,
   Send,
-  Trash2
+  Trash2,
+  Search,
+  X
 } from "lucide-react"
 
 interface YouTubePanelProps {
@@ -82,6 +84,9 @@ export function YouTubePanel({ isDarkMode }: YouTubePanelProps) {
   
   // 复制状态
   const [isCopied, setIsCopied] = useState(false)
+  
+  // 字幕搜索状态
+  const [transcriptSearch, setTranscriptSearch] = useState("")
   
   // 保存状态
   const [isSummarySaved, setIsSummarySaved] = useState(false)
@@ -669,33 +674,98 @@ export function YouTubePanel({ isDarkMode }: YouTubePanelProps) {
               )}
             </div>
 
+            {/* 搜索框 */}
+            {hasTranscript && (
+              <div className="relative flex-shrink-0">
+                <Search className={`absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 ${
+                  isDarkMode ? "text-slate-500" : "text-gray-400"
+                }`} />
+                <input
+                  type="text"
+                  value={transcriptSearch}
+                  onChange={e => setTranscriptSearch(e.target.value)}
+                  placeholder="搜索字幕内容..."
+                  className={`w-full pl-8 pr-8 py-1.5 text-xs rounded-lg border outline-none transition-colors ${
+                    isDarkMode
+                      ? "bg-slate-800 border-slate-700 text-slate-200 placeholder:text-slate-500 focus:border-blue-500"
+                      : "bg-gray-50 border-gray-200 text-gray-800 placeholder:text-gray-400 focus:border-blue-500"
+                  }`}
+                />
+                {transcriptSearch && (
+                  <button
+                    onClick={() => setTranscriptSearch("")}
+                    className={`absolute right-2.5 top-1/2 -translate-y-1/2 ${
+                      isDarkMode ? "text-slate-500 hover:text-slate-300" : "text-gray-400 hover:text-gray-600"
+                    }`}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            )}
+
             {/* 字幕列表 */}
             {hasTranscript ? (
               <div className="flex-1 space-y-1 overflow-y-auto">
                 {videoData?.transcript?.events
                   ?.filter(e => e.segs)
-                  .map((event, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => seekTo(event.tStartMs)}
-                      className={`w-full text-left p-2 rounded-lg flex gap-2 transition-colors ${
-                        isDarkMode
-                          ? "hover:bg-slate-800"
-                          : "hover:bg-gray-50"
-                      }`}
-                    >
-                      <span className={`text-[10px] font-mono flex-shrink-0 ${
-                        isDarkMode ? "text-blue-400" : "text-blue-600"
-                      }`}>
-                        {formatTime(event.tStartMs)}
-                      </span>
-                      <span className={`text-xs ${
-                        isDarkMode ? "text-slate-300" : "text-gray-700"
-                      }`}>
-                        {event.segs?.map(s => s.utf8).join("")}
-                      </span>
-                    </button>
-                  ))}
+                  .filter(e => {
+                    if (!transcriptSearch.trim()) return true
+                    const text = e.segs?.map(s => s.utf8).join("") || ""
+                    return text.toLowerCase().includes(transcriptSearch.toLowerCase())
+                  })
+                  .map((event, idx) => {
+                    const text = event.segs?.map(s => s.utf8).join("") || ""
+                    // 高亮搜索关键词
+                    const highlightText = (content: string) => {
+                      if (!transcriptSearch.trim()) return content
+                      const regex = new RegExp(`(${transcriptSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+                      const parts = content.split(regex)
+                      return parts.map((part, i) => 
+                        regex.test(part) ? (
+                          <mark key={i} className={`${
+                            isDarkMode ? "bg-yellow-500/40 text-yellow-200" : "bg-yellow-200 text-yellow-900"
+                          } rounded px-0.5`}>{part}</mark>
+                        ) : part
+                      )
+                    }
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => seekTo(event.tStartMs)}
+                        className={`w-full text-left p-2 rounded-lg flex gap-2 transition-colors ${
+                          isDarkMode
+                            ? "hover:bg-slate-800"
+                            : "hover:bg-gray-50"
+                        }`}
+                      >
+                        <span className={`text-[10px] font-mono flex-shrink-0 ${
+                          isDarkMode ? "text-blue-400" : "text-blue-600"
+                        }`}>
+                          {formatTime(event.tStartMs)}
+                        </span>
+                        <span className={`text-xs ${
+                          isDarkMode ? "text-slate-300" : "text-gray-700"
+                        }`}>
+                          {highlightText(text)}
+                        </span>
+                      </button>
+                    )
+                  })}
+                {/* 无搜索结果提示 */}
+                {transcriptSearch.trim() && videoData?.transcript?.events
+                  ?.filter(e => e.segs)
+                  .filter(e => {
+                    const text = e.segs?.map(s => s.utf8).join("") || ""
+                    return text.toLowerCase().includes(transcriptSearch.toLowerCase())
+                  }).length === 0 && (
+                  <div className={`text-center py-6 text-xs ${
+                    isDarkMode ? "text-slate-500" : "text-gray-400"
+                  }`}>
+                    <Search className="h-6 w-6 mx-auto mb-2 opacity-50" />
+                    <p>未找到匹配「{transcriptSearch}」的字幕</p>
+                  </div>
+                )}
               </div>
             ) : (
               <div className={`text-center py-8 text-xs ${
