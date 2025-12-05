@@ -552,9 +552,51 @@ function PanelContent({
     chrome.runtime.sendMessage({ type: "clip:open-history" }, () => {})
   }
 
+  // URL 标准化函数，保留重要查询参数
+  const normalizeUrl = (u: string): string => {
+    try {
+      const url = new URL(u)
+      const path = url.pathname.replace(/\/+$/, "") || "/"
+      
+      // 对于依赖查询参数区分内容的网站，保留关键参数
+      // context: 百度新闻 mbd.baidu.com (内含 nid)
+      // nid: 新闻ID
+      const importantParams = ['id', 'vid', 'bvid', 'aid', 'p', 'articleId', 'newsId', 'docid', 'context', 'nid',"wd",
+  "word","q","query"]
+      const params = new URLSearchParams(url.search)
+      const keptParams = new URLSearchParams()
+      
+      for (const key of importantParams) {
+        const value = params.get(key)
+        if (value) {
+          keptParams.set(key, value)
+        }
+      }
+      
+      const queryString = keptParams.toString()
+      return queryString ? `${url.origin}${path}?${queryString}` : `${url.origin}${path}`
+    } catch {
+      const base = u.split("#")[0]
+      return base.replace(/\/+$/, "") || "/"
+    }
+  }
+
   const handleDirectSaveFullPage = async () => {
     try {
       const content = await extractContent()
+
+      // 检查当前页面是否已保存过
+      const contentUrlNorm = content?.url ? normalizeUrl(content.url) : normalizeUrl(window.location.href)
+      if (contentUrlNorm) {
+        const latest = await ClipStore.getAll()
+        if (latest.some((c) => normalizeUrl(c.url) === contentUrlNorm)) {
+          setNotification({
+            message: "当前页面已保存过",
+            type: "error"
+          })
+          return
+        }
+      }
 
       await ClipStore.add({
         source:
