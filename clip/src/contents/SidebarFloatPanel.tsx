@@ -707,9 +707,8 @@ function PanelContent({
 
       {/* Body */}
       <div className="FloatPanelBody flex-1 flex flex-col p-4 overflow-hidden gap-3">
-        {panelMode === "clips" && (
-          /* Clips Mode */
-          <div className="flex-1 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
+        {/* Clips Mode - 使用 CSS 显示/隐藏而非条件渲染，保持组件状态 */}
+        <div className={`flex flex-col gap-4 overflow-y-auto custom-scrollbar ${panelMode === "clips" ? "flex-1" : "hidden"}`}>
             {/* Input Area */}
             <div className="flex flex-col gap-2">
               <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1">
@@ -838,11 +837,9 @@ function PanelContent({
               </div>
             )}
           </div>
-        )}
 
-        {panelMode === "chat" && (
-          /* Chat Mode */
-          <>
+        {/* Chat Mode - 使用 CSS 显示/隐藏而非条件渲染，保持组件状态 */}
+        <div className={`flex flex-col gap-3 ${panelMode === "chat" ? "flex-1" : "hidden"}`}>
             {/* Model Selector & Clear Button */}
             <div className="flex items-center justify-between gap-2">
               <select
@@ -1053,12 +1050,13 @@ function PanelContent({
                 )}
               </button>
             </div>
-          </>
-        )}
+          </div>
 
-        {/* YouTube Mode */}
-        {panelMode === "youtube" && isYouTubePage && (
-          <YouTubePanel isDarkMode={isDarkMode} />
+        {/* YouTube Mode - 使用 CSS 显示/隐藏而非条件渲染，保持组件状态 */}
+        {isYouTubePage && (
+          <div className={`flex flex-col overflow-hidden ${panelMode === "youtube" ? "flex-1" : "hidden"}`}>
+            <YouTubePanel isDarkMode={isDarkMode} />
+          </div>
         )}
       </div>
 
