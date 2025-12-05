@@ -107,6 +107,16 @@ type ThemeContextType = {
   t: typeof themes.dark
 }
 
+/**
+ * 检测文本是否可能是 Markdown 格式
+ * 通过检查常见的 Markdown 语法特征来判断
+ */
+const looksLikeMarkdown = (text: string): boolean => {
+  if (!text) return false
+  // 检测：标题、列表、加粗、斜体、代码块、行内代码、链接等
+  return /^#{1,6}\s|^\*\s|^-\s|^\d+\.\s|\*\*[^*]+\*\*|__[^_]+__|```[\s\S]*```|`[^`]+`|\[[^\]]+\]\([^)]+\)/m.test(text)
+}
+
 const ThemeContext = createContext<ThemeContextType | null>(null)
 const windowsTheme = () => window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';//系统默认主题
 const defaultTheme = windowsTheme() === 'dark' ? 'dark' : 'light';//系统默认主题
@@ -1170,8 +1180,17 @@ function HistoryLayout() {
                       )}
                     </div>
                     <div className={`relative ${t.overlayBg} rounded-xl p-4`}>
-                      <div className={`text-sm ${t.textDim} leading-relaxed whitespace-pre-wrap ${!isRawTextExpanded && selectedClip.rawTextFull && selectedClip.rawTextFull.length > 500 ? 'max-h-[200px] overflow-hidden' : ''}`}>
-                        {selectedClip.rawTextFull || selectedClip.rawTextSnippet}
+                      <div className={`text-sm leading-relaxed ${!isRawTextExpanded && selectedClip.rawTextFull && selectedClip.rawTextFull.length > 500 ? 'max-h-[200px] overflow-hidden' : ''}`}>
+                        {looksLikeMarkdown(selectedClip.rawTextFull || selectedClip.rawTextSnippet || "") ? (
+                          <Markdown 
+                            markdown={selectedClip.rawTextFull || selectedClip.rawTextSnippet || ""} 
+                            className={`${t.textDim} [&_p]:mb-2 [&_ul]:my-2 [&_ol]:my-2 [&_li]:text-sm [&_h1]:text-lg [&_h2]:text-base [&_h3]:text-sm [&_code]:text-xs [&_code]:${t.inputBg} [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_pre]:overflow-x-auto [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:${t.sectionBg}`}
+                          />
+                        ) : (
+                          <div className={`${t.textDim} whitespace-pre-wrap`}>
+                            {selectedClip.rawTextFull || selectedClip.rawTextSnippet}
+                          </div>
+                        )}
                       </div>
                       {!isRawTextExpanded && selectedClip.rawTextFull && selectedClip.rawTextFull.length > 500 && (
                         <div className={`absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t ${t.fadeGradient} pointer-events-none rounded-b-xl`} />
