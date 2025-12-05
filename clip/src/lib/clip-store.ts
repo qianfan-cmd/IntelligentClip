@@ -1,353 +1,439 @@
-import type { ContentMetadata } from "@/core/index"
-
 /**
- * 剪藏的图片信息
+ * ClipStore & FolderStore - 剪藏数据存储模块
+ * 
+ * 【重构说明 - v2.1】
+ * 本模块通过 Plasmo Messaging 在 Background Script 中执行 IndexedDB 操作
+ * 
+ * 【为什么需要 Background 中转？】
+ * Content Script 中使用 IndexedDB 会绑定到当前网页的 origin，
+ * 导致不同网站之间数据不共享。通过在 Background Script 中执行
+ * 所有 IndexedDB 操作，可以确保数据存储在扩展的 origin 下，
+ * 实现跨网站的数据共享。
+ * 
+ * 【兼容性】
+ * - 对外 API 保持不变，调用方无需修改
+ * - 所有方法仍返回 Promise，使用方式完全一致
+ * 
+ * 【性能提升】
+ * - 支持更大数据量（不再受 chrome.storage.local 5MB 限制）
+ * - 支持索引查询，按 url/createdAt/source/folderId 快速筛选
+ * 
+ * @see background/messages/clip-storage.ts - Background 消息处理器
+ * @see clip-db.ts - 数据库定义和迁移逻辑
  */
-export interface ClipImage {
-  /** 图片 URL（绝对路径） */
-  src: string
-  /** 图片描述 */
-  alt?: string
-  /** 图片宽度 */
-  width?: number
-  /** 图片高度 */
-  height?: number
-}
 
-/**
- * 文件夹类型定义
- */
-export interface Folder {
-  id: string
-  name: string
-  createdAt: number
-  color?: string  // 可选：文件夹颜色
-  icon?: string   // 可选：文件夹图标
-}
+import { sendToBackground } from "@plasmohq/messaging"
 
-export interface Clip {
-  id: string
-  source: "youtube" | "bilibili" | "webpage" | "chat" | "other" | "screenshot"
-  url: string
-  title: string
-  createdAt: number
-  rawTextSnippet: string
-  rawTextFull?: string  // Full page text for AI processing
-  summary: string
-  keyPoints?: string[]
-  tags?: string[]
-  rating?: number
-  extra?: any
-  meta?: ContentMetadata  // Platform-specific metadata (author, viewCount, etc.)
-  syncedToFeishu?: boolean
-  feishuRecordId?: string
-  notes?: string  // User's personal notes and thoughts
-  updatedAt?: number  // Last update timestamp
-  folderId?: string  // 所属文件夹 ID
-  
-  // ===== AI 交互式打标字段 =====
-  /** 内容分类，如"公司介绍""技术文档""教程"等 */
-  categories?: string[]
-  /** 适用场景，如"工作参考""备考复习""投资研究"等 */
-  scenarios?: string[]
-  /** 用户个人感想/评论 */
-  personalComment?: string
-  
-  // ===== 图片剪藏 =====
-  /** 剪藏的图片列表 */
-  images?: ClipImage[]
-}
+// 从 clip-db 导入类型
+import type {
+  Clip,
+  ClipImage,
+  Folder,
+  ClipTagsResult
+} from "./clip-db"
 
-/**
- * AI 打标结果的类型定义
- * 用于解析 <clip_tags> JSON 内容
- */
-export interface ClipTagsResult {
-  /** 是否需要更新数据库中的打标信息 */
-  shouldUpdate: boolean
-  /** 内容分类列表 */
-  categories?: string[]
-  /** 适用场景列表 */
-  scenarios?: string[]
-  /** 用户个人感想 */
-  personalComment?: string
-  /** 评分 1-5 星 */
-  rating?: number
-  /** 标签列表 */
-  tags?: string[]
-}
+// 重新导出类型，保持向后兼容
+export type { Clip, ClipImage, Folder, ClipTagsResult }
 
-const STORAGE_KEY = "clips"
-const FOLDERS_STORAGE_KEY = "folders"
+// ============================================
+// 消息发送工具
+// ============================================
 
-function generateUUID() {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
+type StorageAction = 
+  // ClipStore actions
+  | "clips:getAll"
+  | "clips:getById"
+  | "clips:getByUrl"
+  | "clips:getBySource"
+  | "clips:getByFolder"
+  | "clips:getPaginated"
+  | "clips:add"
+  | "clips:update"
+  | "clips:delete"
+  | "clips:deleteMany"
+  | "clips:addImage"
+  | "clips:removeImage"
+  | "clips:moveToFolder"
+  | "clips:moveManyToFolder"
+  | "clips:search"
+  | "clips:count"
+  | "clips:clearAll"
+  // FolderStore actions
+  | "folders:getAll"
+  | "folders:getById"
+  | "folders:create"
+  | "folders:rename"
+  | "folders:update"
+  | "folders:delete"
+  | "folders:getClipCount"
+  | "folders:clearAll"
+
+interface StorageResponse<T = any> {
+  success: boolean
+  data?: T
+  error?: string
 }
 
 /**
- * 检查扩展上下文是否有效
+ * 发送存储操作请求到 Background Script
  */
-function isExtensionContextValid(): boolean {
+async function sendStorageRequest<T>(action: StorageAction, payload?: any): Promise<T> {
   try {
-    // 尝试访问 chrome.runtime.id，如果上下文失效会抛出错误
-    return !!chrome.runtime?.id
-  } catch {
-    return false
-  }
-}
-
-/**
- * 包装存储操作，处理扩展上下文失效的情况
- */
-async function safeStorageOperation<T>(
-  operation: () => Promise<T>,
-  fallback: T
-): Promise<T> {
-  if (!isExtensionContextValid()) {
-    console.warn("⚠️ Extension context invalidated. Please refresh the page.")
-    throw new Error("Extension context invalidated. Please refresh the page to continue using the extension.")
-  }
-  
-  try {
-    return await operation()
-  } catch (error) {
-    if (error instanceof Error && error.message.includes("Extension context invalidated")) {
-      console.warn("⚠️ Extension context invalidated during operation.")
-      throw new Error("Extension context invalidated. Please refresh the page to continue using the extension.")
+    const response = await sendToBackground<{ action: StorageAction; payload?: any }, StorageResponse<T>>({
+      name: "clip-storage",
+      body: { action, payload }
+    })
+    
+    if (!response.success) {
+      throw new Error(response.error || `Storage action ${action} failed`)
     }
-    throw error
+    
+    return response.data as T
+  } catch (err) {
+    console.error(`[ClipStore] ${action} failed:`, err)
+    throw err
   }
 }
+
+// ============================================
+// ClipStore - 剪藏存储
+// ============================================
 
 export const ClipStore = {
+  /**
+   * 获取所有剪藏
+   * 按创建时间倒序排列（最新的在前）
+   */
   async getAll(): Promise<Clip[]> {
-    return safeStorageOperation(async () => {
-      const result = await chrome.storage.local.get(STORAGE_KEY)
-      return result[STORAGE_KEY] || []
-    }, [])
-  },
-
-  async add(clip: Omit<Clip, "id" | "createdAt">): Promise<Clip> {
-    return safeStorageOperation(async () => {
-      const clips = await this.getAll()
-      const newClip: Clip = {
-        ...clip,
-        id: generateUUID(),
-        createdAt: Date.now()
-      }
-      clips.unshift(newClip) // Add to top
-      await chrome.storage.local.set({ [STORAGE_KEY]: clips })
-      return newClip
-    }, { ...clip, id: "", createdAt: 0 } as Clip)
-  },
-
-  async update(id: string, updates: Partial<Clip>): Promise<Clip | null> {
-    return safeStorageOperation(async () => {
-      const clips = await this.getAll()
-      const index = clips.findIndex((c) => c.id === id)
-      if (index === -1) return null
-
-      const updatedClip = { ...clips[index], ...updates }
-      clips[index] = updatedClip
-      await chrome.storage.local.set({ [STORAGE_KEY]: clips })
-      return updatedClip
-    }, null)
-  },
-
-  async delete(id: string): Promise<void> {
-    return safeStorageOperation(async () => {
-      const clips = await this.getAll()
-      const newClips = clips.filter((c) => c.id !== id)
-      await chrome.storage.local.set({ [STORAGE_KEY]: newClips })
-    }, undefined)
+    try {
+      return await sendStorageRequest<Clip[]>("clips:getAll")
+    } catch (err) {
+      console.error("[ClipStore] getAll failed:", err)
+      return []
+    }
   },
 
   /**
-   * 批量删除多个剪藏
+   * 根据 ID 获取单个剪藏
+   */
+  async getById(id: string): Promise<Clip | undefined> {
+    try {
+      return await sendStorageRequest<Clip | undefined>("clips:getById", { id })
+    } catch (err) {
+      console.error("[ClipStore] getById failed:", err)
+      return undefined
+    }
+  },
+
+  /**
+   * 根据 URL 获取剪藏
+   */
+  async getByUrl(url: string): Promise<Clip | undefined> {
+    try {
+      return await sendStorageRequest<Clip | undefined>("clips:getByUrl", { url })
+    } catch (err) {
+      console.error("[ClipStore] getByUrl failed:", err)
+      return undefined
+    }
+  },
+
+  /**
+   * 根据来源筛选剪藏
+   */
+  async getBySource(source: Clip["source"]): Promise<Clip[]> {
+    try {
+      return await sendStorageRequest<Clip[]>("clips:getBySource", { source })
+    } catch (err) {
+      console.error("[ClipStore] getBySource failed:", err)
+      return []
+    }
+  },
+
+  /**
+   * 根据文件夹筛选剪藏
+   */
+  async getByFolder(folderId: string | undefined): Promise<Clip[]> {
+    try {
+      return await sendStorageRequest<Clip[]>("clips:getByFolder", { folderId })
+    } catch (err) {
+      console.error("[ClipStore] getByFolder failed:", err)
+      return []
+    }
+  },
+
+  /**
+   * 分页获取剪藏
+   * 
+   * @param page 页码（从 1 开始）
+   * @param pageSize 每页数量
+   */
+  async getPaginated(page: number = 1, pageSize: number = 50): Promise<{
+    clips: Clip[]
+    total: number
+    hasMore: boolean
+  }> {
+    try {
+      return await sendStorageRequest<{
+        clips: Clip[]
+        total: number
+        hasMore: boolean
+      }>("clips:getPaginated", { page, pageSize })
+    } catch (err) {
+      console.error("[ClipStore] getPaginated failed:", err)
+      return { clips: [], total: 0, hasMore: false }
+    }
+  },
+
+  /**
+   * 新增剪藏
+   */
+  async add(clip: Omit<Clip, "id" | "createdAt">): Promise<Clip> {
+    const result = await sendStorageRequest<Clip>("clips:add", clip)
+    console.log("[ClipStore] Clip added:", result.id)
+    return result
+  },
+
+  /**
+   * 更新剪藏
+   */
+  async update(id: string, updates: Partial<Clip>): Promise<Clip | null> {
+    try {
+      return await sendStorageRequest<Clip | null>("clips:update", { id, updates })
+    } catch (err) {
+      console.error("[ClipStore] update failed:", err)
+      return null
+    }
+  },
+
+  /**
+   * 删除单个剪藏
+   */
+  async delete(id: string): Promise<void> {
+    await sendStorageRequest<boolean>("clips:delete", { id })
+    console.log("[ClipStore] Clip deleted:", id)
+  },
+
+  /**
+   * 批量删除剪藏
    */
   async deleteMany(ids: string[]): Promise<void> {
-    return safeStorageOperation(async () => {
-      const clips = await this.getAll()
-      const idSet = new Set(ids)
-      const newClips = clips.filter((c) => !idSet.has(c.id))
-      await chrome.storage.local.set({ [STORAGE_KEY]: newClips })
-    }, undefined)
+    await sendStorageRequest<boolean>("clips:deleteMany", { ids })
+    console.log("[ClipStore] Clips deleted:", ids.length)
   },
 
   /**
    * 添加图片到剪藏
    */
   async addImage(clipId: string, image: ClipImage): Promise<Clip | null> {
-    return safeStorageOperation(async () => {
-      const clips = await this.getAll()
-      const index = clips.findIndex((c) => c.id === clipId)
-      if (index === -1) return null
-
-      const clip = clips[index]
-      const images = clip.images || []
-      images.push(image)
-      
-      const updatedClip = { ...clip, images, updatedAt: Date.now() }
-      clips[index] = updatedClip
-      await chrome.storage.local.set({ [STORAGE_KEY]: clips })
-      return updatedClip
-    }, null)
+    try {
+      return await sendStorageRequest<Clip | null>("clips:addImage", { clipId, image })
+    } catch (err) {
+      console.error("[ClipStore] addImage failed:", err)
+      return null
+    }
   },
 
   /**
    * 从剪藏删除图片
    */
   async removeImage(clipId: string, imageIndex: number): Promise<Clip | null> {
-    return safeStorageOperation(async () => {
-      const clips = await this.getAll()
-      const index = clips.findIndex((c) => c.id === clipId)
-      if (index === -1) return null
-
-      const clip = clips[index]
-      const images = [...(clip.images || [])]
-      if (imageIndex < 0 || imageIndex >= images.length) return null
-      
-      images.splice(imageIndex, 1)
-      
-      const updatedClip = { ...clip, images, updatedAt: Date.now() }
-      clips[index] = updatedClip
-      await chrome.storage.local.set({ [STORAGE_KEY]: clips })
-      return updatedClip
-    }, null)
+    try {
+      return await sendStorageRequest<Clip | null>("clips:removeImage", { clipId, imageIndex })
+    } catch (err) {
+      console.error("[ClipStore] removeImage failed:", err)
+      return null
+    }
   },
 
   /**
    * 移动剪藏到文件夹
    */
   async moveToFolder(clipId: string, folderId: string | undefined): Promise<Clip | null> {
-    return this.update(clipId, { folderId, updatedAt: Date.now() })
+    try {
+      return await sendStorageRequest<Clip | null>("clips:moveToFolder", { clipId, folderId })
+    } catch (err) {
+      console.error("[ClipStore] moveToFolder failed:", err)
+      return null
+    }
   },
 
   /**
    * 批量移动剪藏到文件夹
    */
   async moveManyToFolder(clipIds: string[], folderId: string | undefined): Promise<void> {
-    return safeStorageOperation(async () => {
-      const clips = await this.getAll()
-      const idSet = new Set(clipIds)
-      const now = Date.now()
-      
-      const updatedClips = clips.map(clip => {
-        if (idSet.has(clip.id)) {
-          return { ...clip, folderId, updatedAt: now }
-        }
-        return clip
-      })
-      
-      await chrome.storage.local.set({ [STORAGE_KEY]: updatedClips })
-    }, undefined)
+    await sendStorageRequest<boolean>("clips:moveManyToFolder", { clipIds, folderId })
+    console.log("[ClipStore] Moved clips to folder:", clipIds.length, folderId)
+  },
+
+  /**
+   * 搜索剪藏（标题和摘要）
+   */
+  async search(keyword: string): Promise<Clip[]> {
+    try {
+      return await sendStorageRequest<Clip[]>("clips:search", { keyword })
+    } catch (err) {
+      console.error("[ClipStore] search failed:", err)
+      return []
+    }
+  },
+
+  /**
+   * 获取剪藏总数
+   */
+  async count(): Promise<number> {
+    try {
+      return await sendStorageRequest<number>("clips:count")
+    } catch (err) {
+      console.error("[ClipStore] count failed:", err)
+      return 0
+    }
   },
 
   /**
    * 检查扩展是否可用
    */
   isAvailable(): boolean {
-    return isExtensionContextValid()
+    try {
+      return !!chrome.runtime?.id
+    } catch {
+      return false
+    }
+  },
+
+  /**
+   * 清空所有剪藏
+   * 
+   * 【危险操作】仅用于调试/重置
+   */
+  async clearAll(): Promise<void> {
+    await sendStorageRequest<boolean>("clips:clearAll")
+    console.warn("[ClipStore] All clips cleared!")
   }
 }
 
-/**
- * 文件夹存储操作
- */
+// ============================================
+// FolderStore - 文件夹存储
+// ============================================
+
 export const FolderStore = {
   /**
    * 获取所有文件夹
    */
   async getAll(): Promise<Folder[]> {
-    return safeStorageOperation(async () => {
-      const result = await chrome.storage.local.get(FOLDERS_STORAGE_KEY)
-      return result[FOLDERS_STORAGE_KEY] || []
-    }, [])
+    try {
+      return await sendStorageRequest<Folder[]>("folders:getAll")
+    } catch (err) {
+      console.error("[FolderStore] getAll failed:", err)
+      return []
+    }
+  },
+
+  /**
+   * 根据 ID 获取文件夹
+   */
+  async getById(id: string): Promise<Folder | undefined> {
+    try {
+      return await sendStorageRequest<Folder | undefined>("folders:getById", { id })
+    } catch (err) {
+      console.error("[FolderStore] getById failed:", err)
+      return undefined
+    }
   },
 
   /**
    * 创建文件夹
    */
   async create(name: string, color?: string): Promise<Folder> {
-    return safeStorageOperation(async () => {
-      const folders = await this.getAll()
-      const newFolder: Folder = {
-        id: generateUUID(),
-        name,
-        createdAt: Date.now(),
-        color
-      }
-      folders.push(newFolder)
-      await chrome.storage.local.set({ [FOLDERS_STORAGE_KEY]: folders })
-      return newFolder
-    }, { id: "", name, createdAt: 0 } as Folder)
+    const result = await sendStorageRequest<Folder>("folders:create", { name, color })
+    console.log("[FolderStore] Folder created:", result.id)
+    return result
   },
 
   /**
    * 重命名文件夹
    */
   async rename(id: string, newName: string): Promise<Folder | null> {
-    return safeStorageOperation(async () => {
-      const folders = await this.getAll()
-      const index = folders.findIndex(f => f.id === id)
-      if (index === -1) return null
-
-      folders[index] = { ...folders[index], name: newName }
-      await chrome.storage.local.set({ [FOLDERS_STORAGE_KEY]: folders })
-      return folders[index]
-    }, null)
+    try {
+      return await sendStorageRequest<Folder | null>("folders:rename", { id, newName })
+    } catch (err) {
+      console.error("[FolderStore] rename failed:", err)
+      return null
+    }
   },
 
   /**
    * 更新文件夹
    */
   async update(id: string, updates: Partial<Folder>): Promise<Folder | null> {
-    return safeStorageOperation(async () => {
-      const folders = await this.getAll()
-      const index = folders.findIndex(f => f.id === id)
-      if (index === -1) return null
-
-      folders[index] = { ...folders[index], ...updates }
-      await chrome.storage.local.set({ [FOLDERS_STORAGE_KEY]: folders })
-      return folders[index]
-    }, null)
+    try {
+      return await sendStorageRequest<Folder | null>("folders:update", { id, updates })
+    } catch (err) {
+      console.error("[FolderStore] update failed:", err)
+      return null
+    }
   },
 
   /**
-   * 删除文件夹（同时将该文件夹下的所有剪藏移到"未归类"）
+   * 删除文件夹
+   * 同时将该文件夹下的所有剪藏移到"未归类"
    */
   async delete(id: string): Promise<void> {
-    return safeStorageOperation(async () => {
-      // 1. 删除文件夹
-      const folders = await this.getAll()
-      const newFolders = folders.filter(f => f.id !== id)
-      await chrome.storage.local.set({ [FOLDERS_STORAGE_KEY]: newFolders })
-      
-      // 2. 将该文件夹下的所有剪藏的 folderId 置为 undefined
-      const clips = await ClipStore.getAll()
-      const updatedClips = clips.map(clip => {
-        if (clip.folderId === id) {
-          return { ...clip, folderId: undefined }
-        }
-        return clip
-      })
-      await chrome.storage.local.set({ [STORAGE_KEY]: updatedClips })
-    }, undefined)
+    await sendStorageRequest<boolean>("folders:delete", { id })
+    console.log("[FolderStore] Folder deleted:", id)
   },
 
   /**
    * 获取文件夹下的剪藏数量
    */
   async getClipCount(folderId: string): Promise<number> {
-    return safeStorageOperation(async () => {
-      const clips = await ClipStore.getAll()
-      return clips.filter(c => c.folderId === folderId).length
-    }, 0)
+    try {
+      return await sendStorageRequest<number>("folders:getClipCount", { folderId })
+    } catch (err) {
+      console.error("[FolderStore] getClipCount failed:", err)
+      return 0
+    }
+  },
+
+  /**
+   * 清空所有文件夹
+   * 
+   * 【危险操作】仅用于调试/重置
+   */
+  async clearAll(): Promise<void> {
+    await sendStorageRequest<boolean>("folders:clearAll")
+    console.warn("[FolderStore] All folders cleared!")
   }
+}
+
+// ============================================
+// 兼容性导出（这些函数在新架构下不需要从外部调用）
+// ============================================
+
+/**
+ * @deprecated 在新架构下，数据库初始化在 Background Script 中自动进行
+ */
+export async function initClipDB(): Promise<void> {
+  // 在新架构下，数据库在 Background 中自动初始化
+  // 这个函数保留是为了兼容性，实际不做任何事
+  console.log("[ClipStore] initClipDB called - initialization happens in background")
+}
+
+/**
+ * @deprecated 在新架构下，无需手动确保数据库就绪
+ */
+export async function ensureDBReady(): Promise<void> {
+  // 同上，保留兼容性
+}
+
+/**
+ * @deprecated 迁移在 Background Script 中自动进行
+ */
+export async function migrateFromChromeStorage(): Promise<{
+  clipsCount: number
+  foldersCount: number
+  skipped: boolean
+}> {
+  // 迁移在 Background 中自动进行
+  console.log("[ClipStore] migrateFromChromeStorage called - migration happens in background")
+  return { clipsCount: 0, foldersCount: 0, skipped: true }
 }

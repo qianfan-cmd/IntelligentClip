@@ -25,6 +25,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "chrome-types": "^0.1.391",
     "cmdk": "^1.1.1",
+    "dexie": "^4.2.1",
     "jotai": "^2.15.1",
     "lucide-react": "^0.554.0",
     "openai": "^4.104.0",
