@@ -252,7 +252,15 @@ function buildRecordFields(
   addIfExists("summary", clip.summary)
   addIfExists("fullText", clip.rawTextFull || clip.rawTextSnippet)
   addIfExists("source", clip.source)
-  addIfExists("createdAt", new Date(clip.createdAt).toISOString())
+  // 转换为可读的日期字符串格式（兼容文本字段和日期字段）
+  addIfExists("createdAt", new Date(clip.createdAt).toLocaleString("zh-CN", {
+    year: "numeric",
+    month: "2-digit", 
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  }))
   addIfExists("tags", clip.tags?.join(", ") || "")
   addIfExists("keyPoints", clip.keyPoints?.join("\n") || "")
 
@@ -359,6 +367,15 @@ export async function createRecordFromClip(clip: Clip): Promise<string> {
       hasToken: !!tenantAccessToken
     })
     console.log("📦 即将写入字段:", Object.keys(fields))
+    console.log("📦 字段详情:", JSON.stringify(fields, null, 2))
+
+    // 检查 fields 是否为空
+    if (Object.keys(fields).length === 0) {
+      throw new Error("没有匹配到任何可写入的字段，请检查飞书表格的列名是否与预期一致")
+    }
+
+    const requestBody = { fields: fields }
+    console.log("📤 完整请求体:", JSON.stringify(requestBody, null, 2))
 
     const response = await fetch(url, {
       method: "POST",
@@ -366,14 +383,12 @@ export async function createRecordFromClip(clip: Clip): Promise<string> {
         Authorization: `Bearer ${tenantAccessToken}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        fields: fields
-      })
+      body: JSON.stringify(requestBody)
     })
 
     const data: FeishuRecordResponse = await response.json()
 
-    console.log("📥 飞书 API 响应:", data)
+    console.log("📥 飞书 API 响应:", JSON.stringify(data, null, 2))
 
     if (data.code !== 0) {
       // 提供更详细的错误信息和解决方案
@@ -438,4 +453,99 @@ export async function createRecordFromClip(clip: Clip): Promise<string> {
     console.error("❌ 导出到飞书失败:", error)
     throw error
   }
+}
+
+/**
+ * 检查飞书记录是否存在
+ * @param recordId 飞书记录 ID
+ * @returns true 如果记录存在，false 如果记录已被删除
+ */
+export async function checkFeishuRecordExists(recordId: string): Promise<boolean> {
+  try {
+    const config = await storage.get<FeishuConfig>("feishuConfig")
+    
+    if (!config || !config.appToken || !config.tableId || !config.appId || !config.appSecret) {
+      console.warn("⚠️ 飞书配置缺失，无法检查记录状态")
+      return true // 配置缺失时默认保持原状态
+    }
+
+    const tenantAccessToken = await getTenantAccessToken(config.appId, config.appSecret)
+    
+    const url = `https://open.feishu.cn/open-apis/bitable/v1/apps/${config.appToken}/tables/${config.tableId}/records/${recordId}`
+    
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${tenantAccessToken}`
+      }
+    })
+
+    const data = await response.json()
+    
+    // code 0 表示记录存在
+    if (data.code === 0) {
+      return true
+    }
+    
+    // 记录不存在的错误码：
+    // - 1254040: RecordNotFound
+    // - 1254043: RecordIdNotFound
+    if (
+      data.code === 1254040 || 
+      data.code === 1254043 || 
+      data.msg?.includes("RecordNotFound") ||
+      data.msg?.includes("RecordIdNotFound")
+    ) {
+      console.log(`📭 飞书记录 ${recordId} 已被删除 (code: ${data.code})`)
+      return false
+    }
+    
+    // 其他错误默认保持原状态
+    console.warn("⚠️ 检查飞书记录状态时出现未知错误:", data)
+    return true
+  } catch (error) {
+    console.error("❌ 检查飞书记录状态失败:", error)
+    return true // 出错时默认保持原状态
+  }
+}
+
+/**
+ * 批量检查多个剪藏的飞书同步状态
+ * @param clips 需要检查的剪藏列表（需包含 feishuRecordId）
+ * @returns 返回需要清除同步状态的剪藏 ID 列表
+ */
+export async function checkFeishuSyncStatus(
+  clips: Array<{ id: string; feishuRecordId?: string }>
+): Promise<string[]> {
+  const config = await storage.get<FeishuConfig>("feishuConfig")
+  
+  if (!config || !config.appToken || !config.tableId || !config.appId || !config.appSecret) {
+    console.warn("⚠️ 飞书配置缺失，无法检查同步状态")
+    return []
+  }
+
+  const clipsToCheck = clips.filter(c => c.feishuRecordId)
+  
+  if (clipsToCheck.length === 0) {
+    console.log("ℹ️ 没有需要检查的同步记录")
+    return []
+  }
+
+  console.log(`🔍 开始检查 ${clipsToCheck.length} 条同步记录的状态...`)
+  
+  const invalidClipIds: string[] = []
+  
+  // 逐个检查（避免并发请求过多）
+  for (const clip of clipsToCheck) {
+    const exists = await checkFeishuRecordExists(clip.feishuRecordId!)
+    if (!exists) {
+      invalidClipIds.push(clip.id)
+    }
+    // 添加短暂延迟避免请求过快
+    await new Promise(resolve => setTimeout(resolve, 200))
+  }
+  
+  console.log(`✅ 检查完成，${invalidClipIds.length} 条记录需要清除同步状态`)
+  
+  return invalidClipIds
 }

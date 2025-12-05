@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useCallback, useMemo, createContext, useContext } from "react"
 import { ClipStore, FolderStore, type Clip, type Folder } from "@/lib/clip-store"
-import { Trash2, ExternalLink, Search, Calendar, Tag, Save, MessageSquare, Share, Loader2, CheckSquare, Square, Edit3, X, Check, ChevronDown, ChevronUp, Star, Filter, Clock, FileText, Image as ImageIcon, Sparkles, BookOpen, LayoutGrid, List, SortAsc, SortDesc, Zap, Globe, TrendingUp, Sun, Moon, FolderIcon, Pencil } from "lucide-react"
+import { Trash2, ExternalLink, Search, Calendar, Tag, Save, MessageSquare, Share, Loader2, CheckSquare, Square, Edit3, X, Check, ChevronDown, ChevronUp, Star, Filter, Clock, FileText, Image as ImageIcon, Sparkles, BookOpen, LayoutGrid, List, SortAsc, SortDesc, Zap, Globe, TrendingUp, Sun, Moon, FolderIcon, Pencil, RefreshCw } from "lucide-react"
 import { ChatProvider, useChat } from "@/contexts/chat-context"
 import { ExtensionProvider, useExtension } from "@/contexts/extension-context"
-import { createRecordFromClip } from "@/lib/feishuBitable"
+import { createRecordFromClip, checkFeishuSyncStatus } from "@/lib/feishuBitable"
 import { storage } from "@/lib/atoms/storage"
 import type { FeishuConfig } from "@/lib/atoms/feishu"
 import Chat from "@/components/chat"
@@ -213,6 +213,9 @@ function HistoryLayout() {
   // Edit modal state
   const [editingClip, setEditingClip] = useState<Clip | null>(null)
   
+  // Feishu sync status refresh
+  const [isRefreshingSyncStatus, setIsRefreshingSyncStatus] = useState(false)
+  
   const { setExtensionData, setCurrentClipId } = useExtension()
   const { chatMessages } = useChat()
 
@@ -384,6 +387,46 @@ function HistoryLayout() {
       }
     } finally {
       setExportingId(null)
+    }
+  }
+
+  // 刷新飞书同步状态
+  const handleRefreshSyncStatus = async () => {
+    const syncedClips = clips.filter(c => c.syncedToFeishu && c.feishuRecordId)
+    
+    if (syncedClips.length === 0) {
+      alert("ℹ️ 没有已同步的记录需要检查")
+      return
+    }
+    
+    const confirmCheck = confirm(`将检查 ${syncedClips.length} 条已同步记录的状态，这可能需要一些时间。是否继续？`)
+    if (!confirmCheck) return
+    
+    setIsRefreshingSyncStatus(true)
+    
+    try {
+      const invalidClipIds = await checkFeishuSyncStatus(
+        syncedClips.map(c => ({ id: c.id, feishuRecordId: c.feishuRecordId }))
+      )
+      
+      if (invalidClipIds.length === 0) {
+        alert("✅ 所有同步记录状态正常")
+      } else {
+        // 清除已删除记录的同步状态
+        for (const clipId of invalidClipIds) {
+          await ClipStore.update(clipId, {
+            syncedToFeishu: false,
+            feishuRecordId: undefined
+          })
+        }
+        await loadClips()
+        alert(`🔄 已更新 ${invalidClipIds.length} 条记录的同步状态（飞书端已删除）`)
+      }
+    } catch (e) {
+      console.error("刷新同步状态失败:", e)
+      alert("❌ 刷新同步状态失败: " + (e as Error).message)
+    } finally {
+      setIsRefreshingSyncStatus(false)
     }
   }
 
@@ -613,7 +656,7 @@ function HistoryLayout() {
                 </button>
                 <button 
                   onClick={() => setStatsFilter(statsFilter === "synced" ? "all" : "synced")}
-                  className={`${t.inputBg} backdrop-blur rounded-lg p-2 text-center transition-all cursor-pointer group ${
+                  className={`${t.inputBg} backdrop-blur rounded-lg p-2 text-center transition-all cursor-pointer group relative ${
                     statsFilter === "synced" 
                       ? "ring-2 ring-amber-500 ring-offset-1 ring-offset-transparent" 
                       : t.inputBgHover
@@ -621,6 +664,20 @@ function HistoryLayout() {
                 >
                   <div className={`text-base font-bold transition-colors ${statsFilter === "synced" ? "text-amber-300" : "text-amber-400 group-hover:text-amber-300"}`}>{stats.synced}</div>
                   <div className={`text-[10px] ${statsFilter === "synced" ? "text-amber-300" : t.textFaint}`}>已同步</div>
+                  {/* 刷新同步状态按钮 */}
+                  {stats.synced > 0 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleRefreshSyncStatus()
+                      }}
+                      disabled={isRefreshingSyncStatus}
+                      className={`absolute -top-1 -right-1 p-1 rounded-full ${t.inputBg} hover:bg-amber-500/20 transition-all ${isRefreshingSyncStatus ? 'animate-spin' : ''}`}
+                      title="刷新飞书同步状态"
+                    >
+                      <RefreshCw className={`h-3 w-3 ${isRefreshingSyncStatus ? 'text-amber-400' : t.textFaint + ' hover:text-amber-400'}`} />
+                    </button>
+                  )}
                 </button>
               </div>
             </div>
