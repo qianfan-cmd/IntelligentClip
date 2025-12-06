@@ -12,3 +12,5 @@ export {
 
 export { Input } from "./ui/input"
 export type { InputProps } from "./ui/input"
+
+export { CardEditor } from "./card-editor"

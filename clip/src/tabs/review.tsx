@@ -8,7 +8,7 @@ import React, { useEffect, useState, useCallback, useMemo } from "react"
 import { ReviewStore } from "@/lib/review/review-store"
 import { generateReviewCards, isCardsCacheValid, getCardTypeLabel, getCardTypeIcon } from "@/lib/review/card-generator"
 import { calculateMemoryStrength, formatNextReviewDate, getReviewStatus } from "@/lib/review/sm2-algorithm"
-import type { ReviewWithClip, ReviewCard, ReviewRating } from "@/lib/review/types"
+import type { ReviewWithClip, ReviewCard, ReviewRating, ReviewRecord } from "@/lib/review/types"
 import { 
   Brain, 
   ChevronRight, 

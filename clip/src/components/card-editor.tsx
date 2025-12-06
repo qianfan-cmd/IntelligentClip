@@ -4,8 +4,8 @@
 
 import React, { useState, useEffect } from "react"
 import type { ReviewCard, CardType } from "@/lib/review/types"
-import { X, Save, Sparkles } from "lucide-react"
-import { getCardTypeLabel, getCardTypeIcon } from "@/lib/review/card-generator"
+import { X, Save, Sparkles, HelpCircle, FileText, List, Target } from "lucide-react"
+import { getCardTypeLabel } from "@/lib/review/card-generator"
 
 interface CardEditorProps {
   /** 初始卡片数据（编辑模式） */
@@ -19,6 +19,17 @@ interface CardEditorProps {
 }
 
 const CARD_TYPES: CardType[] = ['qa', 'cloze', 'summary', 'keypoint']
+
+// 图标映射
+const getCardIcon = (type: CardType) => {
+  const icons = {
+    qa: HelpCircle,
+    cloze: FileText,
+    summary: List,
+    keypoint: Target
+  }
+  return icons[type]
+}
 
 export function CardEditor({ initialCard, onSave, onCancel, title }: CardEditorProps) {
   const [type, setType] = useState<CardType>(initialCard?.type || 'qa')
@@ -104,7 +115,7 @@ export function CardEditor({ initialCard, onSave, onCancel, title }: CardEditorP
             </label>
             <div className="grid grid-cols-4 gap-2">
               {CARD_TYPES.map((t) => {
-                const Icon = getCardTypeIcon(t)
+                const Icon = getCardIcon(t)
                 const label = getCardTypeLabel(t)
                 const isSelected = type === t
                 return (
