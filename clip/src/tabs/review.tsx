@@ -161,20 +161,30 @@ export default function ReviewPage() {
   const handleRating = async (rating: ReviewRating) => {
     if (!currentReview) return
     
-    try {
-      await ReviewStore.submitReview(currentReview.review.id, rating)
-      setCompletedCount(c => c + 1)
-      
-      // 下一个复习项
-      if (currentIndex < dueReviews.length - 1) {
-        setCurrentIndex(i => i + 1)
-        setShowAnswer(false)
-        setCurrentCardIndex(0)
-      } else {
-        setIsComplete(true)
+    // 检查是否还有更多卡片
+    const hasMoreCards = currentCardIndex < currentCards.length - 1
+    
+    if (hasMoreCards) {
+      // 如果还有更多卡片，显示下一张卡片
+      setCurrentCardIndex(i => i + 1)
+      setShowAnswer(false)
+    } else {
+      // 当前复习项的所有卡片都完成了，提交评分并移到下一个复习项
+      try {
+        await ReviewStore.submitReview(currentReview.review.id, rating)
+        setCompletedCount(c => c + 1)
+        
+        // 下一个复习项
+        if (currentIndex < dueReviews.length - 1) {
+          setCurrentIndex(i => i + 1)
+          setShowAnswer(false)
+          setCurrentCardIndex(0)
+        } else {
+          setIsComplete(true)
+        }
+      } catch (err) {
+        console.error("Failed to submit review:", err)
       }
-    } catch (err) {
-      console.error("Failed to submit review:", err)
     }
   }
   
@@ -575,6 +585,11 @@ export default function ReviewPage() {
                 <div>
                   <p className={`text-center text-sm ${theme.textMuted} mb-4`}>
                     你答对了吗？
+                    {currentCardIndex < currentCards.length - 1 && (
+                      <span className="block mt-1 text-xs text-purple-300">
+                        评分后将显示下一张卡片 ({currentCardIndex + 1}/{currentCards.length})
+                      </span>
+                    )}
                   </p>
                   <div className="grid grid-cols-4 gap-2">
                     <RatingButton 

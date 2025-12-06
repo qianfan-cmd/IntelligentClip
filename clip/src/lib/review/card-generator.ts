@@ -52,15 +52,32 @@ export async function generateReviewCards(
   reviewData: ReviewWithClip
 ): Promise<ReviewCard[]> {
   const { clip } = reviewData
-  const rawFull = (clip as any)?.rawTextFull as string | undefined
-  const rawSnippet = (clip as any)?.rawTextSnippet as string | undefined
+  const rawFull = clip.rawTextFull
+  const rawSnippet = clip.rawTextSnippet
+  
+  console.log("[CardGenerator] clip data", {
+    hasRawFull: !!rawFull,
+    rawFullLen: rawFull?.length,
+    hasRawSnippet: !!rawSnippet,
+    rawSnippetLen: rawSnippet?.length,
+    title: clip.title,
+    hasSummary: !!clip.summary,
+    hasKeyPoints: !!clip.keyPoints
+  })
   
   // 构建提示内容
+  const rawText = rawFull?.slice(0, 1200) || rawSnippet || "无原文片段"
   const prompt = CARD_GENERATION_PROMPT
     .replace("{title}", clip.title || "无标题")
     .replace("{summary}", clip.summary || "无摘要")
     .replace("{keyPoints}", clip.keyPoints?.join("\n") || "无关键要点")
-    .replace("{raw}", rawFull?.slice(0, 1200) || rawSnippet || "无原文片段")
+    .replace("{raw}", rawText)
+  
+  console.log("[CardGenerator] using rawText", {
+    source: rawFull ? "rawTextFull" : (rawSnippet ? "rawTextSnippet" : "fallback"),
+    length: rawText.length,
+    preview: rawText.slice(0, 100) + "..."
+  })
   
   try {
     // 获取 API 配置（从 chrome.storage.local，key 为 clipper_api_config）

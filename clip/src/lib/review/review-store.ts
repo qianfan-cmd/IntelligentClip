@@ -290,7 +290,9 @@ export const ReviewStore = {
               keyPoints: clip.keyPoints,
               url: clip.url,
               source: clip.source,
-              createdAt: clip.createdAt
+              createdAt: clip.createdAt,
+              rawTextSnippet: clip.rawTextSnippet,
+              rawTextFull: clip.rawTextFull
             }
           })
         }
@@ -325,7 +327,9 @@ export const ReviewStore = {
               keyPoints: clip.keyPoints,
               url: clip.url,
               source: clip.source,
-              createdAt: clip.createdAt
+              createdAt: clip.createdAt,
+              rawTextSnippet: clip.rawTextSnippet,
+              rawTextFull: clip.rawTextFull
             }
           })
         }

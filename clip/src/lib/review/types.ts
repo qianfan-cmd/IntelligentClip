@@ -165,6 +165,8 @@ export interface ReviewWithClip {
     url: string
     source: string
     createdAt: number
+    rawTextSnippet: string
+    rawTextFull?: string
   }
 }
 
