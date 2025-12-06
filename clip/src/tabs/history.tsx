@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo, createContext, useContext } from "react"
 import { ClipStore, FolderStore, type Clip, type Folder } from "@/lib/clip-store"
-import { Trash2, ExternalLink, Search, Calendar, Tag, Save, MessageSquare, Share, Loader2, CheckSquare, Square, Edit3, X, Check, ChevronDown, ChevronUp, Star, Filter, Clock, FileText, Image as ImageIcon, Sparkles, BookOpen, LayoutGrid, List, SortAsc, SortDesc, Zap, Globe, TrendingUp, Sun, Moon, FolderIcon, Pencil, RefreshCw } from "lucide-react"
+import { ReviewStore } from "@/lib/review/review-store"
+import { Trash2, ExternalLink, Search, Calendar, Tag, Save, MessageSquare, Share, Loader2, CheckSquare, Square, Edit3, X, Check, ChevronDown, ChevronUp, Star, Filter, Clock, FileText, Image as ImageIcon, Sparkles, BookOpen, LayoutGrid, List, SortAsc, SortDesc, Zap, Globe, TrendingUp, Sun, Moon, FolderIcon, Pencil, RefreshCw, Brain } from "lucide-react"
 import { ChatProvider, useChat } from "@/contexts/chat-context"
 import { ExtensionProvider, useExtension } from "@/contexts/extension-context"
 import { createRecordFromClip, checkFeishuSyncStatus } from "@/lib/feishuBitable"
@@ -216,12 +217,18 @@ function HistoryLayout() {
   // Feishu sync status refresh
   const [isRefreshingSyncStatus, setIsRefreshingSyncStatus] = useState(false)
   
+  // Review state
+  const [reviewStatus, setReviewStatus] = useState<Record<string, boolean>>({}) // clipId -> hasReview
+  const [addingToReview, setAddingToReview] = useState<string | null>(null)
+  const [dueReviewCount, setDueReviewCount] = useState(0)
+  
   const { setExtensionData, setCurrentClipId } = useExtension()
   const { chatMessages } = useChat()
 
   useEffect(() => {
     loadClips()
     loadFolders()
+    loadReviewStatus()
     
     // Listen for storage changes to update the list in real-time
     const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
@@ -257,6 +264,58 @@ function HistoryLayout() {
     const data = await FolderStore.getAll()
     setFolders(data)
   }, [])
+
+  // 加载复习状态
+  const loadReviewStatus = useCallback(async () => {
+    try {
+      const reviews = await ReviewStore.getAll()
+      const status: Record<string, boolean> = {}
+      for (const r of reviews) {
+        status[r.clipId] = true
+      }
+      setReviewStatus(status)
+      
+      const dueCount = await ReviewStore.getDueCount()
+      setDueReviewCount(dueCount)
+    } catch (err) {
+      console.error("Failed to load review status:", err)
+    }
+  }, [])
+
+  // 添加到复习
+  const handleAddToReview = async (clipId: string) => {
+    setAddingToReview(clipId)
+    try {
+      await ReviewStore.create(clipId)
+      setReviewStatus(prev => ({ ...prev, [clipId]: true }))
+    } catch (err) {
+      console.error("Failed to add to review:", err)
+      alert("添加到复习失败")
+    } finally {
+      setAddingToReview(null)
+    }
+  }
+
+  // 移除复习
+  const handleRemoveFromReview = async (clipId: string) => {
+    if (!confirm("确定要从复习计划中移除吗？")) return
+    try {
+      await ReviewStore.deleteByClipId(clipId)
+      setReviewStatus(prev => {
+        const next = { ...prev }
+        delete next[clipId]
+        return next
+      })
+    } catch (err) {
+      console.error("Failed to remove from review:", err)
+      alert("移除失败")
+    }
+  }
+
+  // 打开复习页面
+  const openReviewPage = () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL("tabs/review.html") })
+  }
 
   const closeEditModal = useCallback(() => {
     setEditingClip(null)
@@ -620,7 +679,7 @@ function HistoryLayout() {
           <div className={`flex-1 overflow-y-auto custom-scrollbar ${theme === 'dark' ? 'dark' : ''}`}>
             {/* Stats Cards */}
             <div className="p-4 pb-2">
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-5 gap-2">
                 <button 
                   onClick={() => setStatsFilter(statsFilter === "all" ? "all" : "all")}
                   className={`${t.inputBg} backdrop-blur rounded-lg p-2 text-center transition-all cursor-pointer group ${
@@ -677,6 +736,18 @@ function HistoryLayout() {
                     >
                       <RefreshCw className={`h-3 w-3 ${isRefreshingSyncStatus ? 'text-amber-400' : t.textFaint + ' hover:text-amber-400'}`} />
                     </button>
+                  )}
+                </button>
+                {/* 待复习入口 */}
+                <button 
+                  onClick={openReviewPage}
+                  className={`${t.inputBg} backdrop-blur rounded-lg p-2 text-center transition-all cursor-pointer group ${t.inputBgHover} relative`}
+                  title="开始复习"
+                >
+                  <div className={`text-base font-bold transition-colors text-purple-400 group-hover:text-purple-300`}>{dueReviewCount}</div>
+                  <div className={`text-[10px] ${t.textFaint} group-hover:text-purple-300`}>待复习</div>
+                  {dueReviewCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
                   )}
                 </button>
               </div>
@@ -1056,6 +1127,30 @@ function HistoryLayout() {
                       onMoved={loadClips}
                       theme={theme}
                     />
+                    
+                    {/* Review Button */}
+                    <button
+                      onClick={() => reviewStatus[selectedClip.id] 
+                        ? handleRemoveFromReview(selectedClip.id) 
+                        : handleAddToReview(selectedClip.id)
+                      }
+                      disabled={addingToReview === selectedClip.id}
+                      className={`px-4 py-2 rounded-xl transition-all duration-300 flex items-center gap-2 text-sm font-medium ${
+                        reviewStatus[selectedClip.id]
+                          ? "text-purple-400 bg-purple-500/10 ring-1 ring-purple-500/30 hover:bg-purple-500/20"
+                          : `${t.textMuted} ${t.inputBg} hover:bg-purple-500/20 hover:text-purple-300 hover:ring-1 hover:ring-purple-500/30`
+                      }`}
+                      title={reviewStatus[selectedClip.id] ? "点击移除复习计划" : "添加到复习计划"}
+                    >
+                      {addingToReview === selectedClip.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Brain className="h-4 w-4" />
+                          <span>{reviewStatus[selectedClip.id] ? "已加入复习" : "复习"}</span>
+                        </>
+                      )}
+                    </button>
                     
                     <button
                       onClick={() => handleExportToFeishu(selectedClip)}

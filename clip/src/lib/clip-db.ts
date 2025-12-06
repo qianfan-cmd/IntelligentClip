@@ -9,14 +9,17 @@
  * 【数据表】
  * - clips: 剪藏内容主表
  * - folders: 文件夹表
+ * - reviews: 复习记录表（AI 回顾助手）
  * 
  * 【索引设计】
  * - clips: id(主键), url, createdAt, source, folderId
  * - folders: id(主键), name, createdAt
+ * - reviews: id(主键), clipId, nextReviewDate, createdAt
  */
 
 import Dexie, { type Table } from "dexie"
 import type { ContentMetadata } from "@/core/index"
+import type { ReviewRecord } from "./review/types"
 
 // ============================================
 // 类型定义（与原 clip-store.ts 保持一致）
@@ -115,6 +118,7 @@ export class ClipDatabase extends Dexie {
   // 表定义（带类型）
   clips!: Table<Clip, string>
   folders!: Table<Folder, string>
+  reviews!: Table<ReviewRecord, string>
 
   constructor() {
     super("clipper_db")
@@ -126,6 +130,17 @@ export class ClipDatabase extends Dexie {
       clips: "id, url, createdAt, source, folderId",
       // folders 表
       folders: "id, name, createdAt"
+    })
+    
+    // 版本 2：添加 reviews 表（AI 回顾助手）
+    this.version(2).stores({
+      clips: "id, url, createdAt, source, folderId",
+      folders: "id, name, createdAt",
+      // reviews 表：用于存储复习记录
+      // clipId: 关联剪藏
+      // nextReviewDate: 用于查询待复习内容
+      // createdAt: 用于按时间排序
+      reviews: "id, clipId, nextReviewDate, createdAt"
     })
   }
 }

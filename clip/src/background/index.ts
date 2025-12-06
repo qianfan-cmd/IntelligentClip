@@ -1,5 +1,10 @@
 console.log("🚀 Clip Extension background service worker loading...") // 后台 Service Worker 启动日志
 
+// 初始化复习调度器
+import { initReviewScheduler } from "./review-scheduler"
+initReviewScheduler()
+console.log("📅 Review scheduler initialized")
+
 // 点击扩展图标打开历史页面
 chrome.action.onClicked.addListener(() => { // 点击扩展图标时打开历史页
   console.log("🎯 Extension icon clicked, opening history page...")
