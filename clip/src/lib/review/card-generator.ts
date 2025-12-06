@@ -52,8 +52,29 @@ export async function generateReviewCards(
   reviewData: ReviewWithClip
 ): Promise<ReviewCard[]> {
   const { clip } = reviewData
-  const rawFull = clip.rawTextFull
-  const rawSnippet = clip.rawTextSnippet
+  let rawFull = clip.rawTextFull
+  let rawSnippet = clip.rawTextSnippet
+  
+  // 如果两者都不存在，尝试从数据库重新获取完整的 Clip 对象
+  if (!rawFull && !rawSnippet) {
+    console.log("[CardGenerator] rawText missing, fetching full clip from DB...")
+    try {
+      const { clipDB } = await import("@/lib/clip-db")
+      const fullClip = await clipDB.clips.get(clip.id)
+      if (fullClip) {
+        rawFull = fullClip.rawTextFull
+        rawSnippet = fullClip.rawTextSnippet
+        console.log("[CardGenerator] fetched from DB", {
+          hasRawFull: !!rawFull,
+          rawFullLen: rawFull?.length,
+          hasRawSnippet: !!rawSnippet,
+          rawSnippetLen: rawSnippet?.length
+        })
+      }
+    } catch (err) {
+      console.error("[CardGenerator] failed to fetch full clip:", err)
+    }
+  }
   
   console.log("[CardGenerator] clip data", {
     hasRawFull: !!rawFull,
