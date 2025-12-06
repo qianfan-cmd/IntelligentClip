@@ -5,7 +5,7 @@
  */
 
 import { clipDB, ensureDBReady } from "../clip-db"
-import type { ReviewRecord, ReviewSettings, ReviewWithClip, DEFAULT_REVIEW_SETTINGS } from "./types"
+import type { ReviewRecord, ReviewSettings, ReviewWithClip, DEFAULT_REVIEW_SETTINGS, ReviewCard } from "./types"
 import { createInitialReviewRecord, getDueReviews, calculateNextReview } from "./sm2-algorithm"
 import type { ReviewRating } from "./types"
 
@@ -341,17 +341,25 @@ export const ReviewStore = {
   /**
    * 更新复习卡片缓存
    */
-  async updateCards(id: string, cards: ReviewRecord['cards']): Promise<void> {
+  async updateCards(id: string, cards: ReviewRecord['cards']): Promise<ReviewRecord | null> {
     await ensureDBReady()
     
     try {
       console.log("[ReviewStore] updateCards", { id, count: cards?.length })
-      await clipDB.reviews.update(id, {
+      const count = await clipDB.reviews.update(id, {
         cards,
         cardsGeneratedAt: Date.now()
       })
+      
+      if (count === 0) {
+        console.warn("[ReviewStore] Record not found for updateCards:", id)
+        return null
+      }
+      
+      return await clipDB.reviews.get(id) || null
     } catch (err) {
       console.error("[ReviewStore] updateCards failed:", err)
+      return null
     }
   },
 
@@ -393,7 +401,7 @@ export const ReviewStore = {
   },
 
   /**
-   * 清空所有复习记录（危险操作）
+   * 清空所有复习记录（危险操作！）
    */
   async clearAll(): Promise<void> {
     await ensureDBReady()
@@ -404,6 +412,130 @@ export const ReviewStore = {
     } catch (err) {
       console.error("[ReviewStore] clearAll failed:", err)
       throw err
+    }
+  },
+
+  // ============================================
+  // 卡片管理功能
+  // ============================================
+
+  /**
+   * 添加新卡片到复习记录
+   */
+  async addCard(id: string, card: ReviewCard): Promise<ReviewRecord | null> {
+    await ensureDBReady()
+    
+    try {
+      const record = await clipDB.reviews.get(id)
+      if (!record) {
+        console.warn("[ReviewStore] Record not found:", id)
+        return null
+      }
+      
+      const cards = [...(record.cards || []), card]
+      return await this.updateCards(id, cards)
+    } catch (err) {
+      console.error("[ReviewStore] addCard failed:", err)
+      return null
+    }
+  },
+
+  /**
+   * 删除指定索引的卡片
+   */
+  async deleteCard(id: string, cardIndex: number): Promise<ReviewRecord | null> {
+    await ensureDBReady()
+    
+    try {
+      const record = await clipDB.reviews.get(id)
+      if (!record) {
+        console.warn("[ReviewStore] Record not found:", id)
+        return null
+      }
+      
+      const cards = record.cards || []
+      if (cardIndex < 0 || cardIndex >= cards.length) {
+        console.warn("[ReviewStore] Invalid card index:", cardIndex)
+        return null
+      }
+      
+      const newCards = [...cards.slice(0, cardIndex), ...cards.slice(cardIndex + 1)]
+      console.log("[ReviewStore] Deleting card", cardIndex, "from review:", id)
+      return await this.updateCards(id, newCards)
+    } catch (err) {
+      console.error("[ReviewStore] deleteCard failed:", err)
+      return null
+    }
+  },
+
+  /**
+   * 更新指定索引的卡片
+   */
+  async updateCard(id: string, cardIndex: number, card: ReviewCard): Promise<ReviewRecord | null> {
+    await ensureDBReady()
+    
+    try {
+      const record = await clipDB.reviews.get(id)
+      if (!record) {
+        console.warn("[ReviewStore] Record not found:", id)
+        return null
+      }
+      
+      const cards = record.cards || []
+      if (cardIndex < 0 || cardIndex >= cards.length) {
+        console.warn("[ReviewStore] Invalid card index:", cardIndex)
+        return null
+      }
+      
+      const newCards = [...cards]
+      newCards[cardIndex] = card
+      console.log("[ReviewStore] Updating card", cardIndex, "in review:", id)
+      return await this.updateCards(id, newCards)
+    } catch (err) {
+      console.error("[ReviewStore] updateCard failed:", err)
+      return null
+    }
+  },
+
+  /**
+   * 在复习记录中搜索卡片
+   */
+  async searchCards(query: string): Promise<Array<{
+    review: ReviewRecord
+    cardIndex: number
+    card: ReviewCard
+  }>> {
+    await ensureDBReady()
+    
+    try {
+      const records = await clipDB.reviews.toArray()
+      const results: Array<{
+        review: ReviewRecord
+        cardIndex: number
+        card: ReviewCard
+      }> = []
+      
+      const lowerQuery = query.toLowerCase()
+      
+      for (const review of records) {
+        if (!review.cards) continue
+        
+        review.cards.forEach((card, index) => {
+          const matchQuestion = card.question.toLowerCase().includes(lowerQuery)
+          const matchAnswer = card.answer.toLowerCase().includes(lowerQuery)
+          const matchHint = card.hint?.toLowerCase().includes(lowerQuery)
+          
+          if (matchQuestion || matchAnswer || matchHint) {
+            results.push({ review, cardIndex: index, card })
+          }
+        })
+      }
+      
+      console.log("[ReviewStore] Card search results:", results.length, "for query:", query)
+      return results
+    } catch (err) {
+      console.error("[ReviewStore] searchCards failed:", err)
+      return []
     }
   }
 }

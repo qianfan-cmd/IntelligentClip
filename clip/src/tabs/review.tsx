@@ -24,8 +24,12 @@ import {
   ExternalLink,
   Pause,
   Play,
-  SkipForward
+  SkipForward,
+  Trash2,
+  Edit,
+  Plus
 } from "lucide-react"
+import { CardEditor } from "@/components/card-editor"
 import "../style.css"
 
 // ============================================
@@ -72,6 +76,10 @@ export default function ReviewPage() {
   
   // 完成状态
   const [isComplete, setIsComplete] = useState(false)
+  
+  // 卡片编辑器状态
+  const [isEditorOpen, setIsEditorOpen] = useState(false)
+  const [editingCardIndex, setEditingCardIndex] = useState<number | null>(null)
   
   const currentReview = dueReviews[currentIndex]
   const currentCard = currentCards[currentCardIndex]
@@ -260,6 +268,67 @@ export default function ReviewPage() {
   }
   
   // ============================================
+  // 卡片管理功能
+  // ============================================
+  
+  const handleDeleteCard = async () => {
+    if (!currentReview || currentCardIndex === null) return
+    
+    const confirmed = confirm(`确定要删除这张卡片吗？`)
+    if (!confirmed) return
+    
+    const updatedReview = await ReviewStore.deleteCard(currentReview.review.id, currentCardIndex)
+    if (updatedReview) {
+      const newCards = updatedReview.cards || []
+      setCurrentCards(newCards)
+      
+      // 如果删除后没有卡片了，切换到下一个复习项
+      if (newCards.length === 0) {
+        handleSkip()
+      } else if (currentCardIndex >= newCards.length) {
+        setCurrentCardIndex(newCards.length - 1)
+      }
+      setShowAnswer(false)
+    }
+  }
+  
+  const handleEditCard = () => {
+    setEditingCardIndex(currentCardIndex)
+    setIsEditorOpen(true)
+  }
+  
+  const handleAddCard = () => {
+    setEditingCardIndex(null)
+    setIsEditorOpen(true)
+  }
+  
+  const handleSaveCard = async (card: ReviewCard) => {
+    if (!currentReview) return
+    
+    let updatedReview: ReviewRecord | null = null
+    
+    if (editingCardIndex !== null) {
+      // 编辑现有卡片
+      updatedReview = await ReviewStore.updateCard(currentReview.review.id, editingCardIndex, card)
+    } else {
+      // 添加新卡片
+      updatedReview = await ReviewStore.addCard(currentReview.review.id, card)
+    }
+    
+    if (updatedReview) {
+      setCurrentCards(updatedReview.cards || [])
+      if (editingCardIndex === null) {
+        // 新增的卡片，跳转到最后一张
+        setCurrentCardIndex((updatedReview.cards?.length || 1) - 1)
+      }
+    }
+    
+    setIsEditorOpen(false)
+    setEditingCardIndex(null)
+    setShowAnswer(false)
+  }
+  
+  // ============================================
   // 渲染
   // ============================================
   
@@ -279,6 +348,19 @@ export default function ReviewPage() {
   return (
     <div className={`min-h-screen ${theme.pageBg} p-6`}>
       <div className="max-w-3xl mx-auto">
+        {/* 卡片编辑器 */}
+        {isEditorOpen && (
+          <CardEditor
+            initialCard={editingCardIndex !== null ? currentCards[editingCardIndex] : undefined}
+            onSave={handleSaveCard}
+            onCancel={() => {
+              setIsEditorOpen(false)
+              setEditingCardIndex(null)
+            }}
+            title={editingCardIndex !== null ? '编辑卡片' : '新建卡片'}
+          />
+        )}
+        
         {/* Header */}
         <header className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
@@ -389,9 +471,35 @@ export default function ReviewPage() {
                     <span className={`text-xs px-2 py-1 rounded-full bg-purple-500/20 ${theme.accentPurple}`}>
                       {getCardTypeIcon(currentCard.type)} {getCardTypeLabel(currentCard.type)}
                     </span>
-                    <span className={`text-xs ${theme.textFaint}`}>
-                      卡片 {currentCardIndex + 1} / {currentCards.length}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs ${theme.textFaint}`}>
+                        卡片 {currentCardIndex + 1} / {currentCards.length}
+                      </span>
+                      {/* 卡片操作按钮 */}
+                      <div className="flex gap-1 ml-2">
+                        <button
+                          onClick={handleAddCard}
+                          className={`p-1.5 rounded-lg hover:bg-green-500/20 ${theme.textMuted} hover:text-green-300 transition-colors`}
+                          title="添加新卡片"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={handleEditCard}
+                          className={`p-1.5 rounded-lg hover:bg-blue-500/20 ${theme.textMuted} hover:text-blue-300 transition-colors`}
+                          title="编辑卡片"
+                        >
+                          <Edit className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={handleDeleteCard}
+                          className={`p-1.5 rounded-lg hover:bg-red-500/20 ${theme.textMuted} hover:text-red-300 transition-colors`}
+                          title="删除卡片"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
                   </div>
                   
                   {/* Question */}
@@ -519,6 +627,27 @@ interface ReviewListViewProps {
 }
 
 function ReviewListView({ grouped, onStart, getStatusBadge, getDistanceLabel }: ReviewListViewProps) {
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<Array<{
+    review: ReviewRecord
+    cardIndex: number
+    card: ReviewCard
+  }>>([])
+  const [isSearching, setIsSearching] = useState(false)
+  
+  // 搜索卡片
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) {
+      setSearchResults([])
+      return
+    }
+    
+    setIsSearching(true)
+    const results = await ReviewStore.searchCards(searchQuery.trim())
+    setSearchResults(results)
+    setIsSearching(false)
+  }
+  
   const renderSection = (title: string, items: ReviewWithClip[], emptyText: string, accent: string) => (
     <section className="mb-6">
       <div className="flex items-center justify-between mb-3">
@@ -580,7 +709,67 @@ function ReviewListView({ grouped, onStart, getStatusBadge, getDistanceLabel }: 
   )
 
   return (
-    <div className={`${theme.cardBg} ${theme.cardBorder} rounded-2xl p-6`}> 
+    <div className={`${theme.cardBg} ${theme.cardBorder} rounded-2xl p-6`}>
+      {/* 搜索框 */}
+      <div className="mb-6">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            placeholder="搜索卡片内容..."
+            className="flex-1 px-4 py-2 bg-[#1e293b] border border-white/10 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all"
+          />
+          <button
+            onClick={handleSearch}
+            disabled={isSearching}
+            className="px-4 py-2 rounded-xl bg-purple-600 text-white hover:bg-purple-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : '搜索'}
+          </button>
+          {searchQuery && (
+            <button
+              onClick={() => {
+                setSearchQuery('')
+                setSearchResults([])
+              }}
+              className="px-4 py-2 rounded-xl bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors"
+            >
+              清除
+            </button>
+          )}
+        </div>
+        
+        {/* 搜索结果 */}
+        {searchResults.length > 0 && (
+          <div className="mt-4 space-y-2">
+            <div className="text-sm text-slate-400 mb-2">找到 {searchResults.length} 张卡片</div>
+            {searchResults.map(({ review, cardIndex, card }, idx) => (
+              <div key={`${review.id}-${cardIndex}`} className="p-3 bg-[#1e293b] border border-white/10 rounded-xl">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs px-2 py-0.5 rounded bg-purple-500/20 text-purple-300">
+                        {getCardTypeLabel(card.type)}
+                      </span>
+                      <span className="text-xs text-slate-500">卡片 #{cardIndex + 1}</span>
+                    </div>
+                    <div className="text-sm text-slate-200 mb-1">{card.question}</div>
+                    <div className="text-xs text-slate-400 truncate">{card.answer}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {searchQuery && searchResults.length === 0 && !isSearching && (
+          <div className="mt-4 text-center text-sm text-slate-400 py-4">未找到匹配的卡片</div>
+        )}
+      </div>
+      
+      {/* 统计卡片 */} 
       <div className="grid grid-cols-3 gap-3 mb-6">
         <div className="p-3 rounded-xl bg-white/5 border border-white/10">
           <div className="text-xs text-gray-400 mb-1">待复习</div>
