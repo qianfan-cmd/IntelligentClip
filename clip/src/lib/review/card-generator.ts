@@ -9,7 +9,6 @@
  */
 
 import type { ReviewCard, ReviewWithClip } from "./types"
-import { storage } from "../atoms/storage"
 
 // 卡片生成 Prompt 模板（含 few-shot）
 const CARD_GENERATION_PROMPT = `你是一位教育专家，擅长基于给定内容生成高质量、针对性的复习卡片。请结合标题、摘要、关键要点和原文片段，生成 4 张卡片，覆盖不同题型。不要输出与内容无关的通用问题。
@@ -53,19 +52,39 @@ export async function generateReviewCards(
   reviewData: ReviewWithClip
 ): Promise<ReviewCard[]> {
   const { clip } = reviewData
+  const rawFull = (clip as any)?.rawTextFull as string | undefined
+  const rawSnippet = (clip as any)?.rawTextSnippet as string | undefined
   
   // 构建提示内容
   const prompt = CARD_GENERATION_PROMPT
     .replace("{title}", clip.title || "无标题")
     .replace("{summary}", clip.summary || "无摘要")
     .replace("{keyPoints}", clip.keyPoints?.join("\n") || "无关键要点")
-    .replace("{raw}", clip.rawTextFull?.slice(0, 1200) || clip.rawTextSnippet || "无原文片段")
+    .replace("{raw}", rawFull?.slice(0, 1200) || rawSnippet || "无原文片段")
   
   try {
-    // 获取 OpenAI 配置
-    const apiKey = await storage.get<string>("openaiApiKey")
-    const baseUrl = await storage.get<string>("openaiBaseUrl") || "https://api.openai.com/v1"
-    const model = await storage.get<string>("openaiModel") || "gpt-4o-mini"
+    // 获取 API 配置（从 chrome.storage.local，key 为 clipper_api_config）
+    const result = await chrome.storage.local.get("clipper_api_config")
+    const apiConfig = result["clipper_api_config"]
+    
+    const rawKey = apiConfig?.apiKey
+    const apiKey = (typeof rawKey === "string" && rawKey.trim()) ? rawKey.trim() : undefined
+    const baseUrl = apiConfig?.baseUrl || "https://apis.iflow.cn/v1"
+    
+    // 根据 baseUrl 推断模型（iFlow 用 qwen3-max，OpenAI 用 gpt-4o-mini）
+    const isIFlow = baseUrl?.includes("iflow.cn")
+    const model = isIFlow ? "qwen3-max" : "gpt-4o-mini"
+    
+    console.log("[CardGenerator] config", { 
+      hasKey: !!apiKey,
+      keyLen: apiKey?.length,
+      keyPrefix: apiKey?.slice(0, 10) + "...",
+      hasConfig: !!apiConfig,
+      configKeys: apiConfig ? Object.keys(apiConfig) : [],
+      baseUrl, 
+      model,
+      isIFlow
+    })
     
     if (!apiKey) {
       console.warn("[CardGenerator] No OpenAI API key configured")
@@ -73,33 +92,39 @@ export async function generateReviewCards(
     }
     
     // 调用 OpenAI API
+    const requestBody = {
+      model,
+      messages: [
+        {
+          role: "system",
+          content: "你是一位教育专家，擅长创建有效的复习材料。请严格按照要求的 JSON 格式输出，并确保问题紧贴输入内容。"
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      temperature: 0.35,
+      top_p: 0.9,
+      max_tokens: 1400,
+      response_format: { type: "json_object" }
+    }
+    
+    console.log("[CardGenerator] requesting", { url: `${baseUrl}/chat/completions`, model })
     const response = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${apiKey}`
       },
-      body: JSON.stringify({
-        model,
-        messages: [
-          {
-            role: "system",
-            content: "你是一位教育专家，擅长创建有效的复习材料。请严格按照要求的 JSON 格式输出，并确保问题紧贴输入内容。"
-          },
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        temperature: 0.35,
-        top_p: 0.9,
-        max_tokens: 1400,
-        response_format: { type: "json_object" }
-      })
+      body: JSON.stringify(requestBody)
     })
     
+    console.log("[CardGenerator] response", { status: response.status, ok: response.ok })
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`)
+      const errorText = await response.text().catch(() => "(no body)")
+      console.error("[CardGenerator] API error response:", errorText)
+      throw new Error(`OpenAI API error: ${response.status} - ${errorText.slice(0, 200)}`)
     }
     
     const data = await response.json()
@@ -174,16 +199,17 @@ function parseCardsFromResponse(content: string): ReviewCard[] {
  */
 function generateFallbackCards(clip: ReviewWithClip['clip']): ReviewCard[] {
   const cards: ReviewCard[] = []
+  const rawSnippet = (clip as any)?.rawTextSnippet as string | undefined
   
   // Summary 卡
   cards.push({
     type: 'summary',
     question: `请用自己的话复述《${clip.title || '该内容'}》的核心结论或关键因果链（避免只回答“主要内容是什么”）。`,
-    answer: clip.summary || clip.rawTextSnippet || '请参考原文回顾。'
+    answer: clip.summary || rawSnippet || '请参考原文回顾。'
   })
   
   // QA 卡：基于摘要或原文具体细节
-  const detailSource = clip.keyPoints?.[0] || clip.summary || clip.rawTextSnippet || clip.title || '该内容'
+  const detailSource = clip.keyPoints?.[0] || clip.summary || rawSnippet || clip.title || '该内容'
   cards.push({
     type: 'qa',
     question: `这篇内容的关键细节/数据/结论是什么？请回答要点。`,
@@ -191,7 +217,7 @@ function generateFallbackCards(clip: ReviewWithClip['clip']): ReviewCard[] {
   })
   
   // Keypoint 卡：取一个关键要点或原文里的具体事实
-  const kp = clip.keyPoints && clip.keyPoints.length > 0 ? clip.keyPoints[0] : (clip.rawTextSnippet || clip.summary || '')
+  const kp = clip.keyPoints && clip.keyPoints.length > 0 ? clip.keyPoints[0] : (rawSnippet || clip.summary || '')
   cards.push({
     type: 'keypoint',
     question: `关于《${clip.title || '该内容'}》，哪个关键要点最能体现其价值/影响？`,
@@ -199,7 +225,7 @@ function generateFallbackCards(clip: ReviewWithClip['clip']): ReviewCard[] {
   })
   
   // Cloze 卡：在摘要/原文中挖空一个关键词
-  const sourceForCloze = clip.summary || clip.rawTextSnippet || ''
+  const sourceForCloze = clip.summary || rawSnippet || ''
   if (sourceForCloze) {
     const words = sourceForCloze.split(/\s+/)
     if (words.length > 6) {

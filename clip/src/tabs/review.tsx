@@ -107,24 +107,35 @@ export default function ReviewPage() {
   }
   
   const loadOrGenerateCards = async (reviewData: ReviewWithClip) => {
+    console.log("[ReviewPage] loadOrGenerateCards", {
+      reviewId: reviewData.review.id,
+      clipId: reviewData.clip.id,
+      hasCached: !!reviewData.review.cards,
+      cachedAt: reviewData.review.cardsGeneratedAt,
+      cacheValid: isCardsCacheValid(reviewData.review.cardsGeneratedAt)
+    })
     // 检查缓存
     if (reviewData.review.cards && isCardsCacheValid(reviewData.review.cardsGeneratedAt)) {
       setCurrentCards(reviewData.review.cards)
       setCurrentCardIndex(0)
       setShowAnswer(false)
+      console.log("[ReviewPage] using cached cards", { count: reviewData.review.cards.length })
       return
     }
     
     // 生成新卡片
     setIsGeneratingCards(true)
     try {
+      console.log("[ReviewPage] generating cards via AI")
       const cards = await generateReviewCards(reviewData)
+      console.log("[ReviewPage] generated cards", { count: cards.length })
       setCurrentCards(cards)
       setCurrentCardIndex(0)
       setShowAnswer(false)
       
       // 缓存卡片
       await ReviewStore.updateCards(reviewData.review.id, cards)
+      console.log("[ReviewPage] cached cards to ReviewStore")
     } catch (err) {
       console.error("Failed to generate cards:", err)
       // 使用空卡片

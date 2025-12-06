@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo, createContext, useContext } from "react"
 import { ClipStore, FolderStore, type Clip, type Folder } from "@/lib/clip-store"
 import { ReviewStore } from "@/lib/review/review-store"
+import { generateReviewCards } from "@/lib/review/card-generator"
 import { Trash2, ExternalLink, Search, Calendar, Tag, Save, MessageSquare, Share, Loader2, CheckSquare, Square, Edit3, X, Check, ChevronDown, ChevronUp, Star, Filter, Clock, FileText, Image as ImageIcon, Sparkles, BookOpen, LayoutGrid, List, SortAsc, SortDesc, Zap, Globe, TrendingUp, Sun, Moon, FolderIcon, Pencil, RefreshCw, Brain } from "lucide-react"
 import { ChatProvider, useChat } from "@/contexts/chat-context"
 import { ExtensionProvider, useExtension } from "@/contexts/extension-context"
@@ -286,8 +287,34 @@ function HistoryLayout() {
   const handleAddToReview = async (clipId: string) => {
     setAddingToReview(clipId)
     try {
-      await ReviewStore.create(clipId)
+      console.log("[History] Adding clip to review", clipId)
+      const reviewRecord = await ReviewStore.create(clipId)
       setReviewStatus(prev => ({ ...prev, [clipId]: true }))
+      
+      // 预生成卡片并缓存
+      console.log("[History] Pre-generating cards for review", reviewRecord.id)
+      const clip = clips.find(c => c.id === clipId)
+      if (clip) {
+        try {
+          const cards = await generateReviewCards({
+            review: reviewRecord,
+            clip: {
+              id: clip.id,
+              title: clip.title,
+              summary: clip.summary,
+              keyPoints: clip.keyPoints,
+              url: clip.url,
+              source: clip.source,
+              createdAt: clip.createdAt
+            }
+          })
+          await ReviewStore.updateCards(reviewRecord.id, cards)
+          console.log("[History] Cards pre-generated and cached", cards.length)
+        } catch (cardErr) {
+          console.error("[History] Failed to pre-generate cards:", cardErr)
+          // 不阻塞用户，卡片生成失败时复习页会重试
+        }
+      }
     } catch (err) {
       console.error("Failed to add to review:", err)
       alert("添加到复习失败")

@@ -345,6 +345,7 @@ export const ReviewStore = {
     await ensureDBReady()
     
     try {
+      console.log("[ReviewStore] updateCards", { id, count: cards?.length })
       await clipDB.reviews.update(id, {
         cards,
         cardsGeneratedAt: Date.now()
