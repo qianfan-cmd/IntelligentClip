@@ -151,12 +151,14 @@ export function getDueCount(records: ReviewRecord[]): number {
  * @returns 0-100 的记忆强度值
  */
 export function calculateMemoryStrength(record: ReviewRecord): number {
-  if (record.totalReviews === 0) return 100  // 新内容，假设刚学完
+  // 新内容还未复习过，记忆强度为 0（等待首次复习）
+  if (record.totalReviews === 0) return 0
   
   const now = Date.now()
-  const daysSinceLastReview = record.lastReviewDate 
-    ? (now - record.lastReviewDate) / DAY_MS 
-    : 0
+  
+  // 如果没有上次复习时间，使用创建时间作为参考
+  const lastReview = record.lastReviewDate || record.createdAt
+  const daysSinceLastReview = (now - lastReview) / DAY_MS
   
   // 基于艾宾浩斯遗忘曲线的简化计算
   // 记忆强度 = 100 * e^(-t/S)

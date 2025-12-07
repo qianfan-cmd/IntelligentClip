@@ -1482,7 +1482,7 @@ function HistoryLayout() {
                       <h2 className={`font-semibold text-sm ${t.textPrimary}`}>AI 助手</h2>
                       <p className={`text-[10px] ${t.textFaint} flex items-center gap-1`}>
                         <Zap className="h-2.5 w-2.5 text-amber-400" />
-                        Qwen3 驱动
+                        iFlow 驱动
                       </p>
                     </div>
                   </div>

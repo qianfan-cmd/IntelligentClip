@@ -70,6 +70,9 @@ export default function ReviewPage() {
   const [isGeneratingCards, setIsGeneratingCards] = useState(false)
   const [showAnswer, setShowAnswer] = useState(false)
   
+  // 卡片评分记录（每张卡片的评分）
+  const [cardRatings, setCardRatings] = useState<ReviewRating[]>([])
+  
   // 统计状态
   const [completedCount, setCompletedCount] = useState(0)
   const [sessionStartTime, setSessionStartTime] = useState(Date.now())
@@ -80,6 +83,9 @@ export default function ReviewPage() {
   // 卡片编辑器状态
   const [isEditorOpen, setIsEditorOpen] = useState(false)
   const [editingCardIndex, setEditingCardIndex] = useState<number | null>(null)
+  
+  // 目标卡片索引（用于搜索跳转）
+  const [targetCardIndex, setTargetCardIndex] = useState<number>(0)
   
   const currentReview = dueReviews[currentIndex]
   const currentCard = currentCards[currentCardIndex]
@@ -120,14 +126,15 @@ export default function ReviewPage() {
       clipId: reviewData.clip.id,
       hasCached: !!reviewData.review.cards,
       cachedAt: reviewData.review.cardsGeneratedAt,
-      cacheValid: isCardsCacheValid(reviewData.review.cardsGeneratedAt)
+      cacheValid: isCardsCacheValid(reviewData.review.cardsGeneratedAt),
+      targetCardIndex
     })
     // 检查缓存
     if (reviewData.review.cards && isCardsCacheValid(reviewData.review.cardsGeneratedAt)) {
       setCurrentCards(reviewData.review.cards)
-      setCurrentCardIndex(0)
+      setCurrentCardIndex(targetCardIndex)
       setShowAnswer(false)
-      console.log("[ReviewPage] using cached cards", { count: reviewData.review.cards.length })
+      console.log("[ReviewPage] using cached cards", { count: reviewData.review.cards.length, startAt: targetCardIndex })
       return
     }
     
@@ -138,7 +145,7 @@ export default function ReviewPage() {
       const cards = await generateReviewCards(reviewData)
       console.log("[ReviewPage] generated cards", { count: cards.length })
       setCurrentCards(cards)
-      setCurrentCardIndex(0)
+      setCurrentCardIndex(targetCardIndex)
       setShowAnswer(false)
       
       // 缓存卡片
@@ -161,6 +168,18 @@ export default function ReviewPage() {
   const handleRating = async (rating: ReviewRating) => {
     if (!currentReview) return
     
+    // 记录当前卡片的评分
+    const newRatings = [...cardRatings]
+    newRatings[currentCardIndex] = rating
+    setCardRatings(newRatings)
+    
+    console.log("[ReviewPage] card rated", {
+      cardIndex: currentCardIndex,
+      rating,
+      totalCards: currentCards.length,
+      ratingsCollected: newRatings.filter(r => r !== undefined).length
+    })
+    
     // 检查是否还有更多卡片
     const hasMoreCards = currentCardIndex < currentCards.length - 1
     
@@ -169,13 +188,28 @@ export default function ReviewPage() {
       setCurrentCardIndex(i => i + 1)
       setShowAnswer(false)
     } else {
-      // 当前复习项的所有卡片都完成了，提交评分并移到下一个复习项
+      // 当前复习项的所有卡片都完成了，计算平均评分并提交
       try {
-        await ReviewStore.submitReview(currentReview.review.id, rating)
+        // 计算平均评分（四舍五入到最接近的整数评分）
+        const validRatings = newRatings.filter(r => r !== undefined) as ReviewRating[]
+        const avgRating = validRatings.reduce((sum, r) => sum + r, 0 as number) / validRatings.length
+        const finalRating = Math.round(avgRating) as ReviewRating
+        
+        console.log("[ReviewPage] submitting review", {
+          cardRatings: newRatings,
+          avgRating,
+          finalRating
+        })
+        
+        await ReviewStore.submitReview(currentReview.review.id, finalRating)
         setCompletedCount(c => c + 1)
+        
+        // 清空评分记录
+        setCardRatings([])
         
         // 下一个复习项
         if (currentIndex < dueReviews.length - 1) {
+          setTargetCardIndex(0)
           setCurrentIndex(i => i + 1)
           setShowAnswer(false)
           setCurrentCardIndex(0)
@@ -190,7 +224,11 @@ export default function ReviewPage() {
   
   // 跳过当前项
   const handleSkip = () => {
+    // 清空评分记录
+    setCardRatings([])
+    
     if (currentIndex < dueReviews.length - 1) {
+      setTargetCardIndex(0)
       setCurrentIndex(i => i + 1)
       setShowAnswer(false)
       setCurrentCardIndex(0)
@@ -262,10 +300,11 @@ export default function ReviewPage() {
     return `${Math.ceil(days / 7)} 周后`
   }
 
-  const startReviewFrom = (item: ReviewWithClip) => {
+  const startReviewFrom = (item: ReviewWithClip, initialCardIndex: number = 0) => {
     const baseDue = groupedReviews.due
     const queue = [item, ...baseDue.filter(r => r.review.id !== item.review.id)]
 
+    setTargetCardIndex(initialCardIndex)
     setDueReviews(queue)
     setCurrentIndex(0)
     setCompletedCount(0)
@@ -273,8 +312,9 @@ export default function ReviewPage() {
     setIsComplete(false)
     setIsListView(false)
     setShowAnswer(false)
-    setCurrentCardIndex(0)
+    setCurrentCardIndex(initialCardIndex)
     setCurrentCards([])
+    setCardRatings([])  // 重置评分记录
   }
   
   // ============================================
@@ -410,6 +450,7 @@ export default function ReviewPage() {
         {isListView ? (
           <ReviewListView 
             grouped={groupedReviews}
+            allReviews={allReviews}
             getStatusBadge={getStatusBadge}
             getDistanceLabel={getDistanceLabel}
             onStart={startReviewFrom}
@@ -454,13 +495,26 @@ export default function ReviewPage() {
               <div className="mt-4 flex items-center gap-3">
                 <span className={`text-xs ${theme.textMuted}`}>记忆强度</span>
                 <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 transition-all"
-                    style={{ width: `${calculateMemoryStrength(currentReview?.review!)}%` }}
-                  />
+                  {(() => {
+                    const strength = calculateMemoryStrength(currentReview?.review!)
+                    const isNew = currentReview?.review.totalReviews === 0
+                    return (
+                      <div 
+                        className={`h-full transition-all ${
+                          isNew 
+                            ? 'bg-gray-500' 
+                            : 'bg-gradient-to-r from-red-500 via-yellow-500 to-green-500'
+                        }`}
+                        style={{ width: `${isNew ? 100 : strength}%` }}
+                      />
+                    )
+                  })()}
                 </div>
                 <span className={`text-xs ${theme.textMuted}`}>
-                  {calculateMemoryStrength(currentReview?.review!)}%
+                  {currentReview?.review.totalReviews === 0 
+                    ? '待评估' 
+                    : `${calculateMemoryStrength(currentReview?.review!)}%`
+                  }
                 </span>
               </div>
             </div>
@@ -636,12 +690,13 @@ type GroupedReviews = { due: ReviewWithClip[]; upcoming: ReviewWithClip[]; pause
 
 interface ReviewListViewProps {
   grouped: GroupedReviews
-  onStart: (item: ReviewWithClip) => void
+  allReviews: ReviewWithClip[]
+  onStart: (item: ReviewWithClip, cardIndex?: number) => void
   getStatusBadge: (item: ReviewWithClip) => { label: string; color: string }
   getDistanceLabel: (item: ReviewWithClip) => string
 }
 
-function ReviewListView({ grouped, onStart, getStatusBadge, getDistanceLabel }: ReviewListViewProps) {
+function ReviewListView({ grouped, allReviews, onStart, getStatusBadge, getDistanceLabel }: ReviewListViewProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<Array<{
     review: ReviewRecord
@@ -760,22 +815,41 @@ function ReviewListView({ grouped, onStart, getStatusBadge, getDistanceLabel }: 
         {searchResults.length > 0 && (
           <div className="mt-4 space-y-2">
             <div className="text-sm text-slate-400 mb-2">找到 {searchResults.length} 张卡片</div>
-            {searchResults.map(({ review, cardIndex, card }, idx) => (
-              <div key={`${review.id}-${cardIndex}`} className="p-3 bg-[#1e293b] border border-white/10 rounded-xl">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs px-2 py-0.5 rounded bg-purple-500/20 text-purple-300">
-                        {getCardTypeLabel(card.type)}
-                      </span>
-                      <span className="text-xs text-slate-500">卡片 #{cardIndex + 1}</span>
+            {searchResults.map(({ review, cardIndex, card }, idx) => {
+              // 找到对应的 ReviewWithClip 对象
+              const reviewWithClip = allReviews.find(r => r.review.id === review.id)
+              
+              return (
+                <div 
+                  key={`${review.id}-${cardIndex}`} 
+                  onClick={() => {
+                    if (reviewWithClip) {
+                      onStart(reviewWithClip, cardIndex)
+                      // 清除搜索状态
+                      setSearchQuery('')
+                      setSearchResults([])
+                    }
+                  }}
+                  className="p-3 bg-[#1e293b] border border-white/10 rounded-xl hover:border-purple-500/50 hover:bg-[#1e293b]/80 transition-all cursor-pointer group"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs px-2 py-0.5 rounded bg-purple-500/20 text-purple-300">
+                          {getCardTypeLabel(card.type)}
+                        </span>
+                        <span className="text-xs text-slate-500">卡片 #{cardIndex + 1}</span>
+                      </div>
+                      <div className="text-sm text-slate-200 mb-1 group-hover:text-purple-200 transition-colors">{card.question}</div>
+                      <div className="text-xs text-slate-400 truncate">{card.answer}</div>
                     </div>
-                    <div className="text-sm text-slate-200 mb-1">{card.question}</div>
-                    <div className="text-xs text-slate-400 truncate">{card.answer}</div>
+                    <div className="flex-shrink-0">
+                      <ChevronRight className="h-4 w-4 text-slate-500 group-hover:text-purple-400 transition-colors" />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
         
