@@ -83,7 +83,8 @@
       "<all_urls>",
       "https://*/*",
       "http://*/*",
-      "https://apis.iflow.cn/*"
+      "https://apis.iflow.cn/*",
+      "https://translate.volcengineapi.com/*"
     ],
     "web_accessible_resources": [
       {
