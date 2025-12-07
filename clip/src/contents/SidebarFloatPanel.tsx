@@ -185,6 +185,105 @@ function PanelContent({
 
   // Theme & Drag state
   const [isDarkMode, setIsDarkMode] = useState(false)
+  const [position, setPosition] = useState({
+    x: window.innerWidth - 340 - 24,
+    y: 40
+  })
+  const [isDragging, setIsDragging] = useState(false)
+  const [isSnapping, setIsSnapping] = useState(false)
+  const dragOffsetRef = useRef({ x: 0, y: 0 })
+  const snapAnimRef = useRef<number | null>(null)
+  const dragMovedRef = useRef(false)
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    // Only allow dragging from the header background, not buttons
+    if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input')) {
+      return
+    }
+    
+    e.preventDefault()
+    setIsDragging(true)
+    setIsSnapping(false)
+    dragMovedRef.current = false
+    
+    if (snapAnimRef.current) {
+      cancelAnimationFrame(snapAnimRef.current)
+      snapAnimRef.current = null
+    }
+    
+    dragOffsetRef.current = {
+      x: e.clientX - position.x,
+      y: e.clientY - position.y
+    }
+  }, [position])
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isDragging) return
+    
+    const newX = e.clientX - dragOffsetRef.current.x
+    const newY = e.clientY - dragOffsetRef.current.y
+    
+    setPosition({ x: newX, y: newY })
+    
+    if (!dragMovedRef.current) {
+       const dx = Math.abs(newX - position.x)
+       const dy = Math.abs(newY - position.y)
+       if (dx > 3 || dy > 3) dragMovedRef.current = true
+    }
+  }, [isDragging, position])
+
+  const handleMouseUp = useCallback(() => {
+    if (!isDragging) return
+    setIsDragging(false)
+    
+    if (dragMovedRef.current) {
+        setIsSnapping(true)
+        // Snap to top (y=40), keep x (clamped)
+        const targetY = 40
+      // Clamp X to be within screen
+      const maxX = window.innerWidth - 340 - 24 // 340 is width
+      const minX = 24
+      let targetX = position.x
+      
+      // Ensure it stays on screen horizontally
+      if (targetX < minX) targetX = minX
+      if (targetX > maxX) targetX = maxX
+      
+      // Animation
+      const startX = position.x
+      const startY = position.y
+      const startTime = performance.now()
+      const duration = 300
+      
+      const animate = (time: number) => {
+        const elapsed = time - startTime
+        const progress = Math.min(elapsed / duration, 1)
+        const ease = 1 - Math.pow(1 - progress, 3) // Cubic ease out
+        
+        const currentX = startX + (targetX - startX) * ease
+        const currentY = startY + (targetY - startY) * ease
+        
+        setPosition({ x: currentX, y: currentY })
+        
+        if (progress < 1) {
+          snapAnimRef.current = requestAnimationFrame(animate)
+        } else {
+          setIsSnapping(false)
+          snapAnimRef.current = null
+        }
+      }
+      snapAnimRef.current = requestAnimationFrame(animate)
+    }
+  }, [isDragging, position])
+
+  useEffect(() => {
+    window.addEventListener("mousemove", handleMouseMove)
+    window.addEventListener("mouseup", handleMouseUp)
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove)
+      window.removeEventListener("mouseup", handleMouseUp)
+    }
+  }, [handleMouseMove, handleMouseUp])
 
   useEffect(() => {
     chrome.storage.local.get("clip_darkMode", (res) => {
@@ -653,17 +752,19 @@ function PanelContent({
     <>
     <div
       ref={ref}
-      className={`fixed z-[2147483647] flex flex-col shadow-2xl rounded-2xl border font-sans transition-all duration-200 origin-top-right animate-scale-up ${
+      className={`fixed z-[2147483647] flex flex-col shadow-2xl rounded-2xl border font-sans origin-top-right animate-scale-up ${
+        !isDragging && !isSnapping ? "transition-all duration-200" : ""
+      } ${
         isDarkMode
           ? "bg-slate-900/95 border-slate-700 text-slate-100"
           : "bg-white/95 border-white/20 text-slate-800"
       }`}
       style={{
-        top: "24px",
-        right: "24px",
-        bottom: "24px",
+        top: position.y,
+        left: position.x,
         width: "340px",
-        maxHeight: "calc(100vh - 48px)"
+        maxHeight: "calc(100vh - 48px)",
+        height: "calc(100vh - 48px)"
       }}>
       {/* Notification Toast */}
       {notification && (
@@ -684,9 +785,15 @@ function PanelContent({
 
       {/* Header */}
       <div
-        className={`FloatPanelHeader flex items-center justify-between px-5 h-14 border-b ${
+        onMouseDown={handleMouseDown}
+        className={`FloatPanelHeader relative group flex items-end justify-between px-5 h-16 pb-2 border-b cursor-grab active:cursor-grabbing select-none ${
           isDarkMode ? "border-slate-700/50" : "border-slate-100/50"
         }`}>
+        {/* Drag Handle Indicator */}
+        <div className={`absolute top-2 left-1/2 -translate-x-1/2 w-16 h-1.5 rounded-full transition-all duration-300 ${
+            isDarkMode ? "bg-slate-500" : "bg-slate-400"
+        } opacity-80 group-hover:opacity-100`} />
+        
         <div className="flex items-center gap-3">
           <button
             className={`w-9 h-9 flex items-center justify-center rounded-xl shadow-sm ring-1 transition-all active:scale-95 ${
@@ -774,7 +881,7 @@ function PanelContent({
             }`}
             onClick={onClose}
             title="Close">
-            <FiX className="w-3 h-3" />
+            <FiX className="w-4 h-4" />
           </button>
         </div>
       </div>
