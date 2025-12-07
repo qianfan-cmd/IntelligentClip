@@ -239,9 +239,19 @@ function HistoryLayout() {
       }
     }
     
+    // Listen for page visibility to refresh review status
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadReviewStatus()
+      }
+    }
+    
     chrome.storage.onChanged.addListener(handleStorageChange)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
     return () => {
       chrome.storage.onChanged.removeListener(handleStorageChange)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [])
 
@@ -305,7 +315,9 @@ function HistoryLayout() {
               keyPoints: clip.keyPoints,
               url: clip.url,
               source: clip.source,
-              createdAt: clip.createdAt
+              createdAt: clip.createdAt,
+              rawTextSnippet: clip.rawTextSnippet,
+              rawTextFull: clip.rawTextFull
             }
           })
           await ReviewStore.updateCards(reviewRecord.id, cards)

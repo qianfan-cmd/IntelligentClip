@@ -93,6 +93,20 @@ export default function ReviewPage() {
   // 加载复习内容
   useEffect(() => {
     loadAllReviews()
+    
+    // 监听页面可见性变化，自动刷新复习列表
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log("[ReviewPage] Page visible, refreshing reviews...")
+        loadAllReviews()
+      }
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
   }, [])
   
   // 当前复习项变化时加载卡片
@@ -332,9 +346,27 @@ export default function ReviewPage() {
       const newCards = updatedReview.cards || []
       setCurrentCards(newCards)
       
-      // 如果删除后没有卡片了，切换到下一个复习项
+      // 如果删除后没有卡片了，删除整个复习项
       if (newCards.length === 0) {
-        handleSkip()
+        console.log("[ReviewPage] No cards left, deleting review item:", currentReview.review.id)
+        
+        // 删除复习记录
+        await ReviewStore.delete(currentReview.review.id)
+        
+        // 从列表中移除
+        setDueReviews(prev => prev.filter(r => r.review.id !== currentReview.review.id))
+        setAllReviews(prev => prev.filter(r => r.review.id !== currentReview.review.id))
+        
+        // 如果还有其他待复习项，继续；否则显示完成
+        if (dueReviews.length > 1) {
+          // 不增加 currentIndex，因为当前项已被删除
+          setShowAnswer(false)
+          setCurrentCardIndex(0)
+          setCurrentCards([])
+          setCardRatings([])
+        } else {
+          setIsComplete(true)
+        }
       } else if (currentCardIndex >= newCards.length) {
         setCurrentCardIndex(newCards.length - 1)
       }
@@ -705,18 +737,29 @@ function ReviewListView({ grouped, allReviews, onStart, getStatusBadge, getDista
   }>>([])
   const [isSearching, setIsSearching] = useState(false)
   
-  // 搜索卡片
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) {
-      setSearchResults([])
-      return
-    }
+  // 实时搜索（带防抖）
+  useEffect(() => {
+    const debounceTimer = setTimeout(async () => {
+      if (!searchQuery.trim()) {
+        setSearchResults([])
+        setIsSearching(false)
+        return
+      }
+      
+      setIsSearching(true)
+      try {
+        const results = await ReviewStore.searchCards(searchQuery.trim())
+        setSearchResults(results)
+      } catch (err) {
+        console.error("[ReviewListView] Search failed:", err)
+        setSearchResults([])
+      } finally {
+        setIsSearching(false)
+      }
+    }, 300) // 300ms 防抖延迟
     
-    setIsSearching(true)
-    const results = await ReviewStore.searchCards(searchQuery.trim())
-    setSearchResults(results)
-    setIsSearching(false)
-  }
+    return () => clearTimeout(debounceTimer)
+  }, [searchQuery])
   
   const renderSection = (title: string, items: ReviewWithClip[], emptyText: string, accent: string) => (
     <section className="mb-6">
@@ -783,21 +826,20 @@ function ReviewListView({ grouped, allReviews, onStart, getStatusBadge, getDista
       {/* 搜索框 */}
       <div className="mb-6">
         <div className="flex gap-2">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            placeholder="搜索卡片内容..."
-            className="flex-1 px-4 py-2 bg-[#1e293b] border border-white/10 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all"
-          />
-          <button
-            onClick={handleSearch}
-            disabled={isSearching}
-            className="px-4 py-2 rounded-xl bg-purple-600 text-white hover:bg-purple-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : '搜索'}
-          </button>
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="输入关键词实时搜索卡片内容..."
+              className="w-full px-4 py-2 bg-[#1e293b] border border-white/10 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all"
+            />
+            {isSearching && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <Loader2 className="h-4 w-4 animate-spin text-purple-400" />
+              </div>
+            )}
+          </div>
           {searchQuery && (
             <button
               onClick={() => {
