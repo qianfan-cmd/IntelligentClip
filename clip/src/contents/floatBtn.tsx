@@ -189,9 +189,27 @@ const floatButton = () => { // 悬浮按钮主组件
     try {
       const url = new URL(u)
       const path = url.pathname.replace(/\/+$/, "") || "/"
-      return `${url.origin}${path}`
+      
+      // 对于依赖查询参数区分内容的网站，保留关键参数
+      // context: 百度新闻 mbd.baidu.com (内含 nid)
+      // nid: 新闻ID
+      const importantParams = ['id', 'vid', 'bvid', 'aid', 'p', 'articleId', 'newsId', 'docid', 'context', 'nid',"wd",
+  "word","q","query"]
+      const params = new URLSearchParams(url.search)
+      const keptParams = new URLSearchParams()
+      
+      for (const key of importantParams) {
+        const value = params.get(key)
+        if (value) {
+          keptParams.set(key, value)
+        }
+      }
+      
+      const queryString = keptParams.toString()
+      return queryString ? `${url.origin}${path}?${queryString}` : `${url.origin}${path}`
     } catch {
-      const base = u.split("#")[0].split("?")[0]
+      // 降级处理：只去掉 hash，保留查询参数
+      const base = u.split("#")[0]
       return base.replace(/\/+$/, "") || "/"
     }
   }

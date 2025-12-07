@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useCallback, useMemo, createContext, useContext } from "react"
 import { ClipStore, FolderStore, type Clip, type Folder } from "@/lib/clip-store"
-import { Trash2, ExternalLink, Search, Calendar, Tag, Save, MessageSquare, Share, Loader2, CheckSquare, Square, Edit3, X, Check, ChevronDown, ChevronUp, Star, Filter, Clock, FileText, Image as ImageIcon, Sparkles, BookOpen, LayoutGrid, List, SortAsc, SortDesc, Zap, Globe, TrendingUp, Sun, Moon, FolderIcon, Pencil } from "lucide-react"
+import { ReviewStore } from "@/lib/review/review-store"
+import { generateReviewCards } from "@/lib/review/card-generator"
+import { Trash2, ExternalLink, Search, Calendar, Tag, Save, MessageSquare, Share, Loader2, CheckSquare, Square, Edit3, X, Check, ChevronDown, ChevronUp, Star, Filter, Clock, FileText, Image as ImageIcon, Sparkles, BookOpen, LayoutGrid, List, SortAsc, SortDesc, Zap, Globe, TrendingUp, Sun, Moon, FolderIcon, Pencil, RefreshCw, Brain } from "lucide-react"
 import { ChatProvider, useChat } from "@/contexts/chat-context"
 import { ExtensionProvider, useExtension } from "@/contexts/extension-context"
-import { createRecordFromClip } from "@/lib/feishuBitable"
+import { createRecordFromClip, checkFeishuSyncStatus } from "@/lib/feishuBitable"
 import { storage } from "@/lib/atoms/storage"
 import type { FeishuConfig } from "@/lib/atoms/feishu"
 import Chat from "@/components/chat"
@@ -107,6 +109,16 @@ type ThemeContextType = {
   t: typeof themes.dark
 }
 
+/**
+ * 检测文本是否可能是 Markdown 格式
+ * 通过检查常见的 Markdown 语法特征来判断
+ */
+const looksLikeMarkdown = (text: string): boolean => {
+  if (!text) return false
+  // 检测：标题、列表、加粗、斜体、代码块、行内代码、链接等
+  return /^#{1,6}\s|^\*\s|^-\s|^\d+\.\s|\*\*[^*]+\*\*|__[^_]+__|```[\s\S]*```|`[^`]+`|\[[^\]]+\]\([^)]+\)/m.test(text)
+}
+
 const ThemeContext = createContext<ThemeContextType | null>(null)
 const windowsTheme = () => window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';//系统默认主题
 const defaultTheme = windowsTheme() === 'dark' ? 'dark' : 'light';//系统默认主题
@@ -203,12 +215,21 @@ function HistoryLayout() {
   // Edit modal state
   const [editingClip, setEditingClip] = useState<Clip | null>(null)
   
+  // Feishu sync status refresh
+  const [isRefreshingSyncStatus, setIsRefreshingSyncStatus] = useState(false)
+  
+  // Review state
+  const [reviewStatus, setReviewStatus] = useState<Record<string, boolean>>({}) // clipId -> hasReview
+  const [addingToReview, setAddingToReview] = useState<string | null>(null)
+  const [dueReviewCount, setDueReviewCount] = useState(0)
+  
   const { setExtensionData, setCurrentClipId } = useExtension()
   const { chatMessages } = useChat()
 
   useEffect(() => {
     loadClips()
     loadFolders()
+    loadReviewStatus()
     
     // Listen for storage changes to update the list in real-time
     const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
@@ -218,9 +239,19 @@ function HistoryLayout() {
       }
     }
     
+    // Listen for page visibility to refresh review status
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadReviewStatus()
+      }
+    }
+    
     chrome.storage.onChanged.addListener(handleStorageChange)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
     return () => {
       chrome.storage.onChanged.removeListener(handleStorageChange)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [])
 
@@ -244,6 +275,86 @@ function HistoryLayout() {
     const data = await FolderStore.getAll()
     setFolders(data)
   }, [])
+
+  // 加载复习状态
+  const loadReviewStatus = useCallback(async () => {
+    try {
+      const reviews = await ReviewStore.getAll()
+      const status: Record<string, boolean> = {}
+      for (const r of reviews) {
+        status[r.clipId] = true
+      }
+      setReviewStatus(status)
+      
+      const dueCount = await ReviewStore.getDueCount()
+      setDueReviewCount(dueCount)
+    } catch (err) {
+      console.error("Failed to load review status:", err)
+    }
+  }, [])
+
+  // 添加到复习
+  const handleAddToReview = async (clipId: string) => {
+    setAddingToReview(clipId)
+    try {
+      console.log("[History] Adding clip to review", clipId)
+      const reviewRecord = await ReviewStore.create(clipId)
+      setReviewStatus(prev => ({ ...prev, [clipId]: true }))
+      
+      // 预生成卡片并缓存
+      console.log("[History] Pre-generating cards for review", reviewRecord.id)
+      const clip = clips.find(c => c.id === clipId)
+      if (clip) {
+        try {
+          const cards = await generateReviewCards({
+            review: reviewRecord,
+            clip: {
+              id: clip.id,
+              title: clip.title,
+              summary: clip.summary,
+              keyPoints: clip.keyPoints,
+              url: clip.url,
+              source: clip.source,
+              createdAt: clip.createdAt,
+              rawTextSnippet: clip.rawTextSnippet,
+              rawTextFull: clip.rawTextFull
+            }
+          })
+          await ReviewStore.updateCards(reviewRecord.id, cards)
+          console.log("[History] Cards pre-generated and cached", cards.length)
+        } catch (cardErr) {
+          console.error("[History] Failed to pre-generate cards:", cardErr)
+          // 不阻塞用户，卡片生成失败时复习页会重试
+        }
+      }
+    } catch (err) {
+      console.error("Failed to add to review:", err)
+      alert("添加到复习失败")
+    } finally {
+      setAddingToReview(null)
+    }
+  }
+
+  // 移除复习
+  const handleRemoveFromReview = async (clipId: string) => {
+    if (!confirm("确定要从复习计划中移除吗？")) return
+    try {
+      await ReviewStore.deleteByClipId(clipId)
+      setReviewStatus(prev => {
+        const next = { ...prev }
+        delete next[clipId]
+        return next
+      })
+    } catch (err) {
+      console.error("Failed to remove from review:", err)
+      alert("移除失败")
+    }
+  }
+
+  // 打开复习页面
+  const openReviewPage = () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL("tabs/review.html") })
+  }
 
   const closeEditModal = useCallback(() => {
     setEditingClip(null)
@@ -374,6 +485,46 @@ function HistoryLayout() {
       }
     } finally {
       setExportingId(null)
+    }
+  }
+
+  // 刷新飞书同步状态
+  const handleRefreshSyncStatus = async () => {
+    const syncedClips = clips.filter(c => c.syncedToFeishu && c.feishuRecordId)
+    
+    if (syncedClips.length === 0) {
+      alert("ℹ️ 没有已同步的记录需要检查")
+      return
+    }
+    
+    const confirmCheck = confirm(`将检查 ${syncedClips.length} 条已同步记录的状态，这可能需要一些时间。是否继续？`)
+    if (!confirmCheck) return
+    
+    setIsRefreshingSyncStatus(true)
+    
+    try {
+      const invalidClipIds = await checkFeishuSyncStatus(
+        syncedClips.map(c => ({ id: c.id, feishuRecordId: c.feishuRecordId }))
+      )
+      
+      if (invalidClipIds.length === 0) {
+        alert("✅ 所有同步记录状态正常")
+      } else {
+        // 清除已删除记录的同步状态
+        for (const clipId of invalidClipIds) {
+          await ClipStore.update(clipId, {
+            syncedToFeishu: false,
+            feishuRecordId: undefined
+          })
+        }
+        await loadClips()
+        alert(`🔄 已更新 ${invalidClipIds.length} 条记录的同步状态（飞书端已删除）`)
+      }
+    } catch (e) {
+      console.error("刷新同步状态失败:", e)
+      alert("❌ 刷新同步状态失败: " + (e as Error).message)
+    } finally {
+      setIsRefreshingSyncStatus(false)
     }
   }
 
@@ -567,7 +718,7 @@ function HistoryLayout() {
           <div className={`flex-1 overflow-y-auto custom-scrollbar ${theme === 'dark' ? 'dark' : ''}`}>
             {/* Stats Cards */}
             <div className="p-4 pb-2">
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-5 gap-2">
                 <button 
                   onClick={() => setStatsFilter(statsFilter === "all" ? "all" : "all")}
                   className={`${t.inputBg} backdrop-blur rounded-lg p-2 text-center transition-all cursor-pointer group ${
@@ -603,7 +754,7 @@ function HistoryLayout() {
                 </button>
                 <button 
                   onClick={() => setStatsFilter(statsFilter === "synced" ? "all" : "synced")}
-                  className={`${t.inputBg} backdrop-blur rounded-lg p-2 text-center transition-all cursor-pointer group ${
+                  className={`${t.inputBg} backdrop-blur rounded-lg p-2 text-center transition-all cursor-pointer group relative ${
                     statsFilter === "synced" 
                       ? "ring-2 ring-amber-500 ring-offset-1 ring-offset-transparent" 
                       : t.inputBgHover
@@ -611,6 +762,32 @@ function HistoryLayout() {
                 >
                   <div className={`text-base font-bold transition-colors ${statsFilter === "synced" ? "text-amber-300" : "text-amber-400 group-hover:text-amber-300"}`}>{stats.synced}</div>
                   <div className={`text-[10px] ${statsFilter === "synced" ? "text-amber-300" : t.textFaint}`}>已同步</div>
+                  {/* 刷新同步状态按钮 */}
+                  {stats.synced > 0 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleRefreshSyncStatus()
+                      }}
+                      disabled={isRefreshingSyncStatus}
+                      className={`absolute -top-1 -right-1 p-1 rounded-full ${t.inputBg} hover:bg-amber-500/20 transition-all ${isRefreshingSyncStatus ? 'animate-spin' : ''}`}
+                      title="刷新飞书同步状态"
+                    >
+                      <RefreshCw className={`h-3 w-3 ${isRefreshingSyncStatus ? 'text-amber-400' : t.textFaint + ' hover:text-amber-400'}`} />
+                    </button>
+                  )}
+                </button>
+                {/* 待复习入口 */}
+                <button 
+                  onClick={openReviewPage}
+                  className={`${t.inputBg} backdrop-blur rounded-lg p-2 text-center transition-all cursor-pointer group ${t.inputBgHover} relative`}
+                  title="开始复习"
+                >
+                  <div className={`text-base font-bold transition-colors text-purple-400 group-hover:text-purple-300`}>{dueReviewCount}</div>
+                  <div className={`text-[10px] ${t.textFaint} group-hover:text-purple-300`}>待复习</div>
+                  {dueReviewCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
+                  )}
                 </button>
               </div>
             </div>
@@ -990,6 +1167,30 @@ function HistoryLayout() {
                       theme={theme}
                     />
                     
+                    {/* Review Button */}
+                    <button
+                      onClick={() => reviewStatus[selectedClip.id] 
+                        ? handleRemoveFromReview(selectedClip.id) 
+                        : handleAddToReview(selectedClip.id)
+                      }
+                      disabled={addingToReview === selectedClip.id}
+                      className={`px-4 py-2 rounded-xl transition-all duration-300 flex items-center gap-2 text-sm font-medium ${
+                        reviewStatus[selectedClip.id]
+                          ? "text-purple-400 bg-purple-500/10 ring-1 ring-purple-500/30 hover:bg-purple-500/20"
+                          : `${t.textMuted} ${t.inputBg} hover:bg-purple-500/20 hover:text-purple-300 hover:ring-1 hover:ring-purple-500/30`
+                      }`}
+                      title={reviewStatus[selectedClip.id] ? "点击移除复习计划" : "添加到复习计划"}
+                    >
+                      {addingToReview === selectedClip.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Brain className="h-4 w-4" />
+                          <span>{reviewStatus[selectedClip.id] ? "已加入复习" : "复习"}</span>
+                        </>
+                      )}
+                    </button>
+                    
                     <button
                       onClick={() => handleExportToFeishu(selectedClip)}
                       disabled={exportingId === selectedClip.id || selectedClip.syncedToFeishu}
@@ -1170,8 +1371,17 @@ function HistoryLayout() {
                       )}
                     </div>
                     <div className={`relative ${t.overlayBg} rounded-xl p-4`}>
-                      <div className={`text-sm ${t.textDim} leading-relaxed whitespace-pre-wrap ${!isRawTextExpanded && selectedClip.rawTextFull && selectedClip.rawTextFull.length > 500 ? 'max-h-[200px] overflow-hidden' : ''}`}>
-                        {selectedClip.rawTextFull || selectedClip.rawTextSnippet}
+                      <div className={`text-sm leading-relaxed ${!isRawTextExpanded && selectedClip.rawTextFull && selectedClip.rawTextFull.length > 500 ? 'max-h-[200px] overflow-hidden' : ''}`}>
+                        {looksLikeMarkdown(selectedClip.rawTextFull || selectedClip.rawTextSnippet || "") ? (
+                          <Markdown 
+                            markdown={selectedClip.rawTextFull || selectedClip.rawTextSnippet || ""} 
+                            className={`${t.textDim} [&_p]:mb-2 [&_ul]:my-2 [&_ol]:my-2 [&_li]:text-sm [&_h1]:text-lg [&_h2]:text-base [&_h3]:text-sm [&_code]:text-xs [&_code]:${t.inputBg} [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_pre]:overflow-x-auto [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:${t.sectionBg}`}
+                          />
+                        ) : (
+                          <div className={`${t.textDim} whitespace-pre-wrap`}>
+                            {selectedClip.rawTextFull || selectedClip.rawTextSnippet}
+                          </div>
+                        )}
                       </div>
                       {!isRawTextExpanded && selectedClip.rawTextFull && selectedClip.rawTextFull.length > 500 && (
                         <div className={`absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t ${t.fadeGradient} pointer-events-none rounded-b-xl`} />
@@ -1284,7 +1494,7 @@ function HistoryLayout() {
                       <h2 className={`font-semibold text-sm ${t.textPrimary}`}>AI 助手</h2>
                       <p className={`text-[10px] ${t.textFaint} flex items-center gap-1`}>
                         <Zap className="h-2.5 w-2.5 text-amber-400" />
-                        Qwen3 驱动
+                        iFlow 驱动
                       </p>
                     </div>
                   </div>
