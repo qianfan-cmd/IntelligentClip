@@ -42,21 +42,6 @@ export default function Chat({ className }: ChatProps) {
     }
 
     loadClip()
-
-    // 监听存储变化，实时更新打标信息
-    const handleStorageChange = (
-      changes: { [key: string]: chrome.storage.StorageChange },
-      areaName: string
-    ) => {
-      if (areaName === "local" && changes.clips) {
-        loadClip()
-      }
-    }
-
-    chrome.storage.onChanged.addListener(handleStorageChange)
-    return () => {
-      chrome.storage.onChanged.removeListener(handleStorageChange)
-    }
   }, [currentClipId])
 
   const handleCloseTip = () => {

@@ -59,6 +59,10 @@ export default function ChatAction({ className, theme }: ChatActionProps) {
         keyPoints: [],
         tags: ["youtube", "chat", "ai"]
       })
+      
+      // 通知其他页面刷新
+      chrome.runtime.sendMessage({ action: 'clips-updated' }).catch(() => {})
+      
       alert("✅ 对话已保存到剪藏!")
     } catch (e) {
       console.error(e)

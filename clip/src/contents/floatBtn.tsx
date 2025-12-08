@@ -517,6 +517,9 @@ const floatButton = () => { // 悬浮按钮主组件
         meta: content?.metadata,
         images: content?.images
       }).then(() => {
+        // 通知其他页面刷新
+        chrome.runtime.sendMessage({ action: 'clips-updated' }).catch(() => {})
+        
         setLoading(false)
         setLoadingType(null)
         requestTypeRef.current = null
@@ -578,6 +581,10 @@ const floatButton = () => { // 悬浮按钮主组件
         meta: content?.metadata,
         images: content?.images
       })
+      
+      // 通知其他页面刷新
+      chrome.runtime.sendMessage({ action: 'clips-updated' }).catch(() => {})
+      
       setLoading(false)
       setLoadingType(null)
       const imgCount = content?.images?.length || 0
@@ -904,6 +911,10 @@ const floatButton = () => { // 悬浮按钮主组件
         meta: {},
         images
       })
+      
+      // 通知其他页面刷新
+      chrome.runtime.sendMessage({ action: 'clips-updated' }).catch(() => {})
+      
       setLoading(false)
       setLoadingType(null)
       const imgCount = images.length
