@@ -262,10 +262,20 @@ function HistoryLayout() {
     }
     window.addEventListener('message', handleMessage)
     
+    // 监听来自其他页面的剪藏添加/更新通知
+    const handleRuntimeMessage = (message: any) => {
+      if (message.action === 'clips-updated') {
+        console.log('收到剪藏列表更新通知，刷新列表')
+        loadClips()
+      }
+    }
+    chrome.runtime.onMessage.addListener(handleRuntimeMessage)
+    
     return () => {
       chrome.storage.onChanged.removeListener(handleStorageChange)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('message', handleMessage)
+      chrome.runtime.onMessage.removeListener(handleRuntimeMessage)
     }
   }, [])
 

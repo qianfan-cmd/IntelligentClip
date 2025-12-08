@@ -722,6 +722,11 @@ function PanelContent({
       // Reload clips to update the list immediately
       loadClips()
 
+      // 通知其他页面（如 history.tsx）刷新剪藏列表
+      chrome.runtime.sendMessage({ action: 'clips-updated' }).catch(() => {
+        // 忽略错误（可能没有页面在监听）
+      })
+
       const imgCount = content?.images?.length || 0
       setNotification({
         message: `已直接保存整页！${imgCount > 0 ? `（含${imgCount}张图片）` : ""}`,
