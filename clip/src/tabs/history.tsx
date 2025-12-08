@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo, createContext, useContext } from "react"
+import React, { useEffect, useState, useCallback, useMemo, createContext, useContext, useRef } from "react"
 import { ClipStore, FolderStore, type Clip, type Folder } from "@/lib/clip-store"
 import { ReviewStore } from "@/lib/review/review-store"
 import { generateReviewCards } from "@/lib/review/card-generator"
@@ -14,6 +14,7 @@ import ClipTagsPanel from "@/components/clip-tags-panel"
 import ClipEditModal from "@/components/clip-edit-modal"
 import FolderSidebar from "@/components/folder-sidebar"
 import MoveToFolderDropdown from "@/components/move-to-folder-dropdown"
+import { LiaFileDownloadSolid } from "react-icons/lia";
 import "../style.css"
 
 // Theme configuration
@@ -188,6 +189,9 @@ function HistoryLayout() {
   const [selectedClipId, setSelectedClipId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [exportingId, setExportingId] = useState<string | null>(null)
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false)
+  const exportMenuRef = useRef<HTMLDivElement | null>(null)
+  const closeMenuTimer = useRef<number | null>(null)
   
   // View mode & sorting
   const [viewMode, setViewMode] = useState<"list" | "grid">("list")
@@ -254,6 +258,41 @@ function HistoryLayout() {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [])
+
+  useEffect(() => {
+    const onDocClick = (e: MouseEvent) => {
+      if (isExportMenuOpen) {
+        const el = exportMenuRef.current
+        if (el && !el.contains(e.target as Node)) {
+          setIsExportMenuOpen(false)
+        }
+      }
+    }
+    document.addEventListener('mousedown', onDocClick)
+    return () => {
+      document.removeEventListener('mousedown', onDocClick)
+    }
+  }, [isExportMenuOpen])
+
+  const clearCloseMenuTimer = () => {
+    if (closeMenuTimer.current !== null) {
+      clearTimeout(closeMenuTimer.current)
+      closeMenuTimer.current = null
+    }
+  }
+
+  const handleMenuMouseEnter = () => {
+    clearCloseMenuTimer()
+    setIsExportMenuOpen(true)
+  }
+
+  const handleMenuMouseLeave = () => {
+    clearCloseMenuTimer()
+    closeMenuTimer.current = window.setTimeout(() => {
+      setIsExportMenuOpen(false)
+      closeMenuTimer.current = null
+    }, 200)
+  }
 
   // Check for URL params to select clip
   useEffect(() => {
@@ -528,6 +567,88 @@ function HistoryLayout() {
     } finally {
       setIsRefreshingSyncStatus(false)
     }
+  }
+
+  // 导出当前选中剪藏为 CSV：
+  // - CSV 本质是“文本 + 逗号分隔的列 + 换行分隔的行”，第一行通常是表头，便于导入工具识别列含义
+  // - 为确保数据中包含逗号、换行、双引号时仍能被正确解析：每个单元格都用双引号包裹，并将内部双引号替换为两个双引号（RFC 4180 规范）
+  // - 在文本最前加入 UTF-8 BOM（\ufeff），让 Excel 等工具识别为 UTF-8，避免中文乱码
+  // - 使用 Blob 将字符串变成“文件”，借助对象 URL 和一个临时的 <a download> 元素触发浏览器下载，最后释放资源
+  const handleExportToCSV = async () => {
+    if (!selectedClip) {
+      alert("请选择一个剪藏")
+      return
+    }
+    // 取当前选中剪藏数据：没有选中就无法导出
+    const clip = selectedClip;
+    // 解析文件夹名称（若存在）：导出可读的文件夹名，而不是仅存 id
+    const folderName = clip.folderId ? (folders.find(f => f.id === clip.folderId)?.name || "") : ""
+    // CSV 首行表头：定义每一列的含义，导入 Excel/表格软件时能自动映射列
+    const headers = [
+      "id",
+      "title",
+      "url",
+      "source",
+      "createdAt",
+      "summary",
+      "keyPoints",
+      "tags",
+      "rating",
+      "folder",
+      "syncedToFeishu",
+      "feishuRecordId",
+      "images",
+      "notes",
+      "rawTextLength"
+    ]
+    // CSV 单元格转义：
+    // 1) 将值转为字符串（CSV 按文本处理，避免数字被 Excel 自动格式化成日期/科学计数法）
+    // 2) 将内部双引号替换为两个双引号（CSV 的转义规则：" -> ""）
+    // 3) 最外层用双引号包裹，确保逗号、换行、前后空格不破坏结构
+    const escape = (val: unknown) => {
+      const s = String(val ?? "")
+      const e = s.replace(/"/g, '""')
+      return `"${e}"`
+    }
+    // 组装一行数据：
+    // - 数组字段使用 " | " 连接，保持在一个单元格中而不是拆成多列
+    // - 时间使用 ISO 字符串，避免本地化差异（便于程序/表格统一解析）
+    // - 原文不直接导出以避免 CSV 过大，这里只输出长度作为参考
+    const row = [
+      escape(clip.id),
+      escape(clip.title),
+      escape(clip.url),
+      escape(clip.source),
+      escape(new Date(clip.createdAt).toISOString()),
+      escape(clip.summary),
+      escape((clip.keyPoints || []).join(" | ")),
+      escape((clip.tags || []).join(" | ")),
+      escape(clip.rating ?? ""),
+      escape(folderName),
+      escape(clip.syncedToFeishu ? "true" : "false"),
+      escape(clip.feishuRecordId ?? ""),
+      escape((clip.images || []).map(i => i.src).join(" | ")),
+      escape(clip.notes ?? ""),
+      escape((clip.rawTextFull || clip.rawTextSnippet || "").length)
+    ]
+    // 生成 CSV 文本：加入 BOM（\ufeff）让 Excel 识别为 UTF-8；按行拼接（表头 + 数据）
+    const csv = "\ufeff" + [headers.join(","), row.join(",")].join("\n")
+    // 将文本转为 Blob（声明为 CSV 类型）：浏览器将其视为“文件”，可供下载
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
+    // 生成临时对象 URL 指向这个 Blob：不依赖真实网络地址，内存中可下载
+    const url = URL.createObjectURL(blob)
+    // 处理文件名非法字符：兼容 Windows/macOS，避免 “/:*?\"<>|” 导致下载失败
+    const safeTitle = clip.title.replace(/[\\/:*?"<>|]/g, "_")
+    // 通过动态创建 <a download> 元素触发下载：这是在浏览器中保存文件的常用做法
+    // 某些浏览器要求元素在 DOM 中才能触发点击，因此 append 到 body 后再点击
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `${safeTitle || "clip"}-${clip.id}.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    // 释放对象 URL，避免内存泄漏
+    URL.revokeObjectURL(url)
   }
 
   const handleSaveChat = async () => {
@@ -1192,30 +1313,50 @@ function HistoryLayout() {
                         </>
                       )}
                     </button>
-                    
-                    <button
-                      onClick={() => handleExportToFeishu(selectedClip)}
-                      disabled={exportingId === selectedClip.id || selectedClip.syncedToFeishu}
-                      className={`px-4 py-2 rounded-xl transition-all duration-300 flex items-center gap-2 text-sm font-medium ${
-                        selectedClip.syncedToFeishu 
-                          ? "text-emerald-400 bg-emerald-500/10 ring-1 ring-emerald-500/30" 
-                          : `${t.textMuted} ${t.inputBg} hover:bg-indigo-500/20 hover:text-indigo-300 hover:ring-1 hover:ring-indigo-500/30`
-                      }`}
+
+                    <div
+                      ref={exportMenuRef}
+                      className="relative flex justify-center items-center"
+                      onMouseEnter={handleMenuMouseEnter}
+                      onMouseLeave={handleMenuMouseLeave}
                     >
-                      {exportingId === selectedClip.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : selectedClip.syncedToFeishu ? (
-                        <>
-                          <Check className="h-4 w-4" />
-                          <span>已同步</span>
-                        </>
-                      ) : (
-                        <>
-                          <Share className="h-4 w-4" />
-                          <span>同步飞书</span>
-                        </>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setIsExportMenuOpen(v => !v) }}
+                        className={`px-4 py-2 rounded-xl transition-all duration-300 flex items-center gap-2 text-sm font-medium ${t.textMuted} ${t.inputBg} hover:bg-indigo-500/20 hover:text-indigo-300 hover:ring-1 hover:ring-indigo-500/30`}
+                        title="导出"
+                      >
+                        <LiaFileDownloadSolid className="h-4 w-4"/>
+                        导出
+                      </button>
+                      {isExportMenuOpen && (
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          className={`absolute right-0 top-full mt-1 w-40 p-1 rounded-lg shadow-lg border ${t.borderColor} ${t.sidebarBg} z-10`}
+                        >
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleExportToFeishu(selectedClip) }}
+                            disabled={exportingId === selectedClip.id || selectedClip.syncedToFeishu}
+                            className={`flex items-center gap-2 w-full text-xs font-medium px-2 py-1 rounded-md transition-all ${t.inputBg} ${t.textDim} hover:bg-indigo-500/20 hover:text-indigo-300 ${exportingId === selectedClip.id || selectedClip.syncedToFeishu ? 'opacity-70 cursor-not-allowed' : ''}`}
+                          >
+                            {exportingId === selectedClip.id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : selectedClip.syncedToFeishu ? (
+                              <Check className="h-3.5 w-3.5" />
+                            ) : (
+                              <Share className="h-3.5 w-3.5" />
+                            )}
+                            <span>{selectedClip.syncedToFeishu ? '已同步' : exportingId === selectedClip.id ? '同步中…' : '同步飞书'}</span>
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleExportToCSV() }}
+                            className={`flex items-center gap-2 w-full text-xs font-medium px-2 py-1 rounded-md transition-all ${t.inputBg} ${t.textDim} hover:bg-indigo-500/20 hover:text-indigo-300`}
+                          >
+                            <FileText className="h-3.5 w-3.5" />
+                            <span>导出为CSV</span>
+                          </button>
+                        </div>
                       )}
-                    </button>
+                    </div>
                     <button 
                       onClick={() => handleDelete(selectedClip.id)}
                       className={`p-2 ${t.textFaint} hover:text-red-400 ${t.inputBg} hover:bg-red-500/10 rounded-xl transition-all duration-300 hover:ring-1 hover:ring-red-500/30`}
@@ -1230,7 +1371,7 @@ function HistoryLayout() {
               {/* Content with custom scrollbar */}
               <div className={`flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar ${theme === 'dark' ? 'dark' : ''}`}>
                 
-                {/* My Notes Section - Glassmorphism style */}
+                {/* My Notes Section - Glassmorphism style 我的笔记和编辑笔记部分 */}
                 <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500/5 to-orange-500/5 p-5 ring-1 ring-amber-500/20">
                   <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-amber-500/10 to-transparent rounded-full blur-2xl" />
                   
