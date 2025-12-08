@@ -5,7 +5,7 @@ import { generateReviewCards } from "@/lib/review/card-generator"
 import { Trash2, ExternalLink, Search, Calendar, Tag, Save, MessageSquare, Share, Loader2, CheckSquare, Square, Edit3, X, Check, ChevronDown, ChevronUp, Star, Filter, Clock, FileText, Image as ImageIcon, Sparkles, BookOpen, LayoutGrid, List, SortAsc, SortDesc, Zap, Globe, TrendingUp, Sun, Moon, FolderIcon, Pencil, RefreshCw, Brain } from "lucide-react"
 import { ChatProvider, useChat } from "@/contexts/chat-context"
 import { ExtensionProvider, useExtension } from "@/contexts/extension-context"
-import { createRecordFromClip, checkFeishuSyncStatus } from "@/lib/feishuBitable"
+import { createRecordFromClip, checkFeishuSyncStatus, deleteFeishuRecord, batchDeleteFeishuRecords } from "@/lib/feishuBitable"
 import { storage } from "@/lib/atoms/storage"
 import type { FeishuConfig } from "@/lib/atoms/feishu"
 import Chat from "@/components/chat"
@@ -400,7 +400,28 @@ function HistoryLayout() {
   }, [])
 
   const handleDelete = async (id: string) => {
-    if (confirm("确定要删除这个剪藏吗？")) {
+    const clip = clips.find(c => c.id === id)
+    if (!clip) return
+    
+    // 检查是否已同步到飞书
+    const hasSyncedToFeishu = clip.syncedToFeishu && clip.feishuRecordId
+    
+    let confirmMessage = "确定要删除这个剪藏吗？"
+    if (hasSyncedToFeishu) {
+      confirmMessage = "确定要删除这个剪藏吗？\n\n该剪藏已同步到飞书，是否同时删除飞书表格中的记录？\n\n点击\"确定\"将同时删除飞书记录\n点击\"取消\"将不进行任何操作"
+    }
+    
+    if (confirm(confirmMessage)) {
+      // 如果已同步到飞书，先尝试删除飞书记录
+      if (hasSyncedToFeishu) {
+        const deleted = await deleteFeishuRecord(clip.feishuRecordId!)
+        if (deleted) {
+          console.log("✅ 已同步删除飞书记录")
+        } else {
+          console.warn("⚠️ 飞书记录删除失败，但仍会删除本地剪藏")
+        }
+      }
+      
       await ClipStore.delete(id)
       if (selectedClipId === id) setSelectedClipId(null)
       await loadClips()
@@ -410,7 +431,27 @@ function HistoryLayout() {
   // Batch delete handler
   const handleBatchDelete = async () => {
     if (selectedIds.size === 0) return
-    if (confirm(`确定要删除选中的 ${selectedIds.size} 个剪藏吗？`)) {
+    
+    // 检查选中的剪藏中有哪些已同步到飞书
+    const selectedClips = clips.filter(c => selectedIds.has(c.id))
+    const syncedClips = selectedClips.filter(c => c.syncedToFeishu && c.feishuRecordId)
+    
+    let confirmMessage = `确定要删除选中的 ${selectedIds.size} 个剪藏吗？`
+    if (syncedClips.length > 0) {
+      confirmMessage = `确定要删除选中的 ${selectedIds.size} 个剪藏吗？\n\n其中 ${syncedClips.length} 个剪藏已同步到飞书，是否同时删除飞书表格中的记录？\n\n点击\"确定\"将同时删除飞书记录\n点击\"取消\"将不进行任何操作`
+    }
+    
+    if (confirm(confirmMessage)) {
+      // 如果有已同步到飞书的记录，先批量删除飞书记录
+      if (syncedClips.length > 0) {
+        const feishuRecordIds = syncedClips.map(c => c.feishuRecordId!).filter(Boolean)
+        const result = await batchDeleteFeishuRecords(feishuRecordIds)
+        console.log(`✅ 飞书记录删除完成: 成功 ${result.success}/${result.total}`)
+        if (result.failed > 0) {
+          console.warn(`⚠️ ${result.failed} 条飞书记录删除失败，但仍会删除本地剪藏`)
+        }
+      }
+      
       await ClipStore.deleteMany(Array.from(selectedIds))
       if (selectedClipId && selectedIds.has(selectedClipId)) {
         setSelectedClipId(null)

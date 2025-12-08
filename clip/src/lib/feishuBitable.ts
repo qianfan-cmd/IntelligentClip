@@ -549,3 +549,86 @@ export async function checkFeishuSyncStatus(
   
   return invalidClipIds
 }
+
+/**
+ * 删除飞书多维表格记录
+ * @param recordId 飞书记录 ID
+ * @returns 是否删除成功
+ */
+export async function deleteFeishuRecord(recordId: string): Promise<boolean> {
+  try {
+    console.log(`🗑️ 尝试删除飞书记录: ${recordId}`)
+    
+    const config = await storage.get<FeishuConfig>("feishuConfig")
+    
+    if (!config || !config.appToken || !config.tableId || !config.appId || !config.appSecret) {
+      console.warn("⚠️ 飞书配置缺失，无法删除记录")
+      return false
+    }
+
+    const tenantAccessToken = await getTenantAccessToken(config.appId, config.appSecret)
+    
+    const url = `https://open.feishu.cn/open-apis/bitable/v1/apps/${config.appToken}/tables/${config.tableId}/records/${recordId}`
+    
+    const response = await fetch(url, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${tenantAccessToken}`,
+        "Content-Type": "application/json"
+      }
+    })
+
+    const data: FeishuRecordResponse = await response.json()
+    
+    if (data.code === 0) {
+      console.log(`✅ 成功删除飞书记录: ${recordId}`)
+      return true
+    } else {
+      console.warn(`⚠️ 删除飞书记录失败: ${data.msg}`)
+      return false
+    }
+  } catch (error) {
+    console.error("❌ 删除飞书记录时出错:", error)
+    return false
+  }
+}
+
+/**
+ * 批量删除飞书多维表格记录
+ * @param recordIds 飞书记录 ID 数组
+ * @returns 删除结果 { success: 成功数量, failed: 失败数量, total: 总数 }
+ */
+export async function batchDeleteFeishuRecords(recordIds: string[]): Promise<{
+  success: number
+  failed: number
+  total: number
+}> {
+  if (recordIds.length === 0) {
+    return { success: 0, failed: 0, total: 0 }
+  }
+
+  console.log(`🗑️ 批量删除 ${recordIds.length} 条飞书记录...`)
+  
+  let successCount = 0
+  let failedCount = 0
+  
+  // 逐个删除（避免并发请求过多）
+  for (const recordId of recordIds) {
+    const result = await deleteFeishuRecord(recordId)
+    if (result) {
+      successCount++
+    } else {
+      failedCount++
+    }
+    // 添加短暂延迟避免请求过快
+    await new Promise(resolve => setTimeout(resolve, 200))
+  }
+  
+  console.log(`✅ 批量删除完成: 成功 ${successCount}，失败 ${failedCount}`)
+  
+  return {
+    success: successCount,
+    failed: failedCount,
+    total: recordIds.length
+  }
+}
