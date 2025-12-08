@@ -82,6 +82,31 @@ if (chrome.commands) {
 console.log("✅ Clip Extension background service worker loaded successfully") // 启动完成日志
 
 // ---------------------------
+// 语言切换功能
+// ---------------------------
+// 监听语言配置变化
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === "local" && changes.languageConfig) {
+    const newLanguage = changes.languageConfig.newValue?.language;
+    console.log(`🌐 Language changed to: ${newLanguage}`);
+    
+    // 通知所有打开的页面语言已更改
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach((tab) => {
+        if (tab.id && tab.status === "complete") {
+          chrome.tabs.sendMessage(tab.id, {
+            type: "LANGUAGE_CHANGED",
+            language: newLanguage
+          }).catch(() => {
+            // 忽略无法发送消息的标签页（例如，非扩展页面）
+          });
+        }
+      });
+    });
+  }
+});
+
+// ---------------------------
 // 页面翻译功能
 // ---------------------------
 async function translateWithIFLow(text: string, targetLang = "zh-CN", apiKey?: string) { // 调用 iFlow LLM（qwen3-max）

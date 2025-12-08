@@ -3,10 +3,12 @@ import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Inpu
 import { AiFillAliwangwang } from "react-icons/ai"
 import { FiRefreshCcw } from "react-icons/fi"
 import { RxCross2 } from "react-icons/rx"
+import { useI18n } from "@/lib/use-i18n"
 import "./style.css"
 
 function Popup() {
   const [data, setData] = useState("")
+  const { t } = useI18n()
   const openHomepage = async () => {
     const url = chrome.runtime.getURL("tabs/history.html")
     await chrome.tabs.create({ url })
@@ -66,7 +68,7 @@ function Popup() {
           size="icon"
           className="w-10 h-10 rounded-full hover:bg-gray-200 leading-none p-0 transition-transform duration-200 hover:scale-110 hover:brightness-105 hover:shadow-md active:scale-95"
           onClick={openHomepage}
-          aria-label="打开扩展主页"
+          aria-label={t('popupOpenHomepageAriaLabel')}
         >
           <AiFillAliwangwang className="w-5 h-5 text-black" />
         </Button>
@@ -76,7 +78,7 @@ function Popup() {
             size="icon"
             className="w-7 h-7 rounded-full hover:bg-gray-200 leading-none p-0 transition-transform duration-200 hover:scale-110 hover:brightness-105 hover:shadow-md active:scale-95"
             onClick={handleRefresh}
-            aria-label="刷新"
+            aria-label={t('popupRefreshAriaLabel')}
           >
             <FiRefreshCcw className="w-5 h-5" />
           </Button>
@@ -85,7 +87,7 @@ function Popup() {
             size="icon"
             className="w-7 h-7 rounded-full hover:bg-gray-200 leading-none p-0 transition-transform duration-200 hover:scale-110 hover:brightness-105 hover:shadow-md active:scale-95"
             onClick={handleClose}
-            aria-label="关闭"
+            aria-label={t('popupCloseAriaLabel')}
           >
             <RxCross2 className="w-5 h-5" />
           </Button>
@@ -93,12 +95,12 @@ function Popup() {
       </div>
 
       <div className="w-full h-[300px] flex-1 p-4 flex flex-col text-center items-center justify-center overflow-auto">
-        <p className="text-gray-900 text-lg font-medium leading-relaxed tracking-wide text-pretty antialiased drop-shadow-sm first-letter:text-blue-600 first-letter:font-semibold first-letter:text-2xl">Chrome剪藏是一个基于Chrome浏览器的插件，用于剪藏网页上的内容。</p>
-        <p className="mt-2 text-gray-600 text-sm leading-relaxed antialiased">剪藏的内容可以在插件的侧边栏中查看和管理。</p>
+        <p className="text-gray-900 text-lg font-medium leading-relaxed tracking-wide text-pretty antialiased drop-shadow-sm first-letter:text-blue-600 first-letter:font-semibold first-letter:text-2xl">{t('popupWelcomeText')}</p>
+        <p className="mt-2 text-gray-600 text-sm leading-relaxed antialiased">{t('popupDescriptionText')}</p>
       </div>
 
       <div className="w-full h-[50px] flex items-center justify-center -mt-3 px-4">
-        <Button size="default" className="bg-black text-white text-lg transition-transform duration-200 hover:scale-110 hover:brightness-105 hover:shadow-md active:scale-95" onClick={handleSignIn}>Sign in</Button>
+        <Button size="default" className="bg-black text-white text-lg transition-transform duration-200 hover:scale-110 hover:brightness-105 hover:shadow-md active:scale-95" onClick={handleSignIn}>{t('popupSignInButton')}</Button>
       </div>
     </div>
   )
