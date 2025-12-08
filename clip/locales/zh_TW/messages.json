@@ -1,20 +1,24 @@
 {
   "extensionName": {
-    "message": "智能剪藏"
+    "message": "智能剪藏",
+    "description": "扩展名称"
   },
   "extensionDescription": {
-    "message": "可將內容智能結構化剪藏的瀏覽器擴展。"
+    "message": "可將內容智能結構化剪藏的瀏覽器擴展。",
+    "description": "扩展描述"
   },
 
 
-
+  
   "optionsSaveSuccess": {
-    "message": "保存成功"
+    "message": "保存成功",
     "description": "保存成功的提示"
   },
   "optionsSaveFailed": {
-    "message": "保存失敗"
+    "message": "保存失敗",
+    "description": "保存设置失败的提示"
   },
+
   "optionsExtensionSettingsTitle": {
     "message": "擴展設置",
     "description": "扩展设置界面标题"
@@ -142,10 +146,156 @@
   "popupCloseAriaLabel": {
     "message": "關閉",
     "description": "Popup頁面關閉按鈕的aria-label"
-  }
+  },
+
   
+  
+  "floatBtnBookmarkToggleTooltip": {
+    "message": "切換剪藏方式",
+    "description": "浮動按鈕-切換剪藏方式圖標的提示文字"
+  },
+  "floatBtnSaveTypeAllPage": {
+    "message": "整頁剪藏",
+    "description": "浮動按鈕-整頁剪藏選項"
+  },
+  "floatBtnSaveTypeAllPageAI": {
+    "message": "AI整頁剪藏",
+    "description": "浮動按鈕-AI整頁剪藏選項"
+  },
+  "floatBtnSaveTypeSelect": {
+    "message": "選中剪藏",
+    "description": "浮動按鈕-選中剪藏選項"
+  },
+  "floatBtnSaveTypeSelectAI": {
+    "message": "AI選中剪藏",
+    "description": "浮動按鈕-AI選中剪藏選項"
+  },
+  "floatBtnTranslateLanguageTooltip": {
+    "message": "翻譯為：",
+    "description": "浮動按鈕-翻譯語言的提示文字"
+  },
+  "floatBtnShowOriginalTextTooltip": {
+    "message": "顯示原文",
+    "description": "浮動按鈕-顯示原文的提示文字"
+  },
+  "floatBtnAIChatTooltip": {
+    "message": "AI 對話",
+    "description": "浮動按鈕-AI對話的提示文字"
+  },
+  "floatBtnLoadingAIProcessing": {
+    "message": "AI處理中…",
+    "description": "浮動按鈕-AI處理中的載入提示"
+  },
+  "floatBtnLoadingSaving": {
+    "message": "儲存中…",
+    "description": "浮動按鈕-儲存中的載入提示"
+  },
+  "floatBtnSettingsHideOnce": {
+    "message": "隱藏直到下次訪問",
+    "description": "浮動按鈕-隱藏直到下次訪問選項"
+  },
+  "floatBtnSettingsDisableSite": {
+    "message": "在此網站禁用",
+    "description": "浮動按鈕-在此網站禁用選項"
+  },
+  "floatBtnSettingsDisableGlobal": {
+    "message": "全域禁用",
+    "description": "浮動按鈕-全域禁用選項"
+  },
+  "floatBtnSettingsReenableTip": {
+    "message": "您可以在此處重新啟用 設置",
+    "description": "浮動按鈕-重新啟用設置的提示文字"
+  },
+  "floatBtnNotificationExtensionReloaded": {
+    "message": "⚠️ 擴充功能已重載，請重新整理頁面",
+    "description": "浮動按鈕-擴充功能已重載的通知"
+  },
+  "floatBtnNotificationClipSuccess": {
+    "message": "✅ 剪藏成功！",
+    "description": "浮動按鈕-剪藏成功的通知"
+  },
+  "floatBtnNotificationPictureContaining": {
+    "message": "包含",
+    "description": "用於說明圖片的數量"
+  },
+  "floatBtnNotificationPictureCount": {
+    "message": "張圖片",
+    "description": "圖片數量的單位"
+  },
+  "floatBtnNotificationSaveFailed": {
+    "message": "❌ 儲存失敗",
+    "description": "浮動按鈕-儲存失敗的通知"
+  },
+  "floatBtnNotificationAIProcessFailed": {
+    "message": "❌ AI 處理失敗",
+    "description": "浮動按鈕-AI處理失敗的通知"
+  },
+  "floatBtnNotificationAlreadySaved": {
+    "message": "⚠️ 當前頁面已儲存",
+    "description": "浮動按鈕-當前頁面已儲存的通知"
+  },
+  "floatBtnNotificationCheckFailed": {
+    "message": "❌ 檢查剪藏失敗：Error",
+    "description": "浮動按鈕-檢查剪藏失敗的通知"
+  },
+  "floatBtnNotificationAllPageSaveSuccess": {
+    "message": "✅ 已直接儲存整頁！",
+    "description": "浮動按鈕-直接儲存整頁成功的通知"
+  },
+  "floatBtnNotificationTranslating": {
+    "message": "正在翻譯可視區域...",
+    "description": "浮動按鈕-正在翻譯的通知"
+  },
+  "floatBtnNotificationRestoringOriginal": {
+    "message": "正在恢復原文...",
+    "description": "浮動按鈕-正在恢復原文的通知"
+  },
+  "floatBtnFloatingWindowOpenFailed": {
+    "message": "⚠️ 浮動視窗開啟失敗",
+    "description": "浮動按鈕-浮動視窗開啟失敗的通知"
+  },
+  "floatBtnNotificationNoApiKey": {
+    "message": "⚠️ 請先在設置中配置 API Key",
+    "description": "浮動按鈕-未配置API Key的通知"
+  },
+  "floatBtnNotificationAIProcessing": {
+    "message": "AI處理中...",
+    "description": "浮動按鈕-AI處理中的通知"
+  },
+  "floatBtnNotificationClipFailed": {
+    "message": "❌ 剪藏失敗",
+    "description": "浮動按鈕-剪藏失敗的通知"
+  },
+  "floatBtnNotificationSelectText": {
+    "message": "⚠️ 請先選中一些文字（至少10個字元）",
+    "description": "浮動按鈕-請先選中文字的通知"
+  },
+  "floatBtnNotificationSelectionSaveSuccess": {
+    "message": "✅ 已直接儲存選中內容！",
+    "description": "浮動按鈕-直接儲存選中內容成功的通知"
+  },
 
-
+  
+  "saveTypeChangeTitle": {
+    "message": "剪藏方式",
+    "description": "保存类型选择标题"
+  },
+  "saveTypeChangeAllPageClip": {
+    "message": "整頁剪藏",
+    "description": "整页剪藏选项"
+  },
+  "saveTypeChangeAllPageAIClip": {
+    "message": "AI整頁剪藏",
+    "description": "AI整页剪藏选项"
+  },
+  "saveTypeChangeSelectClip": {
+    "message": "選中剪藏",
+    "description": "选中剪藏选项"
+  },
+  "saveTypeChangeSelectAIClip": {
+    "message": "AI選中剪藏",
+    "description": "AI选中剪藏选项"
+  }
 
   
 }

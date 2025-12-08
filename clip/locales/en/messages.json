@@ -1,18 +1,22 @@
   {
   "extensionName": {
-    "message": "Smart Clip"
+    "message": "Smart Clip",
+    "description": "扩展名称"
   },
   "extensionDescription": {
-    "message": "A browser extension that intelligently and structurally clips content."
+    "message": "A browser extension that intelligently and structurally clips content.",
+    "description": "扩展描述" 
   },
 
-
+  
 
   "optionsSaveSuccess": {
-    "message": "Save successful"
+    "message": "Save successful",
+    "description": "保存成功的提示"
   },
   "optionsSaveFailed": {
-    "message": "Save failed"
+    "message": "Save failed",
+    "description": "保存失败的提示"
   },
   "optionsExtensionSettingsTitle": {
     "message": "Extension Settings",
@@ -139,14 +143,156 @@
   "popupCloseAriaLabel": {
     "message": "Close",
     "description": "Popup page close button aria-label"
+  },
+
+
+
+  "floatBtnBookmarkToggleTooltip": {
+    "message": "Toggle clipping mode",
+    "description": "Floating button - tooltip for the toggle clipping mode icon"
+  },
+  "floatBtnSaveTypeAllPage": {
+    "message": "Clip entire page",
+    "description": "Floating button - option for clipping entire page"
+  },
+  "floatBtnSaveTypeAllPageAI": {
+    "message": "AI clip entire page",
+    "description": "Floating button - option for AI clipping entire page"
+  },
+  "floatBtnSaveTypeSelect": {
+    "message": "Clip selected content",
+    "description": "Floating button - option for clipping selected content"
+  },
+  "floatBtnSaveTypeSelectAI": {
+    "message": "AI clip selected content",
+    "description": "Floating button - option for AI clipping selected content"
+  },
+  "floatBtnTranslateLanguageTooltip": {
+    "message": "Translate to:",
+    "description": "Floating button - tooltip for translation language"
+  },
+  "floatBtnShowOriginalTextTooltip": {
+    "message": "Show original text",
+    "description": "Floating button - tooltip for showing original text"
+  },
+  "floatBtnAIChatTooltip": {
+    "message": "AI Chat",
+    "description": "Floating button - tooltip for AI chat"
+  },
+  "floatBtnLoadingAIProcessing": {
+    "message": "AI processing...",
+    "description": "Floating button - loading indicator for AI processing"
+  },
+  "floatBtnLoadingSaving": {
+    "message": "Saving...",
+    "description": "Floating button - loading indicator for saving"
+  },
+  "floatBtnSettingsHideOnce": {
+    "message": "Hide until next visit",
+    "description": "Floating button - option to hide until next visit"
+  },
+  "floatBtnSettingsDisableSite": {
+    "message": "Disable on this site",
+    "description": "Floating button - option to disable on this site"
+  },
+  "floatBtnSettingsDisableGlobal": {
+    "message": "Disable globally",
+    "description": "Floating button - option to disable globally"
+  },
+  "floatBtnSettingsReenableTip": {
+    "message": "You can re-enable settings here",
+    "description": "Floating button - tip for re-enabling settings"
+  },
+  "floatBtnNotificationExtensionReloaded": {
+    "message": "⚠️ Extension reloaded, please refresh the page",
+    "description": "Floating button - notification for extension reloaded"
+  },
+  "floatBtnNotificationClipSuccess": {
+    "message": "✅ Clip successful!",
+    "description": "Floating button - notification for successful clipping"
+  },
+  "floatBtnNotificationPictureContaining": {
+    "message": "containing",
+    "description": "For indicating the number of images"
+  },
+  "floatBtnNotificationPictureCount": {
+    "message": "images",
+    "description": "Unit for image count"
+  },
+  "floatBtnNotificationSaveFailed": {
+    "message": "❌ Save failed",
+    "description": "Floating button - notification for save failed"
+  },
+  "floatBtnNotificationAIProcessFailed": {
+    "message": "❌ AI processing failed",
+    "description": "Floating button - notification for AI processing failed"
+  },
+  "floatBtnNotificationAlreadySaved": {
+    "message": "⚠️ Current page already saved",
+    "description": "Floating button - notification for current page already saved"
+  },
+  "floatBtnNotificationCheckFailed": {
+    "message": "❌ Clip check failed: Error",
+    "description": "Floating button - notification for clip check failed"
+  },
+  "floatBtnNotificationAllPageSaveSuccess": {
+    "message": "✅ Entire page saved directly!",
+    "description": "Floating button - notification for successful direct saving of entire page"
+  },
+  "floatBtnNotificationTranslating": {
+    "message": "Translating visible area...",
+    "description": "Floating button - notification for translating"
+  },
+  "floatBtnNotificationRestoringOriginal": {
+    "message": "Restoring original text...",
+    "description": "Floating button - notification for restoring original text"
+  },
+  "floatBtnFloatingWindowOpenFailed": {
+    "message": "⚠️ Floating window failed to open",
+    "description": "Floating button - notification for floating window open failed"
+  },
+  "floatBtnNotificationNoApiKey": {
+    "message": "⚠️ Please configure API Key in settings first",
+    "description": "Floating button - notification for API Key not configured"
+  },
+  "floatBtnNotificationAIProcessing": {
+    "message": "AI processing...",
+    "description": "Floating button - notification for AI processing"
+  },
+  "floatBtnNotificationClipFailed": {
+    "message": "❌ Clip failed",
+    "description": "Floating button - notification for clip failed"
+  },
+  "floatBtnNotificationSelectText": {
+    "message": "⚠️ Please select some text (at least 10 characters)",
+    "description": "Floating button - notification for please select text"
+  },
+  "floatBtnNotificationSelectionSaveSuccess": {
+    "message": "✅ Selected content saved directly!",
+    "description": "Floating button - notification for successful direct saving of selected content"
+  },
+
+  
+  "saveTypeChangeTitle": {
+    "message": "Clip Method",
+    "description": "Save type selection title"
+  },
+  "saveTypeChangeAllPageClip": {
+    "message": "Clip Entire Page",
+    "description": "Clip entire page option"
+  },
+  "saveTypeChangeAllPageAIClip": {
+    "message": "AI Clip Entire Page",
+    "description": "AI clip entire page option"
+  },
+  "saveTypeChangeSelectClip": {
+    "message": "Clip Selection",
+    "description": "Clip selection option"
+  },
+  "saveTypeChangeSelectAIClip": {
+    "message": "AI Clip Selection",
+    "description": "AI clip selection option"
   }
-  
-  
-  
-    
-  
 
-
-
-
+  
 }
