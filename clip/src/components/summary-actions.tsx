@@ -49,6 +49,10 @@ export default function SummaryActions({}: SummaryActionsProps) {
         keyPoints: [],
         tags: ["youtube", "summary"]
       })
+      
+      // 通知其他页面刷新
+      chrome.runtime.sendMessage({ action: 'clips-updated' }).catch(() => {})
+      
       alert("✅ 总结已保存到剪藏!")
     } catch (e) {
       console.error(e)

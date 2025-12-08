@@ -303,6 +303,10 @@ export function YouTubePanel({ isDarkMode }: YouTubePanelProps) {
         keyPoints: [],
         tags: []
       })
+      
+      // 通知其他页面刷新
+      chrome.runtime.sendMessage({ action: 'clips-updated' }).catch(() => {})
+      
       setIsSummarySaved(true)
       console.log("[YouTubePanel] Summary saved")
     } catch (err) {
@@ -332,6 +336,10 @@ export function YouTubePanel({ isDarkMode }: YouTubePanelProps) {
         keyPoints: [],
         tags: ["chat"]
       })
+      
+      // 通知其他页面刷新
+      chrome.runtime.sendMessage({ action: 'clips-updated' }).catch(() => {})
+      
       setIsChatSaved(true)
       console.log("[YouTubePanel] Chat saved")
     } catch (err) {
