@@ -184,6 +184,47 @@ export default function HistoryPage() {
 function HistoryLayout() {
   const { theme, toggleTheme, t } = useTheme()
   const isDark = theme === "dark"
+  
+  // Layout state
+  const [leftWidth, setLeftWidth] = useState(25)
+  const [rightWidth, setRightWidth] = useState(30)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const isDraggingLeft = useRef(false)
+  const isDraggingRight = useRef(false)
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!containerRef.current) return
+      const containerWidth = containerRef.current.clientWidth
+
+      if (isDraggingLeft.current) {
+        const newLeftWidth = (e.clientX / containerWidth) * 100
+        if (newLeftWidth > 15 && newLeftWidth < 40) {
+          setLeftWidth(newLeftWidth)
+        }
+      } else if (isDraggingRight.current) {
+         const newRightWidth = ((containerWidth - e.clientX) / containerWidth) * 100
+         if (newRightWidth > 20 && newRightWidth < 50) {
+           setRightWidth(newRightWidth)
+         }
+      }
+    }
+
+    const handleMouseUp = () => {
+      isDraggingLeft.current = false
+      isDraggingRight.current = false
+      document.body.style.cursor = 'default'
+      document.body.style.userSelect = ''
+    }
+
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup', handleMouseUp)
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [])
+
   const [clips, setClips] = useState<Clip[]>([])
   const [folders, setFolders] = useState<Folder[]>([])
   const [selectedClipId, setSelectedClipId] = useState<string | null>(null)
@@ -854,7 +895,7 @@ function HistoryLayout() {
   }, [selectedClipId, setExtensionData, setCurrentClipId])
 
   return (
-    <div className={`flex h-screen w-full ${t.pageBg} ${t.textSecondary} font-sans overflow-hidden transition-colors duration-300`}>
+    <div ref={containerRef} className={`flex h-screen w-full ${t.pageBg} ${t.textSecondary} font-sans overflow-hidden transition-colors duration-300`}>
        {/* Edit Modal */}
        {editingClip && (
          <ClipEditModal
@@ -866,8 +907,8 @@ function HistoryLayout() {
          />
        )}
 
-       {/* Sidebar - 25% width */}
-       <div className={`w-[25%] min-w-[320px] border-r ${t.borderColor} flex flex-col ${t.sidebarBg} transition-colors duration-300`}>
+       {/* Sidebar */}
+       <div style={{ width: `${leftWidth}%` }} className={`min-w-[280px] border-r ${t.borderColor} flex flex-col ${t.sidebarBg} transition-colors duration-300`}>
           {/* Fixed Mini Header */}
           <div className={`p-3 border-b ${t.borderColor} flex items-center justify-between shrink-0`}>
             <div className="flex items-center gap-2">
@@ -1304,8 +1345,20 @@ function HistoryLayout() {
           </div>
        </div>
 
-       {/* Main Content - 45% width */}
-       <div className={`w-[45%] flex flex-col h-full overflow-hidden ${t.mainBg} transition-colors duration-300`}>
+       {/* Resize Handle 1 */}
+       <div
+         className={`w-1 hover:bg-indigo-500/50 cursor-col-resize flex-shrink-0 transition-colors z-10 flex flex-col justify-center items-center group`}
+         onMouseDown={() => {
+           isDraggingLeft.current = true
+           document.body.style.cursor = 'col-resize'
+           document.body.style.userSelect = 'none'
+         }}
+       >
+          <div className={`w-0.5 h-8 rounded-full bg-gray-300/50 group-hover:bg-indigo-400 transition-colors ${theme === 'dark' ? 'bg-gray-700' : ''}`} />
+       </div>
+
+       {/* Main Content */}
+       <div style={{ width: `calc(100% - ${leftWidth}% - ${rightWidth}% - 8px)` }} className={`flex flex-col h-full overflow-hidden ${t.mainBg} transition-colors duration-300`}>
           {selectedClip ? (
             <div className="flex flex-col h-full">
               {/* Header with glass effect */}
@@ -1676,8 +1729,20 @@ function HistoryLayout() {
           )}
        </div>
 
-       {/* Chat Sidebar - 30% width */}
-       <div className={`w-[30%] flex flex-col h-full ${t.sidebarBg} border-l ${t.borderColor} transition-colors duration-300`}>
+       {/* Resize Handle 2 */}
+       <div
+         className={`w-1 hover:bg-indigo-500/50 cursor-col-resize flex-shrink-0 transition-colors z-10 flex flex-col justify-center items-center group`}
+         onMouseDown={() => {
+           isDraggingRight.current = true
+           document.body.style.cursor = 'col-resize'
+           document.body.style.userSelect = 'none'
+         }}
+       >
+          <div className={`w-0.5 h-8 rounded-full bg-gray-300/50 group-hover:bg-indigo-400 transition-colors ${theme === 'dark' ? 'bg-gray-700' : ''}`} />
+       </div>
+
+       {/* Chat Sidebar */}
+       <div style={{ width: `${rightWidth}%` }} className={`flex flex-col h-full ${t.sidebarBg} border-l ${t.borderColor} transition-colors duration-300`}>
           {selectedClip ? (
             <>
               <div className={`p-5 border-b ${t.borderColor} relative overflow-hidden`}>
@@ -1714,7 +1779,7 @@ function HistoryLayout() {
                 </div>
               </div>
               <div className="flex-1 overflow-hidden relative">
-                <Chat className="h-full border-0" theme={theme} />
+                <Chat className="h-full border-0" theme={theme as string} />
               </div>
             </>
           ) : (
