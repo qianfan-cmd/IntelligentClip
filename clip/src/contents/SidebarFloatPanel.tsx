@@ -414,19 +414,6 @@ function PanelContent({
     }
   }, [port.data?.error])
 
-  // Get current page context
-  const getPageContext = useCallback(() => {
-    return {
-      openAIKey,
-      metadata: {
-        title: document.title || "未知页面"
-      },
-      clipMode: true,
-      summary: "",
-      rawText: ""
-    }
-  }, [openAIKey])
-
   // Send message
   // [BUG FIX] 增加完整的 try/catch 保护，防止发送消息时异常导致浮窗崩溃
   const handleSendMessage = async (
@@ -496,15 +483,28 @@ function PanelContent({
         }
       }, 0)
 
-      // [BUG FIX] 安全获取页面上下文
+      // [优化] 提取页面完整内容作为上下文
       let context
       try {
-        context = getPageContext()
-      } catch (contextErr) {
-        console.error("[ClipPlugin] getPageContext error:", contextErr)
+        const extractedContent = await extractContent()
         context = {
           openAIKey,
-          metadata: { title: "未知页面" },
+          metadata: {
+            title: extractedContent?.metadata?.title || document.title || "未知页面",
+            author: extractedContent?.metadata?.author,
+            source: extractedContent?.metadata?.source,
+            publishDate: extractedContent?.metadata?.publishDate
+          },
+          clipMode: true,
+          summary: extractedContent?.summary || "",
+          rawText: extractedContent?.text || ""
+        }
+        console.log("[ClipPlugin] Page context extracted, text length:", extractedContent?.text?.length || 0)
+      } catch (contextErr) {
+        console.error("[ClipPlugin] extractContent error:", contextErr)
+        context = {
+          openAIKey,
+          metadata: { title: document.title || "未知页面" },
           clipMode: true,
           summary: "",
           rawText: ""
