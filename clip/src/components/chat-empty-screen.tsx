@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { useExtension } from "@/contexts/extension-context"
 import { cn } from "@/lib/utils"
 import { MessageCircle, ArrowRight, WifiOff } from "lucide-react"
-
+import { useState } from "react"
 // 预设问题示例 - 使用通用表述，适用于各类剪藏内容（网页、视频、文章等）
 const exampleMessages = [
   {
@@ -27,12 +27,16 @@ const exampleMessages = [
   }
 ]
 
+// EmptyScreen 组件入参：
+// - setPromptInput: 由上层传入的设置输入框文本的方法
+// - onRequestFocusPrompt: 点击预设问题后，通知上层让输入框获取焦点
 interface EmptyScreenProps {
   className?: string
   setPromptInput: (value: string) => void
+  onRequestFocusPrompt?: () => void
 }
 
-export default function EmptyScreen({ className, setPromptInput }: EmptyScreenProps) {
+export default function EmptyScreen({ className, setPromptInput, onRequestFocusPrompt }: EmptyScreenProps) {
   const { extensionData, extensionLoading } = useExtension()
   
   const hasTranscript = extensionData?.transcript?.events && extensionData.transcript.events.length > 0
@@ -78,7 +82,8 @@ export default function EmptyScreen({ className, setPromptInput }: EmptyScreenPr
           <Button
             key={index}
             variant="outline"
-            onClick={() => setPromptInput(item.message)}
+            // 点击示例：先把示例文案写入输入框，再请求聚焦
+            onClick={() => { setPromptInput(item.message); onRequestFocusPrompt?.() }}
             className="w-full h-auto justify-between text-left p-3 bg-gray-50/50 dark:bg-zinc-800/50 border-gray-200/80 dark:border-zinc-700/80 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:border-indigo-300 dark:hover:border-indigo-700 group transition-all"
           >
             <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-indigo-700 dark:group-hover:text-indigo-300 transition-colors">

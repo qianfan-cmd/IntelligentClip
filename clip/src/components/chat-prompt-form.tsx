@@ -26,12 +26,15 @@ import Textarea from "react-textarea-autosize"
 
 import { usePort } from "@plasmohq/messaging/hook"
 
+// PromptForm 入参：
+// - focusTrigger: 来自父组件的“聚焦信号”。每次变化时都会尝试聚焦输入框
 interface PromptFormProps {
   className?: string
   theme?: 'dark' | 'light'
+  focusTrigger?: number
 }
 
-export default function PromptForm({ className, theme }: PromptFormProps) {
+export default function PromptForm({ className, theme, focusTrigger }: PromptFormProps) {
   const port = usePort("chat")
   const { extensionData, currentClipId } = useExtension()
   // 【修复】使用统一的 API 配置模块，包含加载状态
@@ -57,6 +60,13 @@ export default function PromptForm({ className, theme }: PromptFormProps) {
       inputRef.current.focus()
     }
   }, [])
+
+  // 监听来自父组件的聚焦信号，每次变化都尝试聚焦
+  useEffect(() => {
+    if (focusTrigger !== undefined) {
+      inputRef.current?.focus()
+    }
+  }, [focusTrigger])
 
   // 处理键盘事件：Enter 发送，Shift+Enter 换行
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
