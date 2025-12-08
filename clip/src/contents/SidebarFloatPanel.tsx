@@ -1017,7 +1017,7 @@ function PanelContent({
           </div>
 
         {/* Chat Mode - 使用 CSS 显示/隐藏而非条件渲染，保持组件状态 */}
-        <div className={`flex flex-col gap-3 ${panelMode === "chat" ? "flex-1" : "hidden"}`}>
+        <div className={`flex flex-col gap-3 overflow-hidden ${panelMode === "chat" ? "flex-1" : "hidden"}`}>
             {/* Model Selector & Clear Button */}
             <div className="flex items-center justify-between gap-2">
               <select
