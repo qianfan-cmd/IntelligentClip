@@ -1,0 +1,145 @@
+  {
+  "extensionName": {
+    "message": "Smart Clip"
+  },
+  "extensionDescription": {
+    "message": "A browser extension that intelligently and structurally clips content."
+  },
+
+
+
+  "optionsSaveSuccess": {
+    "message": "Save successful"
+  },
+  "optionsSaveFailed": {
+    "message": "Save failed"
+  },
+  "optionsExtensionSettingsTitle": {
+    "message": "Extension Settings",
+    "description": "扩展设置界面标题"
+  },
+  "optionsSettingsDescription": {
+    "message": "Configure your API keys and integration settings.",
+    "description": "扩展设置界面描述"
+  },
+  "optionsOpenAIConfigTitle": {
+    "message": "OpenAI Configuration",
+    "description": "OpenAI 配置界面标题"
+  },
+  "optionsLoadingStatus": {
+    "message": "Loading...",
+    "description": "OpenAI 配置界面加载状态提示信息"
+  },
+  "optionsAlreadyConfigured": {
+    "message": "Already configured!",
+    "description": "OpenAI 配置界面已配置提示信息"
+  },
+  "optionsApiKeyLabel": {
+    "message": "OpenAI API Key",
+    "description": "OpenAI 配置界面 API 密钥标签"
+  },
+  "optionsApiKeyHelp": {
+    "message": "Required for AI summarization and chat features.",
+    "description": "OpenAI 配置界面 API 密钥帮助提示信息"
+  },
+
+
+  "optionsFeishuOrLarkConfigTitle": {
+    "message": "Feishu / Lark Bitable",
+    "description": "飞书 / Lark 多维表格配置界面标题"
+  },
+  "optionsFeishuSecurityPromptTitle": {
+    "message": "Security Note",
+    "description": "飞书多维表格安全提示标题"
+  },
+  "optionsFeishuSecurityPromptContent1": {
+    "message": "Configuration information is stored locally in the browser. App Secret has high permissions, please keep it safe.",
+    "description": "飞书多维表格安全提示内容，第一部分"
+  },
+  "optionsFeishuSecurityPromptContent2": {
+    "message": "The system will automatically obtain tenant_access_token using App ID and App Secret (valid for 2 hours, automatically cached).",
+    "description": "飞书多维表格安全提示内容，第二部分"
+  },
+
+  "optionsFeishuTableTokenLabel": {
+    "message": "Table Token",
+    "description": "飞书多维表格配置界面 Table Token 标签"
+  },
+  "optionsFeishuTableTokenHelp": {
+    "message": "Found in the base URL: /base/",
+    "description": "飞书多维表格配置界面 Table Token 帮助提示信息"
+  },
+  "optionsFeishuTableIDLabel": {
+    "message": "Table ID",
+    "description": "飞书多维表格配置界面 Table ID 标签"
+  },
+  "optionsFeishuTableIDHelp": {
+    "message": "Found in the base URL: ?table=",
+    "description": "飞书多维表格配置界面 Table ID 帮助提示信息"
+  },
+  "optionsFeishuAppIDLabel": {
+    "message": "App ID",
+    "description": "飞书多维表格配置界面 App ID 标签"
+  },
+  "optionsFeishuAppIDHelp": {
+    "message": "Obtained from Feishu Open Platform - Development Configuration - App Credentials",
+    "description": "飞书多维表格配置界面 App ID 帮助提示信息"
+  },
+  "optionsFeishuAppSecretLabel": {
+    "message": "App Secret",
+    "description": "飞书多维表格配置界面 App Secret 标签"
+  },
+  "optionsFeishuAppSecretInputPlaceholder": {
+    "message": "Enter app secret...",
+    "description": "飞书多维表格配置界面 App Secret 输入框占位符"
+  },
+  "optionsFeishuAppSecretHelp": {
+    "message": "Obtain it from Feishu Open Platform - Development Configuration - App Credentials, the system will automatically obtain tenant_access_token",
+    "description": "飞书多维表格配置界面 App Secret 帮助提示信息"
+  },
+  "optionsLanguageLabel": {
+    "message": "Language",
+    "description": "语言选择标签"
+  },
+  "popupWelcomeText": {
+    "message": "Chrome Clip is a Chrome browser extension for clipping web content.",
+    "description": "Popup page welcome text"
+  },
+  "popupDescriptionText": {
+    "message": "Clipped content can be viewed and managed in the plugin's sidebar.",
+    "description": "Popup page description text"
+  },
+  "popupSignInButton": {
+    "message": "Sign in",
+    "description": "Popup page sign in button text"
+  },
+  "popupOpenHomepageAriaLabel": {
+    "message": "Open extension homepage",
+    "description": "Popup page open homepage button aria-label"
+  },
+  "popupRefreshAriaLabel": {
+    "message": "Refresh",
+    "description": "Popup page refresh button aria-label"
+  },
+  "popupCloseAriaLabel": {
+    "message": "Close",
+    "description": "Popup page close button aria-label"
+  },
+  
+  
+  "optionsSaveButtonSaving": {
+    "message": "Saving...",
+    "description": "配置界面保存按钮，正在保存状态"
+  },
+  "optionsSaveButtonSaved": {
+    "message": "Saved!",
+    "description": "配置界面保存按钮，已保存状态"
+  },
+  "optionsSaveButtonToSave": {
+    "message": "Save Settings",
+    "description": "配置界面保存按钮，待保存状态"
+  }
+    
+  
+
+}

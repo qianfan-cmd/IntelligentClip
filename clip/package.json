@@ -2,7 +2,7 @@
   "name": "clip",
   "displayName": "Clip",
   "version": "0.0.1",
-  "description": "clip",
+  "description": "__MSG_extensionDescription__",
   "author": "smartWorker",
   "scripts": {
     "dev": "plasmo dev",
@@ -73,6 +73,7 @@
     "typescript-eslint": "^8.48.0"
   },
   "manifest": {
+    "default_locale": "zh_CN",
     "permissions": [
       "tabs",
       "storage",

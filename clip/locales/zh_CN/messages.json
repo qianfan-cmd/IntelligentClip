@@ -1,0 +1,147 @@
+{
+  "extensionName": {
+    "message": "智能剪藏"
+  },
+  "extensionDescription": {
+    "message": "可将内容智能结构化剪藏的浏览器扩展。"
+  },
+
+
+
+  "optionsSaveSuccess": {
+    "message": "保存成功"
+  },
+  "optionsSaveFailed": {
+    "message": "保存失败"
+  },
+  "optionsExtensionSettingsTitle": {
+    "message": "扩展设置",
+    "description": "扩展设置界面标题"
+  },
+  "optionsSettingsDescription": {
+    "message": "配置您的 API 密钥和集成设置。",
+    "description": "扩展设置界面描述"
+  },
+  "optionsOpenAIConfigTitle": {
+    "message": "OpenAI 配置",
+    "description": "OpenAI 配置界面标题"
+  },
+  "optionsLoadingStatus": {
+    "message": "加载中...",
+    "description": "OpenAI 配置界面加载状态提示信息"
+  },
+  "optionsAlreadyConfigured": {
+    "message": "已配置",
+    "description": "OpenAI 配置界面已配置提示信息"
+  },
+  "optionsApiKeyLabel": {
+    "message": "OpenAI API 密钥",
+    "description": "OpenAI 配置界面 API 密钥标签"
+  },
+  "optionsApiKeyHelp": {
+    "message": "AI 摘要与聊天功能所必需。",
+    "description": "OpenAI 配置界面 API 密钥帮助提示信息"
+  },
+
+
+  "optionsFeishuOrLarkConfigTitle": {
+    "message": "飞书 / Lark 多维表格配置",
+    "description": "飞书 / Lark 多维表格配置界面标题"
+  },
+  "optionsFeishuSecurityPromptTitle": {
+    "message": "安全提示",
+    "description": "飞书多维表格安全提示标题"
+  },
+  "optionsFeishuSecurityPromptContent1": {
+    "message": "配置信息本地存储在浏览器中。App Secret 具有较高权限，请妥善保管。",
+    "description": "飞书多维表格安全提示内容，第一部分"
+  },
+  "optionsFeishuSecurityPromptContent2": {
+    "message": "系统将使用 App ID 和 App Secret 自动获取 tenant_access_token（有效期 2 小时，自动缓存）。",
+    "description": "飞书多维表格安全提示内容，第二部分"
+  },
+
+  "optionsFeishuTableTokenLabel": {
+    "message": "Table Token（基础令牌）",
+    "description": "飞书多维表格配置界面 Table Token 标签"
+  },
+  "optionsFeishuTableTokenHelp": {
+    "message": "在多维表格 URL 中找到：/base/",
+    "description": "飞书多维表格配置界面 Table Token 帮助提示信息"
+  },
+  "optionsFeishuTableIDLabel": {
+    "message": "Table ID（表格 ID）",
+    "description": "飞书多维表格配置界面 Table ID 标签"
+  },
+  "optionsFeishuTableIDHelp": {
+    "message": "在多维表格 URL 中找到：?table=",
+    "description": "飞书多维表格配置界面 Table ID 帮助提示信息"
+  },
+  "optionsFeishuAppIDLabel": {
+    "message": "App ID（应用 ID）",
+    "description": "飞书多维表格配置界面 App ID 标签"
+  },
+  "optionsFeishuAppIDHelp": {
+    "message": "在飞书开放平台 - 开发配置 - 应用凭证中获取",
+    "description": "飞书多维表格配置界面 App ID 帮助提示信息"
+  },
+  "optionsFeishuAppSecretLabel": {
+    "message": "App Secret（应用密钥）",
+    "description": "飞书多维表格配置界面 App Secret 标签"
+  },
+  "optionsFeishuAppSecretInputPlaceholder": {
+    "message": "输入应用密钥...",
+    "description": "飞书多维表格配置界面 App Secret 输入框占位符"
+  },
+  "optionsFeishuAppSecretHelp": {
+    "message": "在飞书开放平台 - 开发配置 - 应用凭证中获取，系统将自动获取 tenant_access_token",
+    "description": "飞书多维表格配置界面 App Secret 帮助提示信息"
+  },
+  "optionsLanguageLabel": {
+    "message": "语言",
+    "description": "语言选择标签"
+  },
+  
+  
+  "optionsSaveButtonSaving": {
+    "message": "保存中...",
+    "description": "配置界面保存按钮，正在保存状态"
+  },
+  "optionsSaveButtonSaved": {
+    "message": "已保存!",
+    "description": "配置界面保存按钮，已保存状态"
+  },
+  "optionsSaveButtonToSave": {
+    "message": "保存设置",
+    "description": "配置界面保存按钮，待保存状态"
+  },
+  "popupWelcomeText": {
+    "message": "Chrome剪藏是一个基于Chrome浏览器的插件，用于剪藏网页上的内容。",
+    "description": "Popup页面欢迎文本"
+  },
+  "popupDescriptionText": {
+    "message": "剪藏的内容可以在插件的侧边栏中查看和管理。",
+    "description": "Popup页面描述文本"
+  },
+  "popupSignInButton": {
+    "message": "登录",
+    "description": "Popup页面登录按钮文本"
+  },
+  "popupOpenHomepageAriaLabel": {
+    "message": "打开扩展主页",
+    "description": "Popup页面打开主页按钮的aria-label"
+  },
+  "popupRefreshAriaLabel": {
+    "message": "刷新",
+    "description": "Popup页面刷新按钮的aria-label"
+  },
+  "popupCloseAriaLabel": {
+    "message": "关闭",
+    "description": "Popup页面关闭按钮的aria-label"
+  }
+    
+
+
+
+
+}
