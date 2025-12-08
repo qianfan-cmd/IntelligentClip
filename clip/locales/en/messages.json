@@ -101,6 +101,21 @@
     "message": "Language",
     "description": "语言选择标签"
   },
+
+  "optionsSaveButtonSaving": {
+    "message": "Saving...",
+    "description": "配置界面保存按钮，正在保存状态"
+  },
+  "optionsSaveButtonSaved": {
+    "message": "Saved!",
+    "description": "配置界面保存按钮，已保存状态"
+  },
+  "optionsSaveButtonToSave": {
+    "message": "Save Settings",
+    "description": "配置界面保存按钮，待保存状态"
+  },
+
+
   "popupWelcomeText": {
     "message": "Chrome Clip is a Chrome browser extension for clipping web content.",
     "description": "Popup page welcome text"
@@ -124,22 +139,14 @@
   "popupCloseAriaLabel": {
     "message": "Close",
     "description": "Popup page close button aria-label"
-  },
-  
-  
-  "optionsSaveButtonSaving": {
-    "message": "Saving...",
-    "description": "配置界面保存按钮，正在保存状态"
-  },
-  "optionsSaveButtonSaved": {
-    "message": "Saved!",
-    "description": "配置界面保存按钮，已保存状态"
-  },
-  "optionsSaveButtonToSave": {
-    "message": "Save Settings",
-    "description": "配置界面保存按钮，待保存状态"
   }
+  
+  
+  
     
   
+
+
+
 
 }

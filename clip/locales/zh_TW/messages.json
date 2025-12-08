@@ -10,6 +10,7 @@
 
   "optionsSaveSuccess": {
     "message": "保存成功"
+    "description": "保存成功的提示"
   },
   "optionsSaveFailed": {
     "message": "保存失敗"
@@ -142,5 +143,9 @@
     "message": "關閉",
     "description": "Popup頁面關閉按鈕的aria-label"
   }
+  
+
+
+
   
 }

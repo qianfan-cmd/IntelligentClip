@@ -6,14 +6,151 @@
     "message": "可将内容智能结构化剪藏的浏览器扩展。"
   },
 
+  
+
+  "floatBtnBookmarkToggleTooltip": {
+    "message": "切换剪藏方式",
+    "description": "浮动按钮-切换剪藏方式图标的提示文本"
+  },
+  "floatBtnSaveTypeAllPage": {
+    "message": "整页剪藏",
+    "description": "浮动按钮-整页剪藏选项"
+  },
+  "floatBtnSaveTypeAllPageAI": {
+    "message": "AI整页剪藏",
+    "description": "浮动按钮-AI整页剪藏选项"
+  },
+  "floatBtnSaveTypeSelect": {
+    "message": "选中剪藏",
+    "description": "浮动按钮-选中剪藏选项"
+  },
+  "floatBtnSaveTypeSelectAI": {
+    "message": "AI选中剪藏",
+    "description": "浮动按钮-AI选中剪藏选项"
+  },
+
+
+  "floatBtnTranslateLanguageTooltip": {
+    "message": "翻译为：",
+    "description": "浮动按钮-翻译语言的提示文本"
+  },
+  "floatBtnShowOriginalTextTooltip": {
+    "message": "显示原文",
+    "description": "浮动按钮-显示原文的提示文本"
+  },
+  
+
+  "floatBtnAIChatTooltip": {
+    "message": "AI 对话",
+    "description": "浮动按钮-AI对话的提示文本"
+  },
+  "floatBtnLoadingAIProcessing": {
+    "message": "AI处理中…",
+    "description": "浮动按钮-AI处理中的加载提示"
+  },
+  "floatBtnLoadingSaving": {
+    "message": "保存中…",
+    "description": "浮动按钮-保存中的加载提示"
+  },
+
+
+  "floatBtnSettingsHideOnce": {
+    "message": "隐藏直到下次访问",
+    "description": "浮动按钮-隐藏直到下次访问选项"
+  },
+  "floatBtnSettingsDisableSite": {
+    "message": "在此网站禁用",
+    "description": "浮动按钮-在此网站禁用选项"
+  },
+  "floatBtnSettingsDisableGlobal": {
+    "message": "全局禁用",
+    "description": "浮动按钮-全局禁用选项"
+  },
+  "floatBtnSettingsReenableTip": {
+    "message": "您可以在此处重新启用 设置",
+    "description": "浮动按钮-重新启用设置的提示文本"
+  },
+
+
+  "floatBtnNotificationCaptureSelectionFailed": {
+    "message": "⚠️ 抓取失败，请重新选择内容",
+    "description": "浮动按钮-选中剪藏失败的通知"
+  },
+
+
+  "floatBtnNotificationExtensionReloaded": {
+    "message": "⚠️ 扩展已重载，请刷新页面",
+    "description": "浮动按钮-扩展已重载的通知"
+  },
+  "floatBtnNotificationCheckFailed": {
+    "message": "❌ 检查剪藏失败",
+    "description": "浮动按钮-检查剪藏失败的通知"
+  },
+  "floatBtnNotificationAlreadySaved": {
+    "message": "⚠️ 当前页面已保存",
+    "description": "浮动按钮-当前页面已保存的通知"
+  },
+  "floatBtnNotificationDirectSaveSuccess": {
+    "message": "✅ 已直接保存整页！",
+    "description": "浮动按钮-直接保存整页成功的通知"
+  },
+  "floatBtnNotificationDirectSaveSuccessWithImages": {
+    "message": "✅ 已直接保存整页！（含{count}张图片）",
+    "description": "浮动按钮-直接保存整页成功且包含图片的通知"
+  },
+  "floatBtnNotificationSaveFailed": {
+    "message": "❌ 保存失败",
+    "description": "浮动按钮-保存失败的通知"
+  },
+  "floatBtnNotificationTranslating": {
+    "message": "正在翻译可视区域…",
+    "description": "浮动按钮-正在翻译的通知"
+  },
+  "floatBtnNotificationRestoringOriginal": {
+    "message": "正在恢复原文…",
+    "description": "浮动按钮-正在恢复原文的通知"
+  },
+  "floatBtnNotificationNoApiKey": {
+    "message": "⚠️ 请先在设置中配置 API Key",
+    "description": "浮动按钮-未配置API Key的通知"
+  },
+  "floatBtnNotificationAProcessing": {
+    "message": "AI处理中…",
+    "description": "浮动按钮-AI处理中的通知"
+  },
+  "floatBtnNotificationClipFailed": {
+    "message": "❌ 剪藏失败",
+    "description": "浮动按钮-剪藏失败的通知"
+  },
+  "floatBtnNotificationSelectText": {
+    "message": "⚠️ 请先选中一些文字（至少10个字符）",
+    "description": "浮动按钮-请先选中文字的通知"
+  },
+  "floatBtnNotificationDirectSaveSelectionSuccess": {
+    "message": "✅ 已直接保存选中内容！",
+    "description": "浮动按钮-直接保存选中内容成功的通知"
+  },
+  "floatBtnNotificationDirectSaveSelectionSuccessWithImages": {
+    "message": "✅ 已直接保存选中内容！（含{count}张图片）",
+    "description": "浮动按钮-直接保存选中内容成功且包含图片的通知"
+  },
+  "floatBtnNotificationLLMDiagnosisError": {
+    "message": "LLM 诊断异常: {error}",
+    "description": "浮动按钮-LLM诊断异常的通知"
+  },
+
 
 
   "optionsSaveSuccess": {
-    "message": "保存成功"
+    "message": "保存成功",
+    "description": "保存成功的提示"
   },
   "optionsSaveFailed": {
-    "message": "保存失败"
+    "message": "保存失败",
+    "description": "保存设置失败的提示"
   },
+
+
   "optionsExtensionSettingsTitle": {
     "message": "扩展设置",
     "description": "扩展设置界面标题"
@@ -115,6 +252,9 @@
     "message": "保存设置",
     "description": "配置界面保存按钮，待保存状态"
   },
+
+
+  
   "popupWelcomeText": {
     "message": "Chrome剪藏是一个基于Chrome浏览器的插件，用于剪藏网页上的内容。",
     "description": "Popup页面欢迎文本"
