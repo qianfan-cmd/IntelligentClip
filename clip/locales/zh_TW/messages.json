@@ -138,7 +138,6 @@
   "popupCloseAriaLabel": {
     "message": "關閉",
     "description": "Popup頁面關閉按鈕的aria-label"
-<<<<<<< HEAD
   },
 
   
@@ -291,7 +290,4 @@
   }
 
   
-=======
-  }
->>>>>>> 2cd6cd8c72c7ceafa722cc138812ec381876762a
 }
