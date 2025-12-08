@@ -1,6 +1,8 @@
 // @ts-ignore
 import Markdown from "@/components/markdown"
 import { YouTubePanel } from "@/components/floating-dock/panels/youtube-panel"
+import { FeedbackPage } from "@/components/FeedbackPage"
+import FirstUseWelcomePage from "@/components/FirstUseWelcomePage"
 import { extractContent } from "@/core/index"
 // 【修复】使用统一的 API 配置模块，解决跨页面不同步问题
 import { useApiConfig } from "@/lib/api-config-store"
@@ -24,6 +26,7 @@ import {
   FiCrop,
   FiGrid,
   FiHelpCircle,
+  FiMessageSquare,
   FiMoon,
   FiRefreshCcw,
   FiSave,
@@ -162,7 +165,7 @@ function PanelContent({
   initialChatText?: string
 }) {
   const [title, setTitle] = useState("Clip")
-  const [quickSaveValue, setQuickSaveValue] = useState("")
+  const [searchValue, setSearchValue] = useState("")
   const [clips, setClips] = useState<Clip[]>([])
   const [notification, setNotification] = useState<{
     message: string
@@ -178,9 +181,109 @@ function PanelContent({
     initialChatText ? "chat" : "clips"
   )
   const [isScreenshotMode, setIsScreenshotMode] = useState(false)
+  const [showFeedback, setShowFeedback] = useState(false)
 
   // Theme & Drag state
   const [isDarkMode, setIsDarkMode] = useState(false)
+  const [position, setPosition] = useState({
+    x: window.innerWidth - 340 - 24,
+    y: 40
+  })
+  const [isDragging, setIsDragging] = useState(false)
+  const [isSnapping, setIsSnapping] = useState(false)
+  const dragOffsetRef = useRef({ x: 0, y: 0 })
+  const snapAnimRef = useRef<number | null>(null)
+  const dragMovedRef = useRef(false)
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    // Only allow dragging from the header background, not buttons
+    if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input')) {
+      return
+    }
+    
+    e.preventDefault()
+    setIsDragging(true)
+    setIsSnapping(false)
+    dragMovedRef.current = false
+    
+    if (snapAnimRef.current) {
+      cancelAnimationFrame(snapAnimRef.current)
+      snapAnimRef.current = null
+    }
+    
+    dragOffsetRef.current = {
+      x: e.clientX - position.x,
+      y: e.clientY - position.y
+    }
+  }, [position])
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isDragging) return
+    
+    const newX = e.clientX - dragOffsetRef.current.x
+    const newY = e.clientY - dragOffsetRef.current.y
+    
+    setPosition({ x: newX, y: newY })
+    
+    if (!dragMovedRef.current) {
+       const dx = Math.abs(newX - position.x)
+       const dy = Math.abs(newY - position.y)
+       if (dx > 3 || dy > 3) dragMovedRef.current = true
+    }
+  }, [isDragging, position])
+
+  const handleMouseUp = useCallback(() => {
+    if (!isDragging) return
+    setIsDragging(false)
+    
+    if (dragMovedRef.current) {
+        setIsSnapping(true)
+        // Snap to top (y=40), keep x (clamped)
+        const targetY = 40
+      // Clamp X to be within screen
+      const maxX = window.innerWidth - 340 - 24 // 340 is width
+      const minX = 24
+      let targetX = position.x
+      
+      // Ensure it stays on screen horizontally
+      if (targetX < minX) targetX = minX
+      if (targetX > maxX) targetX = maxX
+      
+      // Animation
+      const startX = position.x
+      const startY = position.y
+      const startTime = performance.now()
+      const duration = 300
+      
+      const animate = (time: number) => {
+        const elapsed = time - startTime
+        const progress = Math.min(elapsed / duration, 1)
+        const ease = 1 - Math.pow(1 - progress, 3) // Cubic ease out
+        
+        const currentX = startX + (targetX - startX) * ease
+        const currentY = startY + (targetY - startY) * ease
+        
+        setPosition({ x: currentX, y: currentY })
+        
+        if (progress < 1) {
+          snapAnimRef.current = requestAnimationFrame(animate)
+        } else {
+          setIsSnapping(false)
+          snapAnimRef.current = null
+        }
+      }
+      snapAnimRef.current = requestAnimationFrame(animate)
+    }
+  }, [isDragging, position])
+
+  useEffect(() => {
+    window.addEventListener("mousemove", handleMouseMove)
+    window.addEventListener("mouseup", handleMouseUp)
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove)
+      window.removeEventListener("mouseup", handleMouseUp)
+    }
+  }, [handleMouseMove, handleMouseUp])
 
   useEffect(() => {
     chrome.storage.local.get("clip_darkMode", (res) => {
@@ -616,6 +719,9 @@ function PanelContent({
         images: content?.images // 保存提取的图片
       })
 
+      // Reload clips to update the list immediately
+      loadClips()
+
       const imgCount = content?.images?.length || 0
       setNotification({
         message: `已直接保存整页！${imgCount > 0 ? `（含${imgCount}张图片）` : ""}`,
@@ -630,20 +736,35 @@ function PanelContent({
     }
   }
 
+  const filteredClips = clips.filter((clip) => {
+    if (!searchValue) return true
+    const lowerSearch = searchValue.toLowerCase()
+    return (
+      (clip.title && clip.title.toLowerCase().includes(lowerSearch)) ||
+      (clip.summary && clip.summary.toLowerCase().includes(lowerSearch)) ||
+      (clip.rawTextSnippet && clip.rawTextSnippet.toLowerCase().includes(lowerSearch)) ||
+      (clip.url && clip.url.toLowerCase().includes(lowerSearch)) ||
+      (clip.tags && clip.tags.some(tag => tag.toLowerCase().includes(lowerSearch)))
+    )
+  })
+
   return (
+    <>
     <div
       ref={ref}
-      className={`fixed z-[2147483647] flex flex-col shadow-2xl rounded-2xl border font-sans transition-all duration-200 origin-top-right animate-scale-up ${
+      className={`fixed z-[2147483647] flex flex-col shadow-2xl rounded-2xl border font-sans origin-top-right animate-scale-up ${
+        !isDragging && !isSnapping ? "transition-all duration-200" : ""
+      } ${
         isDarkMode
           ? "bg-slate-900/95 border-slate-700 text-slate-100"
           : "bg-white/95 border-white/20 text-slate-800"
       }`}
       style={{
-        top: "24px",
-        right: "24px",
-        bottom: "24px",
+        top: position.y,
+        left: position.x,
         width: "340px",
-        maxHeight: "calc(100vh - 48px)"
+        maxHeight: "calc(100vh - 48px)",
+        height: "calc(100vh - 48px)"
       }}>
       {/* Notification Toast */}
       {notification && (
@@ -664,9 +785,15 @@ function PanelContent({
 
       {/* Header */}
       <div
-        className={`FloatPanelHeader flex items-center justify-between px-5 h-14 border-b ${
+        onMouseDown={handleMouseDown}
+        className={`FloatPanelHeader relative group flex items-end justify-between px-5 h-16 pb-2 border-b cursor-grab active:cursor-grabbing select-none ${
           isDarkMode ? "border-slate-700/50" : "border-slate-100/50"
         }`}>
+        {/* Drag Handle Indicator */}
+        <div className={`absolute top-2 left-1/2 -translate-x-1/2 w-16 h-1.5 rounded-full transition-all duration-300 ${
+            isDarkMode ? "bg-slate-500" : "bg-slate-400"
+        } opacity-80 group-hover:opacity-100`} />
+        
         <div className="flex items-center gap-3">
           <button
             className={`w-9 h-9 flex items-center justify-center rounded-xl shadow-sm ring-1 transition-all active:scale-95 ${
@@ -694,6 +821,18 @@ function PanelContent({
           </div>
         </div>
         <div className="flex items-center gap-1">
+          <button
+            onClick={() => setShowFeedback(true)}
+            className={`p-2 rounded-lg transition-colors ${
+              isDarkMode
+                ? "hover:bg-slate-800 text-slate-500 hover:text-slate-300"
+                : "hover:bg-slate-100 text-slate-400 hover:text-slate-600"
+            }`}
+            title="Feedback"
+          >
+            <FiMessageSquare className="w-4 h-4" />
+          </button>
+
           <button
             className={`p-2 rounded-lg transition-colors ${
               isDarkMode
@@ -742,7 +881,7 @@ function PanelContent({
             }`}
             onClick={onClose}
             title="Close">
-            <FiX className="w-5 h-5" />
+            <FiX className="w-4 h-4" />
           </button>
         </div>
       </div>
@@ -754,7 +893,7 @@ function PanelContent({
             {/* Input Area */}
             <div className="flex flex-col gap-2">
               <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1">
-                Quick Save
+                Search
               </label>
               <div
                 className={`flex gap-2 p-1 rounded-xl border focus-within:ring-2 focus-within:ring-blue-100 transition-all ${
@@ -764,23 +903,20 @@ function PanelContent({
                 }`}>
                 <input
                   type="text"
-                  value={quickSaveValue}
-                  onChange={(e) => setQuickSaveValue(e.target.value)}
-                  placeholder="Paste link or note..."
-                  className={`flex-1 bg-transparent px-3 text-sm outline-none ${
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  placeholder="Search clips..."
+                  className={`flex-1 bg-transparent px-3 py-2 text-sm outline-none ${
                     isDarkMode
                       ? "text-slate-200 placeholder:text-slate-600"
                       : "text-slate-700 placeholder:text-slate-400"
                   }`}
                 />
-                <button className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-4 py-2 rounded-lg shadow-md shadow-blue-200 transition-all active:scale-95">
-                  Save
-                </button>
               </div>
             </div>
 
             {/* Content List */}
-            {clips.length === 0 ? (
+            {filteredClips.length === 0 ? (
               <div
                 className={`FloatPanelBodyContentPlaceholder flex-1 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-2 min-h-[200px] ${
                   isDarkMode
@@ -802,7 +938,7 @@ function PanelContent({
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1">
                   Recent Clips
                 </label>
-                {clips.map((clip) => {
+                {filteredClips.map((clip) => {
                   const firstImage =
                     clip.images && clip.images.length > 0
                       ? clip.images[0].src
@@ -1177,7 +1313,11 @@ function PanelContent({
           ))}
         </div>
       </div>
+
     </div>
+      <FirstUseWelcomePage />
+      {showFeedback && <FeedbackPage onClose={() => setShowFeedback(false)} />}
+    </>
   )
 }
 

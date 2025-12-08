@@ -566,6 +566,18 @@ const floatButton = () => { // 悬浮按钮主组件
     setIsTranslating(true);
     const dismiss = showNotification("正在翻译可视区域…", "loading");
     loadingNotifyDismissRef.current = dismiss;
+    /* LLM 诊断暂时禁用
+    try { 
+      chrome.runtime.sendMessage({ action: "diagnose-llm" }, (resp) => { 
+        try { 
+          console.log("[LLM 诊断]", resp) 
+          if (resp?.error || (resp?.status && resp.status !== 200)) {
+             showNotification(`LLM 诊断异常: ${resp.error || resp.status}`, "warning")
+          }
+        } catch {} 
+      }) 
+    } catch {}
+    */
     /** 启动定时器，延迟600ms秒执行，该函数负责节点扫描、并发调度、分批翻译、结果写回与恢复原文。
      * 在暂停的同时异步发送消息给内容脚本（chrome.runtime.sendMessage)=>跳转到pageTranslator接受消息
      * 如果消息回调到达表示通道正常，就清除计时器（此时就可以正常发送请求了）否则600ms后就走前端直启直接调用translateCurrentPage开始翻译
@@ -580,20 +592,14 @@ const floatButton = () => { // 悬浮按钮主组件
       } }, 600);
     chrome.runtime.sendMessage({ type: "TRANSLATE_PAGE", translateLang }, () => { clearTimeout(safety) });//发送翻译请求
   } else {
-    //显示原文
     const dismiss = showNotification("正在恢复原文…", "loading")
     loadingNotifyDismissRef.current = dismiss;
     setIsTranslated(false);
-    //兜底，通道延迟500ms到期自动切换按钮状态关闭loading通知
     const restoreSafety = setTimeout(() => {
       try { loadingNotifyDismissRef.current?.(); } catch {}
       loadingNotifyDismissRef.current = null;
       setIsTranslating(false);
     }, 500);
-    /**双通道触发恢复原文：同时向页面线程和扩展后台发送指令
-     * 页面管道触发：window发送消息被pageTranslator接收，pageTranslator立即回传确认事件，协会__clipOriginal保存的原文，实现快速恢复原文
-     * 扩展一样
-     */
     try { window.postMessage({ source: "clip", type: "clip:translate-restore" }, "*") } catch {}
     chrome.runtime.sendMessage({ type: "TRANSLATE_RESTORE" }, () => { try { clearTimeout(restoreSafety) } catch {} })
   }
@@ -617,6 +623,9 @@ const floatButton = () => { // 悬浮按钮主组件
         setIsTranslated(false)
       }
       if (msg?.type === "CLIP_TRANSLATE_RESTORED") {//恢复原文完成事件
+        try { loadingNotifyDismissRef.current?.() } catch {}
+        loadingNotifyDismissRef.current = null
+        setIsTranslating(false)
         setIsTranslated(false)
       }
     }
@@ -646,6 +655,44 @@ const floatButton = () => { // 悬浮按钮主组件
       window.removeEventListener("message", pageHandler)
     }
   }, [])
+
+  useEffect(() => {
+    const lastHrefRef = { current: window.location.href }
+    const notifyUrlChange = () => {
+      const href = window.location.href
+      if (href !== lastHrefRef.current) {
+        lastHrefRef.current = href
+        if (isTranslated && !isTranslating) {
+          const dismiss = showNotification("正在恢复原文…", "loading")
+          loadingNotifyDismissRef.current = dismiss
+          setIsTranslated(false)
+          const restoreSafety = setTimeout(() => {
+            try { loadingNotifyDismissRef.current?.() } catch {}
+            loadingNotifyDismissRef.current = null
+            setIsTranslating(false)
+          }, 500)
+          try { window.postMessage({ source: "clip", type: "clip:translate-restore" }, "*") } catch {}
+          try { chrome.runtime.sendMessage({ type: "TRANSLATE_RESTORE" }, () => { try { clearTimeout(restoreSafety) } catch {} }) } catch {}
+        }
+      }
+    }
+    const origPush = history.pushState
+    const origReplace = history.replaceState
+    try {
+      history.pushState = function(...args: any[]) { const r = origPush.apply(history, args as any); notifyUrlChange(); return r }
+      history.replaceState = function(...args: any[]) { const r = origReplace.apply(history, args as any); notifyUrlChange(); return r }
+    } catch {}
+    window.addEventListener('popstate', notifyUrlChange)
+    window.addEventListener('hashchange', notifyUrlChange)
+    const tick = () => { notifyUrlChange(); setTimeout(tick, 1000) }
+    setTimeout(tick, 1000)
+    return () => {
+      try { history.pushState = origPush } catch {}
+      try { history.replaceState = origReplace } catch {}
+      window.removeEventListener('popstate', notifyUrlChange)
+      window.removeEventListener('hashchange', notifyUrlChange)
+    }
+  }, [isTranslated, isTranslating])
 
 
   const handleAI = () => {
