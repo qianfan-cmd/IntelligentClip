@@ -9,7 +9,7 @@
   },
 
 
-  
+
   "optionsSaveSuccess": {
     "message": "保存成功",
     "description": "保存成功的提示"
@@ -47,8 +47,6 @@
     "message": "AI 摘要與聊天功能所必需。",
     "description": "OpenAI 配置界面 API 密钥帮助提示信息"
   },
-
-
   "optionsFeishuOrLarkConfigTitle": {
     "message": "飛書 / Lark 多維表格配置",
     "description": "飞书 / Lark 多维表格配置界面标题"
@@ -65,7 +63,6 @@
     "message": "系統將使用 App ID 和 App Secret 自動獲取 tenant_access_token（有效期 2 小時，自動緩存）。",
     "description": "飞书多维表格安全提示内容，第二部分"
   },
-
   "optionsFeishuTableTokenLabel": {
     "message": "Table Token（基礎令牌）",
     "description": "飞书多维表格配置界面 Table Token 标签"
@@ -106,8 +103,6 @@
     "message": "語言",
     "description": "语言选择标签"
   },
-  
-  
   "optionsSaveButtonSaving": {
     "message": "保存中...",
     "description": "配置界面保存按钮，正在保存状态"
@@ -120,9 +115,6 @@
     "message": "保存設置",
     "description": "配置界面保存按钮，待保存状态"
   },
-
-
-  
   "popupWelcomeText": {
     "message": "Chrome剪藏是一個基於Chrome瀏覽器的插件，用於剪藏網頁上的內容。",
     "description": "Popup頁面歡迎文本"
@@ -146,6 +138,7 @@
   "popupCloseAriaLabel": {
     "message": "關閉",
     "description": "Popup頁面關閉按鈕的aria-label"
+<<<<<<< HEAD
   },
 
   
@@ -298,4 +291,7 @@
   }
 
   
+=======
+  }
+>>>>>>> 2cd6cd8c72c7ceafa722cc138812ec381876762a
 }

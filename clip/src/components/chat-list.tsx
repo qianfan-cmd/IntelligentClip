@@ -13,12 +13,17 @@ import { useEffect, useRef, useCallback } from "react"
 import { MessageBubble } from "./message-bubble"
 import EmptyScreen from "./chat-empty-screen"
 
+// 组件入参：
+// - onRequestFocusPrompt: 当需要让底部输入框获取焦点时触发的回调（由父组件实现具体聚焦逻辑）
 interface ChatListProps {
   className?: string
   theme?: 'dark' | 'light'
+  onRequestFocusPrompt?: () => void
 }
 
-export default function ChatList({ className, theme }: ChatListProps) {
+// ChatList：消息列表或空态
+// 这里不直接持有输入框的 ref，而是通过回调把“请求聚焦”的意图传给父组件
+export default function ChatList({ className, theme, onRequestFocusPrompt }: ChatListProps) {
   const { chatMessages, chatIsGenerating, setChatPrompt } = useChat()
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -48,7 +53,10 @@ export default function ChatList({ className, theme }: ChatListProps) {
   return (
     <div data-theme={theme} className={cn("flex-1 overflow-hidden", className)}>
       {!hasMessages ? (
-        <EmptyScreen setPromptInput={setChatPrompt} />
+        // 空态时展示预设问题示例。点击示例：
+        // 1) 通过 setPromptInput 设定输入框内容
+        // 2) 通过 onRequestFocusPrompt 请求父组件让输入框获取焦点
+        <EmptyScreen setPromptInput={setChatPrompt} onRequestFocusPrompt={onRequestFocusPrompt} />
       ) : (
         <div
           ref={scrollContainerRef}

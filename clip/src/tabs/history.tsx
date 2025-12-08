@@ -681,7 +681,7 @@ function HistoryLayout() {
   const handleExportToCSV = async () => {
     if (!selectedClip) {
       alert("请选择一个剪藏")
-      return
+      return;
     }
     // 取当前选中剪藏数据：没有选中就无法导出
     const clip = selectedClip;
@@ -703,7 +703,8 @@ function HistoryLayout() {
       "feishuRecordId",
       "images",
       "notes",
-      "rawTextLength"
+      "rawTextLength",
+      "rawText"
     ]
     // CSV 单元格转义：
     // 1) 将值转为字符串（CSV 按文本处理，避免数字被 Excel 自动格式化成日期/科学计数法）
@@ -717,7 +718,7 @@ function HistoryLayout() {
     // 组装一行数据：
     // - 数组字段使用 " | " 连接，保持在一个单元格中而不是拆成多列
     // - 时间使用 ISO 字符串，避免本地化差异（便于程序/表格统一解析）
-    // - 原文不直接导出以避免 CSV 过大，这里只输出长度作为参考
+    // - 原文也一并导出到 rawText 字段，注意文件体积可能较大
     const row = [
       escape(clip.id),
       escape(clip.title),
@@ -733,7 +734,8 @@ function HistoryLayout() {
       escape(clip.feishuRecordId ?? ""),
       escape((clip.images || []).map(i => i.src).join(" | ")),
       escape(clip.notes ?? ""),
-      escape((clip.rawTextFull || clip.rawTextSnippet || "").length)
+      escape((clip.rawTextFull || clip.rawTextSnippet || "").length),
+      escape(clip.rawTextFull || clip.rawTextSnippet || "")
     ]
     // 生成 CSV 文本：加入 BOM（\ufeff）让 Excel 识别为 UTF-8；按行拼接（表头 + 数据）
     const csv = "\ufeff" + [headers.join(","), row.join(",")].join("\n")

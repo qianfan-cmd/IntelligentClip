@@ -29,6 +29,8 @@ export default function Chat({ className, theme: propTheme }: ChatProps) {
   const theme = propTheme || extensionTheme
   const [currentClip, setCurrentClip] = useState<Clip | null>(null)
   const [isTipOpen, setIsTipOpen] = useState(true)
+  // 用作“聚焦信号”的计数器。每次递增都会触发 PromptForm 内的 useEffect 执行 focus()
+  const [focusTrigger, setFocusTrigger] = useState(0);
 
   // 加载当前剪藏数据
   useEffect(() => {
@@ -71,7 +73,8 @@ export default function Chat({ className, theme: propTheme }: ChatProps) {
         )}
 
         {/* 消息列表 - 可滚动 */}
-        <ChatList className="flex-1 min-h-0" theme={theme as "dark" | "light"} />
+        {/* 当 EmptyScreen 触发 onRequestFocusPrompt 时，这里递增 focusTrigger 作为信号 */}
+        <ChatList className="flex-1 min-h-0" theme={theme as "dark" | "light"} onRequestFocusPrompt={() => setFocusTrigger((v) => v + 1)} />
 
         {/* 打标功能提示 */}
         {isTipOpen && currentClipId && (
@@ -93,9 +96,11 @@ export default function Chat({ className, theme: propTheme }: ChatProps) {
         )}
 
         {/* 底部输入框 - 固定 */}
+        {/* 将聚焦信号传给输入框组件，内部监听变化后执行 inputRef.focus() */}
         <PromptForm
           className="flex-shrink-0 border-t border-gray-100 dark:border-zinc-800"
           theme={theme as "dark" | "light"}
+          focusTrigger={focusTrigger}
         />
       </div>
     </div>
