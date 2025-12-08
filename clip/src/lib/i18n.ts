@@ -81,4 +81,4 @@ async function getMessage(messageName: string): Promise<string> {
   await loadLanguageFile(defaultLanguage);
 })();
 
-export { getMessage, getUserLanguage };
+export { getMessage, getUserLanguage, loadLanguageFile };
