@@ -253,9 +253,19 @@ function HistoryLayout() {
     chrome.storage.onChanged.addListener(handleStorageChange)
     document.addEventListener('visibilitychange', handleVisibilityChange)
     
+    // 监听来自Chat组件的更新通知（AI打标签后）
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'clip-updated') {
+        console.log('收到剪藏更新通知，刷新列表')
+        loadClips()
+      }
+    }
+    window.addEventListener('message', handleMessage)
+    
     return () => {
       chrome.storage.onChanged.removeListener(handleStorageChange)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('message', handleMessage)
     }
   }, [])
 
@@ -512,6 +522,8 @@ function HistoryLayout() {
         updatedAt: Date.now()
       })
       setIsEditingNotes(false)
+      // 立即刷新clips列表，让用户看到更新后的笔记
+      await loadClips()
     } catch (e) {
       console.error(e)
       alert("保存笔记失败")

@@ -175,6 +175,9 @@ export default function PromptForm({ className, theme }: PromptFormProps) {
           })
           
           console.log("[ClipTagging] Successfully updated clip tags")
+          
+          // 通知父页面刷新数据
+          window.postMessage({ type: 'clip-updated', clipId: currentClipId }, '*')
         }
       } catch (error) {
         console.error("[ClipTagging] Failed to update clip tags:", error)
