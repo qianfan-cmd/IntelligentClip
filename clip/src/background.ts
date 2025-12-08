@@ -1,7 +1,7 @@
 import { createLlm } from "@/utils/llm"
 console.log("🚀 Clip Extension background service worker loading...")
 // 初始化复习调度器
-import { initReviewScheduler } from "./review-scheduler"
+import { initReviewScheduler } from "./background/review-scheduler"
 
 initReviewScheduler()
 console.log("📅 Review scheduler initialized")

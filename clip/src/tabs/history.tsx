@@ -364,6 +364,7 @@ function HistoryLayout() {
     if (confirm("确定要删除这个剪藏吗？")) {
       await ClipStore.delete(id)
       if (selectedClipId === id) setSelectedClipId(null)
+      await loadClips()
     }
   }
 
@@ -377,6 +378,7 @@ function HistoryLayout() {
       }
       setSelectedIds(new Set())
       setIsSelectMode(false)
+      await loadClips()
     }
   }
 
