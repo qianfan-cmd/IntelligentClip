@@ -1412,6 +1412,105 @@ function HistoryLayout() {
               {/* Content with custom scrollbar */}
               <div className={`flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar ${theme === 'dark' ? 'dark' : ''}`}>
                 
+                {/* AI Tags Section */}
+                <ClipTagsPanel clip={selectedClip} />
+
+                {/* Key Points Section */}
+                {selectedClip.keyPoints && selectedClip.keyPoints.length > 0 && (
+                  <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500/5 to-teal-500/5 p-5 ring-1 ring-emerald-500/20">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-teal-500/10 to-transparent rounded-full blur-2xl" />
+                    
+                    <h3 className="relative text-base font-semibold mb-4 flex items-center gap-2 text-emerald-300">
+                      <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
+                        <TrendingUp className="h-3.5 w-3.5 text-white" />
+                      </div>
+                      关键要点
+                    </h3>
+                    <div className="space-y-2">
+                      {selectedClip.keyPoints.map((point, i) => (
+                        <div key={i} className={`flex gap-3 p-3 ${t.sectionBg} rounded-xl`}>
+                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 text-white flex items-center justify-center text-xs font-bold">
+                            {i + 1}
+                          </span>
+                          <span className={`text-sm leading-relaxed ${t.textMuted} pt-0.5`}>{point}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {/* Summary Section */}
+                <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500/5 to-purple-500/5 p-5 ring-1 ring-indigo-500/20">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-purple-500/10 to-transparent rounded-full blur-2xl" />
+                  
+                  <h3 className="relative text-base font-semibold mb-4 flex items-center gap-2 text-indigo-300">
+                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center">
+                      <Sparkles className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    AI 摘要
+                  </h3>
+                  <div className={`${t.sectionBg} rounded-xl p-4`}>
+                    <Markdown 
+                      markdown={selectedClip.summary} 
+                      className={`${t.textMuted} text-sm leading-relaxed [&_p]:mb-2 [&_ul]:my-2 [&_ol]:my-2 [&_li]:text-sm [&_h1]:text-lg [&_h2]:text-base [&_h3]:text-sm [&_code]:text-xs [&_code]:${t.inputBg} [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded`}
+                    />
+                  </div>
+                </section>
+
+                {/* Raw Text Section */}
+                {(selectedClip.rawTextFull || selectedClip.rawTextSnippet) && (
+                  <section className={`relative overflow-hidden rounded-2xl ${t.cardBg} p-5 ring-1 ${t.ringColor}`}>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className={`text-base font-semibold flex items-center gap-2 ${t.textMuted}`}>
+                        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-gray-500 to-slate-600 flex items-center justify-center">
+                          <FileText className="h-3.5 w-3.5 text-white" />
+                        </div>
+                        原文内容
+                        {selectedClip.rawTextFull && (
+                          <span className={`text-xs font-normal ${t.textFaint} ml-2`}>
+                            {selectedClip.rawTextFull.length.toLocaleString()} 字
+                          </span>
+                        )}
+                      </h3>
+                      {selectedClip.rawTextFull && selectedClip.rawTextFull.length > 500 && (
+                        <button
+                          onClick={() => setIsRawTextExpanded(!isRawTextExpanded)}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium ${t.textDim} ${t.inputBg} rounded-lg ${t.inputBgHover} transition-all`}
+                        >
+                          {isRawTextExpanded ? (
+                            <>
+                              <ChevronUp className="h-3 w-3" />
+                              收起
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="h-3 w-3" />
+                              展开
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                    <div className={`relative ${t.overlayBg} rounded-xl p-4`}>
+                      <div className={`text-sm leading-relaxed ${!isRawTextExpanded && selectedClip.rawTextFull && selectedClip.rawTextFull.length > 500 ? 'max-h-[200px] overflow-hidden' : ''}`}>
+                        {looksLikeMarkdown(selectedClip.rawTextFull || selectedClip.rawTextSnippet || "") ? (
+                          <Markdown 
+                            markdown={selectedClip.rawTextFull || selectedClip.rawTextSnippet || ""} 
+                            className={`${t.textDim} [&_p]:mb-2 [&_ul]:my-2 [&_ol]:my-2 [&_li]:text-sm [&_h1]:text-lg [&_h2]:text-base [&_h3]:text-sm [&_code]:text-xs [&_code]:${t.inputBg} [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_pre]:overflow-x-auto [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:${t.sectionBg}`}
+                          />
+                        ) : (
+                          <div className={`${t.textDim} whitespace-pre-wrap`}>
+                            {selectedClip.rawTextFull || selectedClip.rawTextSnippet}
+                          </div>
+                        )}
+                      </div>
+                      {!isRawTextExpanded && selectedClip.rawTextFull && selectedClip.rawTextFull.length > 500 && (
+                        <div className={`absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t ${t.fadeGradient} pointer-events-none rounded-b-xl`} />
+                      )}
+                    </div>
+                  </section>
+                )}
+
                 {/* My Notes Section - Glassmorphism style 我的笔记和编辑笔记部分 */}
                 <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500/5 to-orange-500/5 p-5 ring-1 ring-amber-500/20">
                   <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-amber-500/10 to-transparent rounded-full blur-2xl" />
@@ -1474,105 +1573,6 @@ function HistoryLayout() {
                     </div>
                   )}
                 </section>
-
-                {/* Summary Section */}
-                <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500/5 to-purple-500/5 p-5 ring-1 ring-indigo-500/20">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-purple-500/10 to-transparent rounded-full blur-2xl" />
-                  
-                  <h3 className="relative text-base font-semibold mb-4 flex items-center gap-2 text-indigo-300">
-                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center">
-                      <Sparkles className="h-3.5 w-3.5 text-white" />
-                    </div>
-                    AI 摘要
-                  </h3>
-                  <div className={`${t.sectionBg} rounded-xl p-4`}>
-                    <Markdown 
-                      markdown={selectedClip.summary} 
-                      className={`${t.textMuted} text-sm leading-relaxed [&_p]:mb-2 [&_ul]:my-2 [&_ol]:my-2 [&_li]:text-sm [&_h1]:text-lg [&_h2]:text-base [&_h3]:text-sm [&_code]:text-xs [&_code]:${t.inputBg} [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded`}
-                    />
-                  </div>
-                </section>
-
-                {/* AI Tags Section */}
-                <ClipTagsPanel clip={selectedClip} />
-
-                {/* Key Points Section */}
-                {selectedClip.keyPoints && selectedClip.keyPoints.length > 0 && (
-                  <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500/5 to-teal-500/5 p-5 ring-1 ring-emerald-500/20">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-teal-500/10 to-transparent rounded-full blur-2xl" />
-                    
-                    <h3 className="relative text-base font-semibold mb-4 flex items-center gap-2 text-emerald-300">
-                      <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
-                        <TrendingUp className="h-3.5 w-3.5 text-white" />
-                      </div>
-                      关键要点
-                    </h3>
-                    <div className="space-y-2">
-                      {selectedClip.keyPoints.map((point, i) => (
-                        <div key={i} className={`flex gap-3 p-3 ${t.sectionBg} rounded-xl`}>
-                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 text-white flex items-center justify-center text-xs font-bold">
-                            {i + 1}
-                          </span>
-                          <span className={`text-sm leading-relaxed ${t.textMuted} pt-0.5`}>{point}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                )}
-
-                {/* Raw Text Section */}
-                {(selectedClip.rawTextFull || selectedClip.rawTextSnippet) && (
-                  <section className={`relative overflow-hidden rounded-2xl ${t.cardBg} p-5 ring-1 ${t.ringColor}`}>
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className={`text-base font-semibold flex items-center gap-2 ${t.textMuted}`}>
-                        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-gray-500 to-slate-600 flex items-center justify-center">
-                          <FileText className="h-3.5 w-3.5 text-white" />
-                        </div>
-                        原文内容
-                        {selectedClip.rawTextFull && (
-                          <span className={`text-xs font-normal ${t.textFaint} ml-2`}>
-                            {selectedClip.rawTextFull.length.toLocaleString()} 字
-                          </span>
-                        )}
-                      </h3>
-                      {selectedClip.rawTextFull && selectedClip.rawTextFull.length > 500 && (
-                        <button
-                          onClick={() => setIsRawTextExpanded(!isRawTextExpanded)}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium ${t.textDim} ${t.inputBg} rounded-lg ${t.inputBgHover} transition-all`}
-                        >
-                          {isRawTextExpanded ? (
-                            <>
-                              <ChevronUp className="h-3 w-3" />
-                              收起
-                            </>
-                          ) : (
-                            <>
-                              <ChevronDown className="h-3 w-3" />
-                              展开
-                            </>
-                          )}
-                        </button>
-                      )}
-                    </div>
-                    <div className={`relative ${t.overlayBg} rounded-xl p-4`}>
-                      <div className={`text-sm leading-relaxed ${!isRawTextExpanded && selectedClip.rawTextFull && selectedClip.rawTextFull.length > 500 ? 'max-h-[200px] overflow-hidden' : ''}`}>
-                        {looksLikeMarkdown(selectedClip.rawTextFull || selectedClip.rawTextSnippet || "") ? (
-                          <Markdown 
-                            markdown={selectedClip.rawTextFull || selectedClip.rawTextSnippet || ""} 
-                            className={`${t.textDim} [&_p]:mb-2 [&_ul]:my-2 [&_ol]:my-2 [&_li]:text-sm [&_h1]:text-lg [&_h2]:text-base [&_h3]:text-sm [&_code]:text-xs [&_code]:${t.inputBg} [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_pre]:overflow-x-auto [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:${t.sectionBg}`}
-                          />
-                        ) : (
-                          <div className={`${t.textDim} whitespace-pre-wrap`}>
-                            {selectedClip.rawTextFull || selectedClip.rawTextSnippet}
-                          </div>
-                        )}
-                      </div>
-                      {!isRawTextExpanded && selectedClip.rawTextFull && selectedClip.rawTextFull.length > 500 && (
-                        <div className={`absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t ${t.fadeGradient} pointer-events-none rounded-b-xl`} />
-                      )}
-                    </div>
-                  </section>
-                )}
 
                 {/* Images Section */}
                 {selectedClip.images && selectedClip.images.length > 0 && (

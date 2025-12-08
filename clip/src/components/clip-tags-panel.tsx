@@ -90,10 +90,10 @@ function TagSection({
   if (isEmpty) return null
   
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1 flex flex-wrap gap-2">
       <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
         <Icon className="h-3.5 w-3.5" />
-        <span>{title}</span>
+        <span>{title}:</span>
       </div>
       <div>{children}</div>
     </div>
