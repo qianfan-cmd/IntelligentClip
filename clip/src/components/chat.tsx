@@ -21,10 +21,12 @@ import ClipTagsPanel from "./clip-tags-panel"
 
 interface ChatProps {
   className?: string
+  theme?: string
 }
 
-export default function Chat({ className }: ChatProps) {
+export default function Chat({ className, theme: propTheme }: ChatProps) {
   const { currentClipId, extensionTheme } = useExtension()
+  const theme = propTheme || extensionTheme
   const [currentClip, setCurrentClip] = useState<Clip | null>(null)
   const [isTipOpen, setIsTipOpen] = useState(true)
 
@@ -58,18 +60,18 @@ export default function Chat({ className }: ChatProps) {
         {/* 顶部操作栏 - 固定 */}
         <ChatActions
           className="flex-shrink-0 border-b border-gray-100 dark:border-zinc-800"
-          theme={extensionTheme}
+          theme={theme as "dark" | "light"}
         />
 
         {/* AI 标注面板 - 仅在有剪藏时显示 */}
         {currentClipId && (
           <div className="flex-shrink-0 p-3 border-b border-gray-100 dark:border-zinc-800">
-            <ClipTagsPanel clip={currentClip} compact theme={extensionTheme} />
+            <ClipTagsPanel clip={currentClip} compact theme={theme as "dark" | "light"} />
           </div>
         )}
 
         {/* 消息列表 - 可滚动 */}
-        <ChatList className="flex-1 min-h-0" theme={extensionTheme} />
+        <ChatList className="flex-1 min-h-0" theme={theme as "dark" | "light"} />
 
         {/* 打标功能提示 */}
         {isTipOpen && currentClipId && (
@@ -93,7 +95,7 @@ export default function Chat({ className }: ChatProps) {
         {/* 底部输入框 - 固定 */}
         <PromptForm
           className="flex-shrink-0 border-t border-gray-100 dark:border-zinc-800"
-          theme={extensionTheme}
+          theme={theme as "dark" | "light"}
         />
       </div>
     </div>

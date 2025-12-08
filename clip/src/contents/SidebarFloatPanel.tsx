@@ -187,7 +187,7 @@ function PanelContent({
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [position, setPosition] = useState({
     x: window.innerWidth - 340 - 24,
-    y: 40
+    y: 32
   })
   const [isDragging, setIsDragging] = useState(false)
   const [isSnapping, setIsSnapping] = useState(false)
@@ -238,8 +238,8 @@ function PanelContent({
     
     if (dragMovedRef.current) {
         setIsSnapping(true)
-        // Snap to top (y=40), keep x (clamped)
-        const targetY = 40
+        // Snap to top (y=32), keep x (clamped)
+        const targetY = 32
       // Clamp X to be within screen
       const maxX = window.innerWidth - 340 - 24 // 340 is width
       const minX = 24
@@ -496,7 +496,7 @@ function PanelContent({
             publishDate: extractedContent?.metadata?.publishDate
           },
           clipMode: true,
-          summary: extractedContent?.summary || "",
+          summary: "",
           rawText: extractedContent?.text || ""
         }
         console.log("[ClipPlugin] Page context extracted, text length:", extractedContent?.text?.length || 0)

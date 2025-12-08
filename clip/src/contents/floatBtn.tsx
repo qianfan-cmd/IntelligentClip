@@ -1,5 +1,4 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react'; // 引入 React 核心 hooks
-import { useI18n } from '@/lib/use-i18n'; // 引入国际化支持 Hook
 import { Storage } from '@plasmohq/storage'; // 引入 Plasmo 存储库，用于持久化数据
 import styleText from "data-text:../style.css" // 引入全局样式文件
 import type { PlasmoGetShadowHostId } from "plasmo" // 引入 Plasmo 类型定义
@@ -13,7 +12,6 @@ import { TooltipWrapper } from "@/components/ui/tooltip-wrapper" // 引入 Toolt
 import { ClipStore } from "@/lib/clip-store" // 引入剪藏存储库
 import { extractContent, extractSelectedContent } from "@/core/index" // 引入内容提取核心函数
 import type { ExtractedContent } from "@/core/types" // 引入提取内容的类型定义
->>>>>>> Stashed changes
 // 【修复】使用统一的 API 配置模块，解决跨页面不同步问题
 import { useApiConfig } from "@/lib/api-config-store" // 引入统一的 API 配置 Hook
 import { usePort } from "@plasmohq/messaging/hook" // 引入 Plasmo 消息端口 Hook
@@ -154,7 +152,6 @@ function showNotification(message: string, type: "success" | "error" | "warning"
  * 包含拖拽、吸附、菜单展开、翻译控制、剪藏控制等核心逻辑
  */
 const floatButton = () => { // 悬浮按钮主组件
-  const { t } = useI18n();
   const [position, setPosition] = useState(INITIAL_POSITION);//悬浮按钮当前位置
   const [isDragging, setIsDragging] = useState(false);//是否正在拖拽
   const [isSnapping, setIsSnapping] = useState(false)//是否正在吸附动画中
@@ -196,8 +193,8 @@ const floatButton = () => { // 悬浮按钮主组件
     try {
       selectedTextRef.current = window.getSelection()?.toString().trim() || "" // 获取并修剪选中文本
     } catch (e) {
-      console.log("选取失败：", e);
-      showNotification(t("floatBtnNotificationCaptureSelectionFailed"), "warning")
+      console.log("选取失败：", e); // 错误日志
+      showNotification("⚠️ 抓取失败，请重新选择内容", "warning") // 用户提示
     }
   }
 
@@ -517,9 +514,6 @@ const floatButton = () => { // 悬浮按钮主组件
         meta: content?.metadata,
         images: content?.images
       }).then(() => {
-        // 通知其他页面刷新
-        chrome.runtime.sendMessage({ action: 'clips-updated' }).catch(() => {})
-        
         setLoading(false)
         setLoadingType(null)
         requestTypeRef.current = null
@@ -581,10 +575,6 @@ const floatButton = () => { // 悬浮按钮主组件
         meta: content?.metadata,
         images: content?.images
       })
-      
-      // 通知其他页面刷新
-      chrome.runtime.sendMessage({ action: 'clips-updated' }).catch(() => {})
-      
       setLoading(false)
       setLoadingType(null)
       const imgCount = content?.images?.length || 0
@@ -911,10 +901,6 @@ const floatButton = () => { // 悬浮按钮主组件
         meta: {},
         images
       })
-      
-      // 通知其他页面刷新
-      chrome.runtime.sendMessage({ action: 'clips-updated' }).catch(() => {})
-      
       setLoading(false)
       setLoadingType(null)
       const imgCount = images.length
@@ -1038,8 +1024,7 @@ const floatButton = () => { // 悬浮按钮主组件
                   offset={12}
                   content={
                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                      {/* 切换剪藏方式 */}
-                      <p>{t("floatBtnBookmarkToggleTooltip")}</p>
+                      <p>切换剪藏方式</p>
                     </div>
                   }
                 >
@@ -1060,13 +1045,12 @@ const floatButton = () => { // 悬浮按钮主组件
                   offset={12}
                   content={
                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                      {/** 整页剪藏  AI 整页剪藏  选中剪藏  AI 选中剪藏 */}
-                      <span>{({ 
-                        allPageSave: t("floatBtnSaveTypeAllPage"),
-                        allPageAISave: t("floatBtnSaveTypeAllPageAI"),
-                        selectSave: t("floatBtnSaveTypeSelect"),
-                        selectAISave: t("floatBtnSaveTypeSelectAI")
-                      } as Record<string, string>)[saveTypeTip] || t("floatBtnSaveTypeFull")}</span>
+                      <span>{({ // 动态显示当前保存模式名称
+                        allPageSave: "整页剪藏",
+                        allPageAISave: "AI整页剪藏",
+                        selectSave: "选中剪藏",
+                        selectAISave: "AI选中剪藏"
+                      } as Record<string, string>)[saveTypeTip] || "整页剪藏"}</span>
                     </div>
                   }
                 >
@@ -1107,8 +1091,7 @@ const floatButton = () => { // 悬浮按钮主组件
                   offset={12}
                   content={
                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                      {/** 翻译为： */}
-                      <span style={{ fontWeight: 600 }}>{t("floatBtnTranslateLanguageTooltip")}</span>
+                      <span style={{ fontWeight: 600 }}>翻译为：</span>
                       <span style={{ marginLeft: 4 }}>{languageLang}</span>
                     </div>
                   }
@@ -1123,8 +1106,7 @@ const floatButton = () => { // 悬浮按钮主组件
                   offset={8}
                   content={
                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                      {/** <span>{isTranslated ? '显示原文' : '翻译为：'}</span> */}
-                      <span>{isTranslated ? t("floatBtnShowOriginalTextTooltip") : t("floatBtnTranslateLanguageTooltip")}</span>
+                      <span>{isTranslated ? '显示原文' : '翻译为：'}</span>
                       {!isTranslated && (
                         <span style={{ marginLeft: 4 }}>{translateLang}</span>
                       )}
@@ -1146,8 +1128,7 @@ const floatButton = () => { // 悬浮按钮主组件
               className="absolute top-1/2 left-1/2 origin-center transition-all duration-300 ease-out delay-150"
               style={{ transform: getTransform('ai') }} // 应用位置变换
             >
-              {/** AI 对话 */}
-              <MenuButton icon={aiIcon} onClick={handleAI} tooltip={t("floatBtnAIChatTooltip")} isDark={isDark} />
+              <MenuButton icon={aiIcon} onClick={handleAI} tooltip='AI 对话' isDark={isDark} />
             </div>
           </div>
         </div>
@@ -1177,8 +1158,7 @@ const floatButton = () => { // 悬浮按钮主组件
         {loading && ( // 显示 loading 状态条
           <div className="absolute left-[48px] top-1/2 -translate-y-1/2 flex items-center gap-[4px] rounded-md bg-black/80 text-white px-[8px] py-[4px] text-[11px] shadow animate-fade-in">
             <div className="w-[12px] h-[12px] rounded-full border-2 border-white/60 border-t-transparent animate-spin"></div>
-            {/** <span>{loadingType === "full" || loadingType === "selection" ? "AI处理中…" : "保存中…"}</span> */}
-            <span>{loadingType === "full" || loadingType === "selection" ? t("floatBtnLoadingAIProcessing") : t("floatBtnLoadingSaving")}</span>
+            <span>{loadingType === "full" || loadingType === "selection" ? "AI处理中…" : "保存中…"}</span>
           </div>
         )}
       </div>
@@ -1189,16 +1169,12 @@ const floatButton = () => { // 悬浮按钮主组件
           className="absolute top-[24px] right-[20px] w-[180px] bg-gray-800 text-gray-200 rounded-[10px] shadow-xl py-[6px] z-[2147483647] text-[13px] leading-snug"
           onMouseDown={(e) => e.stopPropagation()}
         >
-          {/* 下面有修改（单位由默认的 rem 换算成了 px）：px-3 py-4 => px-[12px] py-[8px] */}
-          {/** 隐藏直到下次访问 */}
-          <div className="px-[12px] py-[8px] cursor-pointer hover:bg-white/5 transition-colors" onClick={handleHideOnce}>{t("floatBtnSettingsHideOnce")}</div>
-          {/** 在此网站禁用 */}
-          <div className="px-[12px] py-[8px] cursor-pointer hover:bg-white/5 transition-colors" onClick={handleDisableSite}>{t("floatBtnSettingsDisableSite")}</div>
-          {/** 全局禁用 */}
-          <div className="px-[12px] py-[8px] cursor-pointer hover:bg-white/5 transition-colors" onClick={handleDisableGlobal}>{t("floatBtnSettingsDisableGlobal")}</div>
+          {/* 此处有修改（单位由默认的 rem 换算成了 px）：px-3 py-4 => px-[12px] py-[8px] */}
+          <div className="px-[12px] py-[8px] cursor-pointer hover:bg-white/5 transition-colors" onClick={handleHideOnce}>隐藏直到下次访问</div>
+          <div className="px-[12px] py-[8px] cursor-pointer hover:bg-white/5 transition-colors" onClick={handleDisableSite}>在此网站禁用</div>
+          <div className="px-[12px] py-[8px] cursor-pointer hover:bg-white/5 transition-colors" onClick={handleDisableGlobal}>全局禁用</div>
           <div className="h-px bg-white/10 my-[6px] mx-[12px]"></div>
-          {/** 您可以在此处重新启用 设置 */}
-          <div className="px-[12px] py-[6px] text-gray-400 text-[12px]">{t("floatBtnSettingsReenableTip")}</div>
+          <div className="px-[12px] py-[6px] text-gray-400 text-[12px]">您可以在此处重新启用 设置</div>
         </div>
       )}
 

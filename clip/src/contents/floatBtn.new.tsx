@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react'; // 引入 React 核心 hooks
+import { useI18n } from '@/lib/use-i18n'; // 引入国际化支持 Hook
 import { Storage } from '@plasmohq/storage'; // 引入 Plasmo 存储库，用于持久化数据
 import styleText from "data-text:../style.css" // 引入全局样式文件
 import type { PlasmoGetShadowHostId } from "plasmo" // 引入 Plasmo 类型定义
@@ -152,6 +153,7 @@ function showNotification(message: string, type: "success" | "error" | "warning"
  * 包含拖拽、吸附、菜单展开、翻译控制、剪藏控制等核心逻辑
  */
 const floatButton = () => { // 悬浮按钮主组件
+  const { t } = useI18n();
   const [position, setPosition] = useState(INITIAL_POSITION);//悬浮按钮当前位置
   const [isDragging, setIsDragging] = useState(false);//是否正在拖拽
   const [isSnapping, setIsSnapping] = useState(false)//是否正在吸附动画中
@@ -193,8 +195,8 @@ const floatButton = () => { // 悬浮按钮主组件
     try {
       selectedTextRef.current = window.getSelection()?.toString().trim() || "" // 获取并修剪选中文本
     } catch (e) {
-      console.log("选取失败：", e); // 错误日志
-      showNotification("⚠️ 抓取失败，请重新选择内容", "warning") // 用户提示
+      console.log("选取失败：", e);
+      showNotification(t("floatBtnNotificationCaptureSelectionFailed"), "warning")
     }
   }
 
@@ -497,7 +499,8 @@ const floatButton = () => { // 悬浮按钮主组件
       if (!checkContext()) { // 检查上下文
         setLoading(false)
         setLoadingType(null)
-        showNotification("⚠️ 扩展已重载，请刷新页面", "warning")
+        // showNotification("⚠️ 扩展已重载，请刷新页面", "warning")
+        showNotification(t("floatBtnNotificationExtensionReloaded"), "warning")
         return
       }
       // 保存到 ClipStore
@@ -514,29 +517,37 @@ const floatButton = () => { // 悬浮按钮主组件
         meta: content?.metadata,
         images: content?.images
       }).then(() => {
+        // 通知其他页面刷新
+        chrome.runtime.sendMessage({ action: 'clips-updated' }).catch(() => {})
+        
         setLoading(false)
         setLoadingType(null)
         requestTypeRef.current = null
         const imgCount = content?.images?.length || 0
-        showNotification(`✅ 剪藏成功！${imgCount > 0 ? `（含${imgCount}张图片）` : ""}`, "success")
+        // showNotification(`✅ 剪藏成功！${imgCount > 0 ? `（含${imgCount}张图片）` : ""}`, "success")
+        const picNumInfo = t("floatBtnNotificationPictureContaining") + imgCount + t("floatBtnNotificationPictureCount")
+        showNotification(t("floatBtnNotificationClipSuccess") + (imgCount > 0 ? picNumInfo : ""), "success")
       }).catch((err) => {
         setLoading(false)
         setLoadingType(null)
-        showNotification("❌ 保存失败: " + err.message, "error")
+        // showNotification("❌ 保存失败: " + err.message, "error")
+        showNotification(t("floatBtnNotificationSaveFailed") + err.message, "error")
       })
     } else if (port.data.error) { // 接收错误
       loadingNotifyDismissRef.current?.()
       loadingNotifyDismissRef.current = null
       setLoading(false)
       setLoadingType(null)
-      showNotification("❌ AI 处理失败", "error")
+      // showNotification("❌ AI 处理失败", "error")
+      showNotification(t("floatBtnNotificationAIProcessFailed"), "error")
     }
   }, [port.data])
 
   //直接保存整页
   const handleSave = async () => {
     if (!checkContext()) {
-      showNotification("⚠️ 扩展已重载，请刷新页面", "warning")
+      // showNotification("⚠️ 扩展已重载，请刷新页面", "warning")
+      showNotification(t("floatBtnNotificationExtensionReloaded"), "warning")
       return
     }
     //检查当前网页是否保存过
@@ -549,13 +560,15 @@ const floatButton = () => { // 悬浮按钮主组件
           if (latest.some((c) => normalizeUrl(c.url) === contentUrlNorm)) { // 查重
             setLoading(false)
             setLoadingType(null)
-            showNotification("⚠️ 当前页面已保存", "warning")
+            // showNotification("⚠️ 当前页面已保存", "warning")
+            showNotification(t("floatBtnNotificationAlreadySaved"), "warning")
             return
           }
         }
       } catch (e) {
         console.log(e);
-        showNotification("❌ 检查剪藏失败:Error")
+        // showNotification("❌ 检查剪藏失败:Error")
+        showNotification(t("floatBtnNotificationCheckFailed") + e.message, "error")
         return
       }
       setLoading(true)
@@ -575,15 +588,22 @@ const floatButton = () => { // 悬浮按钮主组件
         meta: content?.metadata,
         images: content?.images
       })
+      
+      // 通知其他页面刷新
+      chrome.runtime.sendMessage({ action: 'clips-updated' }).catch(() => {})
+      
       setLoading(false)
       setLoadingType(null)
       const imgCount = content?.images?.length || 0
-      showNotification(`✅ 已直接保存整页！${imgCount > 0 ? `（含${imgCount}张图片）` : ""}`, "success")
+      //showNotification(`✅ 已直接保存整页！${imgCount > 0 ? `（含${imgCount}张图片）` : ""}`, "success")
+      const picNumInfo = t("floatBtnNotificationPictureContaining") + imgCount + t("floatBtnNotificationPictureCount")
+      showNotification(t("floatBtnNotificationAllPageSaveSuccess") + (imgCount > 0 ? picNumInfo : ""), "success")
     } catch (e) {
       console.error("❌ Direct save error:", e)
       setLoading(false)
       setLoadingType(null)
-      showNotification("❌ 保存失败", "error")
+      // showNotification("❌ 保存失败", "error")
+      showNotification(t("floatBtnNotificationSaveFailed") + e.message, "error")
     }
   }
 
@@ -612,7 +632,8 @@ const floatButton = () => { // 悬浮按钮主组件
   if (isTranslating) return;//若翻译已经启动则不翻译
   if (!isTranslated) { // 如果当前未翻译，则开始翻译
     setIsTranslating(true);
-    const dismiss = showNotification("正在翻译可视区域…", "loading");
+    // const dismiss = showNotification("正在翻译可视区域…", "loading");
+    const dismiss = showNotification(t("floatBtnNotificationTranslating"), "loading");
     loadingNotifyDismissRef.current = dismiss;
     /* LLM 诊断暂时禁用
     try { 
@@ -640,7 +661,8 @@ const floatButton = () => { // 悬浮按钮主组件
       } }, 600);
     chrome.runtime.sendMessage({ type: "TRANSLATE_PAGE", translateLang }, () => { clearTimeout(safety) });//发送翻译请求给 Content Script
   } else { // 如果当前已翻译，则恢复原文
-    const dismiss = showNotification("正在恢复原文…", "loading")
+    // const dismiss = showNotification("正在恢复原文…", "loading")
+    const dismiss = showNotification(t("floatBtnNotificationRestoringOriginal"), "loading")
     loadingNotifyDismissRef.current = dismiss;
     setIsTranslated(false);
     const restoreSafety = setTimeout(() => { // 兜底恢复
@@ -712,7 +734,8 @@ const floatButton = () => { // 悬浮按钮主组件
       if (href !== lastHrefRef.current) {
         lastHrefRef.current = href
         if (isTranslated && !isTranslating) { // 如果已翻译且不在翻译中
-          const dismiss = showNotification("正在恢复原文…", "loading")
+          // const dismiss = showNotification("正在恢复原文…", "loading")
+          const dismiss = showNotification(t("floatBtnNotificationRestoringOriginal"), "loading")
           loadingNotifyDismissRef.current = dismiss
           setIsTranslated(false) // 重置状态
           const restoreSafety = setTimeout(() => { // 兜底清理
@@ -754,7 +777,8 @@ const floatButton = () => { // 悬浮按钮主组件
         window.dispatchEvent(new CustomEvent('clip-send-to-chat', { detail: { text: sel } })) // 发送选中文本到聊天
       } catch (e) {
         console.log(e);
-        alert("悬浮窗打开失败");
+        // alert("悬浮窗打开失败");
+        alert(t("floatBtnFloatingWindowOpenFailed"))
       }
 
     } catch (e) {
@@ -765,7 +789,8 @@ const floatButton = () => { // 悬浮按钮主组件
       chrome.runtime.sendMessage({ type: "clip:show-float" }, () => {}) // 备用：通知后台
     } catch (e) {
       console.log(e);
-      alert("悬浮窗打开失败");
+      //alert("悬浮窗打开失败");
+      alert(t("floatBtnFloatingWindowOpenFailed"))
     }
   }
 
@@ -796,18 +821,21 @@ const floatButton = () => { // 悬浮按钮主组件
   //整页保存(AI)
   const handleAISaveFull = async () => {
     if (!checkContext()) {
-      showNotification("⚠️ 扩展已重载，请刷新页面", "warning")
+      //showNotification("⚠️ 扩展已重载，请刷新页面", "warning")
+      showNotification(t("floatBtnNotificationExtensionReloaded"), "warning")
       return
     }
     const key = await getOpenAIKeySafely() // 获取 API Key
     if (!key) {
-      showNotification("⚠️ 请先在设置中配置 API Key", "warning")
+      // showNotification("⚠️ 请先在设置中配置 API Key", "warning")
+      showNotification(t("floatBtnNotificationNoApiKey"), "warning")
       return
     }
     setLoading(true)
     setLoadingType("full")
     requestTypeRef.current = "full"
-    loadingNotifyDismissRef.current = showNotification("AI处理中…", "loading")
+    // loadingNotifyDismissRef.current = showNotification("AI处理中…", "loading")
+    loadingNotifyDismissRef.current = showNotification(t("floatBtnNotificationAIProcessing"), "loading")
     try {
       const content = await extractContent() // 提取整页内容
       extractedContentRef.current = content
@@ -824,7 +852,8 @@ const floatButton = () => { // 悬浮按钮主组件
       console.error("❌ Clip error:", e)
       setLoading(false)
       setLoadingType(null)
-      showNotification("❌ 剪藏失败", "error")
+      // showNotification("❌ 剪藏失败", "error")
+      showNotification(t("floatBtnNotificationClipFailed"), "error")
     }
   }
   // 剪藏选中内容（AI摘要）
@@ -832,22 +861,26 @@ const floatButton = () => { // 悬浮按钮主组件
     const liveText = window.getSelection()?.toString().trim()
     const selectedText = (selectedTextRef.current || liveText || "").trim()
     if (!selectedText || selectedText.length < 10) {
-      showNotification("⚠️ 请先选中一些文字（至少10个字符）", "warning")
+      //showNotification("⚠️ 请先选中一些文字（至少10个字符）", "warning")
+      showNotification(t("floatBtnNotificationSelectText"), "warning")
       return
     }
     if (!checkContext()) {
-      showNotification("⚠️ 扩展已重载，请刷新页面", "warning")
+      // showNotification("⚠️ 扩展已重载，请刷新页面", "warning")
+      showNotification(t("floatBtnNotificationExtensionReloaded"), "warning")
       return
     }
     const key = await getOpenAIKeySafely()
     if (!key) {
-      showNotification("⚠️ 请先在设置中配置 API Key", "warning")
+      // showNotification("⚠️ 请先在设置中配置 API Key", "warning")
+      showNotification(t("floatBtnNotificationNoApiKey"), "warning")
       return
     }
     setLoading(true)
     setLoadingType("selection")
     requestTypeRef.current = "selection"
-    loadingNotifyDismissRef.current = showNotification("AI处理中…", "loading")
+    // loadingNotifyDismissRef.current = showNotification("AI处理中…", "loading")
+    loadingNotifyDismissRef.current = showNotification(t("floatBtnNotificationAIProcessing"), "loading")
     try {
       const selectedContent = extractSelectedContent() // 提取选中内容
       extractedContentRef.current = {
@@ -868,7 +901,8 @@ const floatButton = () => { // 悬浮按钮主组件
       console.error("❌ Clip error:", e)
       setLoading(false)
       setLoadingType(null)
-      showNotification("❌ 剪藏失败", "error")
+      //showNotification("❌ 剪藏失败", "error")
+      showNotification(t("floatBtnNotificationClipFailed"), "error")
     }
   }
 
@@ -877,11 +911,13 @@ const floatButton = () => { // 悬浮按钮主组件
     const liveText = window.getSelection()?.toString().trim()
     const selectedText = (selectedTextRef.current || liveText || "").trim()
     if (!selectedText || selectedText.length < 10) {
-      showNotification("⚠️ 请先选中一些文字（至少10个字符）", "warning")
+      // showNotification("⚠️ 请先选中一些文字（至少10个字符）", "warning")
+      showNotification(t("floatBtnNotificationSelectText"), "warning")
       return
     }
     if (!checkContext()) {
-      showNotification("⚠️ 扩展已重载，请刷新页面", "warning")
+      // showNotification("⚠️ 扩展已重载，请刷新页面", "warning")
+      showNotification(t("floatBtnNotificationExtensionReloaded"), "warning")
       return
     }
     setLoading(true)
@@ -901,15 +937,22 @@ const floatButton = () => { // 悬浮按钮主组件
         meta: {},
         images
       })
+      
+      // 通知其他页面刷新
+      chrome.runtime.sendMessage({ action: 'clips-updated' }).catch(() => {})
+      
       setLoading(false)
       setLoadingType(null)
       const imgCount = images.length
-      showNotification(`✅ 已直接保存选中内容！${imgCount > 0 ? `（含${imgCount}张图片）` : ""}`, "success")
+      // showNotification(`✅ 已直接保存选中内容！${imgCount > 0 ? `（含${imgCount}张图片）` : ""}`, "success")
+      const imgCountInfo = t("floatBtnNotificationPictureContaining") + imgCount + t("floatBtnNotificationPictureCount")
+      showNotification(t("floatBtnNotificationSelectionSaveSuccess") + (imgCount > 0 ? imgCountInfo : ""), "success")
     } catch (e) {
       console.error("❌ Direct save error:", e)
       setLoading(false)
       setLoadingType(null)
-      showNotification("❌ 保存失败", "error")
+      // showNotification("❌ 保存失败", "error")
+      showNotification(t("floatBtnNotificationSaveFailed"), "error")
     }
   }
 
@@ -1024,7 +1067,8 @@ const floatButton = () => { // 悬浮按钮主组件
                   offset={12}
                   content={
                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <p>切换剪藏方式</p>
+                      {/* 切换剪藏方式 */}
+                      <p>{t("floatBtnBookmarkToggleTooltip")}</p>
                     </div>
                   }
                 >
@@ -1045,12 +1089,13 @@ const floatButton = () => { // 悬浮按钮主组件
                   offset={12}
                   content={
                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <span>{({ // 动态显示当前保存模式名称
-                        allPageSave: "整页剪藏",
-                        allPageAISave: "AI整页剪藏",
-                        selectSave: "选中剪藏",
-                        selectAISave: "AI选中剪藏"
-                      } as Record<string, string>)[saveTypeTip] || "整页剪藏"}</span>
+                      {/** 整页剪藏  AI 整页剪藏  选中剪藏  AI 选中剪藏 */}
+                      <span>{({ 
+                        allPageSave: t("floatBtnSaveTypeAllPage"),
+                        allPageAISave: t("floatBtnSaveTypeAllPageAI"),
+                        selectSave: t("floatBtnSaveTypeSelect"),
+                        selectAISave: t("floatBtnSaveTypeSelectAI")
+                      } as Record<string, string>)[saveTypeTip] || t("floatBtnSaveTypeFull")}</span>
                     </div>
                   }
                 >
@@ -1091,7 +1136,8 @@ const floatButton = () => { // 悬浮按钮主组件
                   offset={12}
                   content={
                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <span style={{ fontWeight: 600 }}>翻译为：</span>
+                      {/** 翻译为： */}
+                      <span style={{ fontWeight: 600 }}>{t("floatBtnTranslateLanguageTooltip")}</span>
                       <span style={{ marginLeft: 4 }}>{languageLang}</span>
                     </div>
                   }
@@ -1106,7 +1152,8 @@ const floatButton = () => { // 悬浮按钮主组件
                   offset={8}
                   content={
                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <span>{isTranslated ? '显示原文' : '翻译为：'}</span>
+                      {/** <span>{isTranslated ? '显示原文' : '翻译为：'}</span> */}
+                      <span>{isTranslated ? t("floatBtnShowOriginalTextTooltip") : t("floatBtnTranslateLanguageTooltip")}</span>
                       {!isTranslated && (
                         <span style={{ marginLeft: 4 }}>{translateLang}</span>
                       )}
@@ -1128,7 +1175,8 @@ const floatButton = () => { // 悬浮按钮主组件
               className="absolute top-1/2 left-1/2 origin-center transition-all duration-300 ease-out delay-150"
               style={{ transform: getTransform('ai') }} // 应用位置变换
             >
-              <MenuButton icon={aiIcon} onClick={handleAI} tooltip='AI 对话' isDark={isDark} />
+              {/** AI 对话 */}
+              <MenuButton icon={aiIcon} onClick={handleAI} tooltip={t("floatBtnAIChatTooltip")} isDark={isDark} />
             </div>
           </div>
         </div>
@@ -1158,7 +1206,8 @@ const floatButton = () => { // 悬浮按钮主组件
         {loading && ( // 显示 loading 状态条
           <div className="absolute left-[48px] top-1/2 -translate-y-1/2 flex items-center gap-[4px] rounded-md bg-black/80 text-white px-[8px] py-[4px] text-[11px] shadow animate-fade-in">
             <div className="w-[12px] h-[12px] rounded-full border-2 border-white/60 border-t-transparent animate-spin"></div>
-            <span>{loadingType === "full" || loadingType === "selection" ? "AI处理中…" : "保存中…"}</span>
+            {/** <span>{loadingType === "full" || loadingType === "selection" ? "AI处理中…" : "保存中…"}</span> */}
+            <span>{loadingType === "full" || loadingType === "selection" ? t("floatBtnLoadingAIProcessing") : t("floatBtnLoadingSaving")}</span>
           </div>
         )}
       </div>
@@ -1169,12 +1218,16 @@ const floatButton = () => { // 悬浮按钮主组件
           className="absolute top-[24px] right-[20px] w-[180px] bg-gray-800 text-gray-200 rounded-[10px] shadow-xl py-[6px] z-[2147483647] text-[13px] leading-snug"
           onMouseDown={(e) => e.stopPropagation()}
         >
-          {/* 此处有修改（单位由默认的 rem 换算成了 px）：px-3 py-4 => px-[12px] py-[8px] */}
-          <div className="px-[12px] py-[8px] cursor-pointer hover:bg-white/5 transition-colors" onClick={handleHideOnce}>隐藏直到下次访问</div>
-          <div className="px-[12px] py-[8px] cursor-pointer hover:bg-white/5 transition-colors" onClick={handleDisableSite}>在此网站禁用</div>
-          <div className="px-[12px] py-[8px] cursor-pointer hover:bg-white/5 transition-colors" onClick={handleDisableGlobal}>全局禁用</div>
+          {/* 下面有修改（单位由默认的 rem 换算成了 px）：px-3 py-4 => px-[12px] py-[8px] */}
+          {/** 隐藏直到下次访问 */}
+          <div className="px-[12px] py-[8px] cursor-pointer hover:bg-white/5 transition-colors" onClick={handleHideOnce}>{t("floatBtnSettingsHideOnce")}</div>
+          {/** 在此网站禁用 */}
+          <div className="px-[12px] py-[8px] cursor-pointer hover:bg-white/5 transition-colors" onClick={handleDisableSite}>{t("floatBtnSettingsDisableSite")}</div>
+          {/** 全局禁用 */}
+          <div className="px-[12px] py-[8px] cursor-pointer hover:bg-white/5 transition-colors" onClick={handleDisableGlobal}>{t("floatBtnSettingsDisableGlobal")}</div>
           <div className="h-px bg-white/10 my-[6px] mx-[12px]"></div>
-          <div className="px-[12px] py-[6px] text-gray-400 text-[12px]">您可以在此处重新启用 设置</div>
+          {/** 您可以在此处重新启用 设置 */}
+          <div className="px-[12px] py-[6px] text-gray-400 text-[12px]">{t("floatBtnSettingsReenableTip")}</div>
         </div>
       )}
 
