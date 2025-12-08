@@ -1287,7 +1287,7 @@ function HistoryLayout() {
           {selectedClip ? (
             <div className="flex flex-col h-full">
               {/* Header with glass effect */}
-              <div className={`p-6 border-b ${t.borderColor} relative overflow-hidden`}>
+              <div className={`p-6 border-b ${t.borderColor} relative overflow-visible`}>
                 {/* Gradient background */}
                 <div className={`absolute inset-0 bg-gradient-to-r ${t.gradientAccent}`} />
                 
@@ -1357,7 +1357,7 @@ function HistoryLayout() {
 
                     <div
                       ref={exportMenuRef}
-                      className="relative flex justify-center items-center"
+                      className="relative flex justify-center items-center z-index:2147483640"
                       onMouseEnter={handleMenuMouseEnter}
                       onMouseLeave={handleMenuMouseLeave}
                     >
@@ -1372,27 +1372,27 @@ function HistoryLayout() {
                       {isExportMenuOpen && (
                         <div
                           onClick={(e) => e.stopPropagation()}
-                          className={`absolute right-0 top-full mt-1 w-40 p-1 rounded-lg shadow-lg border ${t.borderColor} ${t.sidebarBg} z-10`}
+                          className={`absolute right-0 top-full mt-1 w-44 p-2 rounded-lg shadow-lg border ${t.borderColor} ${t.sidebarBg} z-50`}
                         >
                           <button
                             onClick={(e) => { e.stopPropagation(); handleExportToFeishu(selectedClip) }}
                             disabled={exportingId === selectedClip.id || selectedClip.syncedToFeishu}
-                            className={`flex items-center gap-2 w-full text-xs font-medium px-2 py-1 rounded-md transition-all ${t.inputBg} ${t.textDim} hover:bg-indigo-500/20 hover:text-indigo-300 ${exportingId === selectedClip.id || selectedClip.syncedToFeishu ? 'opacity-70 cursor-not-allowed' : ''}`}
+                            className={`flex items-center gap-2 w-full text-sm font-medium px-4 py-2 rounded-md transition-all ${t.inputBg} ${t.textDim} hover:bg-indigo-500/20 hover:text-indigo-300 ${exportingId === selectedClip.id || selectedClip.syncedToFeishu ? 'opacity-70 cursor-not-allowed' : ''}`}
                           >
                             {exportingId === selectedClip.id ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              <Loader2 className="h-4 w-4 animate-spin" />
                             ) : selectedClip.syncedToFeishu ? (
-                              <Check className="h-3.5 w-3.5" />
+                              <Check className="h-4 w-4" />
                             ) : (
-                              <Share className="h-3.5 w-3.5" />
+                              <Share className="h-4 w-4" />
                             )}
                             <span>{selectedClip.syncedToFeishu ? '已同步' : exportingId === selectedClip.id ? '同步中…' : '同步飞书'}</span>
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); handleExportToCSV() }}
-                            className={`flex items-center gap-2 w-full text-xs font-medium px-2 py-1 rounded-md transition-all ${t.inputBg} ${t.textDim} hover:bg-indigo-500/20 hover:text-indigo-300`}
+                            className={`flex items-center gap-2 w-full text-sm font-medium px-4 py-2 rounded-md transition-all ${t.inputBg} ${t.textDim} hover:bg-indigo-500/20 hover:text-indigo-300`}
                           >
-                            <FileText className="h-3.5 w-3.5" />
+                            <FileText className="h-4 w-4" />
                             <span>导出为CSV</span>
                           </button>
                         </div>
