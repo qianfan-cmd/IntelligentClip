@@ -51,12 +51,16 @@ export default function ChatList({ className, theme, onRequestFocusPrompt }: Cha
   const hasMessages = chatMessages && chatMessages.length > 0
 
   return (
-    <div data-theme={theme} className={cn("flex-1 overflow-hidden", className)}>
+    <div data-theme={theme} className={cn("flex-1 min-h-0", className)}>
       {!hasMessages ? (
-        // 空态时展示预设问题示例。点击示例：
-        // 1) 通过 setPromptInput 设定输入框内容
-        // 2) 通过 onRequestFocusPrompt 请求父组件让输入框获取焦点
-        <EmptyScreen setPromptInput={setChatPrompt} onRequestFocusPrompt={onRequestFocusPrompt} />
+        // 空态场景也使用滚动容器，避免在小屏幕下被底部输入框遮挡
+        <div
+          ref={scrollContainerRef}
+          className="h-full overflow-y-auto custom-scrollbar px-4 py-4"
+        >
+          {/* 为空态预设增加底部留白（在 EmptyScreen 中），确保在小屏幕下不会被输入框覆盖 */}
+          <EmptyScreen setPromptInput={setChatPrompt} onRequestFocusPrompt={onRequestFocusPrompt} />
+        </div>
       ) : (
         <div
           ref={scrollContainerRef}

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { useExtension } from "@/contexts/extension-context"
 import { cn } from "@/lib/utils"
 import { MessageCircle, ArrowRight, WifiOff } from "lucide-react"
-import { useState } from "react"
+
 // 预设问题示例 - 使用通用表述，适用于各类剪藏内容（网页、视频、文章等）
 const exampleMessages = [
   {
@@ -59,7 +59,9 @@ export default function EmptyScreen({ className, setPromptInput, onRequestFocusP
   }
 
   return (
-    <div className={cn("flex flex-col h-full px-4 py-6", className)}>
+    // 小屏幕下为避免底部输入框遮挡，增加较大的底部内边距；
+    // 高于 md 断点时收缩底部内边距
+    <div className={cn("flex flex-col h-full px-4 py-6 pb-24 md:pb-10", className)}>
       {/* 顶部欢迎区域 */}
       <div className="flex flex-col items-center text-center mb-6">
         <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 flex items-center justify-center mb-4 shadow-sm">
