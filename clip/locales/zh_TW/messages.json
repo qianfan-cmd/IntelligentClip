@@ -287,7 +287,159 @@
   "saveTypeChangeSelectAIClip": {
     "message": "AI選中剪藏",
     "description": "AI选中剪藏选项"
-  }
+  },
 
   
+  "sidebarFloatPanelErrorBoundaryMessage": {
+    "message": "出現了一些問題",
+    "description": "错误边界组件的错误提示"
+  },
+  "sidebarFloatPanelErrorBoundaryUnknownError": {
+    "message": "未知錯誤",
+    "description": "未知错误提示"
+  },
+  "sidebarFloatPanelErrorBoundaryRetry": {
+    "message": "重試",
+    "description": "错误边界组件的重试"
+  },
+  "sidebarFloatPanelInitialTitle": {
+    "message": "剪藏",
+    "description": "侧边栏初始标题"
+  },
+  "sidebarFloatPanelNotificationSaveFullPage": {
+    "message": "已直接保存整頁！",
+    "description": "侧边栏通知标题"
+  },
+  "sidebarFloatPanelNotificationPictureContaining": {
+    "message": "包含",
+    "description": "用于说明图片的数量"
+  },
+  "sidebarFloatPanelNotificationPictureCount": {
+    "message": "張圖片",
+    "description": "图片数量的单位"
+  },
+  "sidebarFloatPanelNotificationSaveFailed": {
+    "message": "保存失敗",
+    "description": "保存失败的通知信息"
+  },
+  "sidebarFloatPanelNotificationPageAlreadySaved": {
+    "message": "當前頁面已保存過",
+    "description": "页面已保存的通知信息"
+  },
+  "sidebarFloatPanelSearchLabel": {
+    "message": "搜索",
+    "description": "搜索标签"
+  },
+  "sidebarFloatPanelSearchPlaceholder": {
+    "message": "搜索剪藏...",
+    "description": "搜索框的占位符"
+  },
+  "sidebarFloatPanelNoClips": {
+    "message": "暫無剪藏",
+    "description": "没有剪藏时的提示"
+  },
+  "sidebarFloatPanelRecentClips": {
+    "message": "最近剪藏",
+    "description": "最近剪藏的标签"
+  },
+  "sidebarFloatPanelClearChat": {
+    "message": "清空對話",
+    "description": "清空对话按钮的标题"
+  },
+  "sidebarFloatPanelAIAssistantTitle": {
+    "message": "AI 助手",
+    "description": "AI助手标题"
+  },
+  "sidebarFloatPanelAIAssistantReadyText": {
+    "message": "隨時為您解答問題",
+    "description": "AI助手就绪提示"
+  },
+  "sidebarFloatPanelAISummaryPrompt": {
+    "message": "幫我總結這個頁面",
+    "description": "AI总结页面的快速提示"
+  },
+  "sidebarFloatPanelAIExplainPrompt": {
+    "message": "解釋一下這段內容",
+    "description": "AI解释内容的快速提示"
+  },
+  "sidebarFloatPanelAISuggestPrompt": {
+    "message": "有什麼建議?",
+    "description": "AI建议的快速提示"
+  },
+  "sidebarFloatPanelAIChatInputPlaceholder": {
+    "message": "輸入消息... (Enter 發送)",
+    "description": "AI助手聊天框的占位符"
+  },
+  "sidebarFloatPanelFooterSaveButton": {
+    "message": "保存",
+    "description": "保存按钮的标题"
+  },
+  "sidebarFloatPanelFooterChatButton": {
+    "message": "對話",
+    "description": "对话按钮的提示"
+  },
+  "sidebarFloatPanelFooterYoutubeButton": {
+    "message": "YouTube",
+    "description": "Youtube 按钮的提示"
+  },
+  "sidebarFloatPanelFooterScreenshotButton": {
+    "message": "截圖",
+    "description": "截图按钮的提示"
+  },
+  "sidebarFloatPanelFooterClipsButton": {
+    "message": "剪藏",
+    "description": "剪藏按钮的提示"
+  },
+  "sidebarFloatPanelFooterSettingsButton": {
+    "message": "設置",
+    "description": "设置按钮的提示"
+  },
+  "sidebarFloatPanelHeaderOpenHomepageHint": {
+    "message": "打開主頁",
+    "description": "打开主页按钮的提示"
+  },
+  "sidebarFloatPanelHeaderWorkspaceLabel": {
+    "message": "工作區",
+    "description": "侧边栏工作区标签"
+  },
+  "sidebarFloatPanelHeaderFeedbackHint": {
+    "message": "反饋",
+    "description": "反馈按钮的提示"
+  },
+  "sidebarFloatPanelHeaderLightModeHint": {
+    "message": "淺色模式",
+    "description": "浅色模式按钮的提示"
+  },
+  "sidebarFloatPanelHeaderDarkModeHint": {
+    "message": "深色模式",
+    "description": "深色模式按钮的提示"
+  },
+  "sidebarFloatPanelHeaderHelpHint": {
+    "message": "幫助",
+    "description": "帮助按钮的提示"
+  },
+  "sidebarFloatPanelHeaderRefreshHint": {
+    "message": "刷新",
+    "description": "刷新按钮的提示"
+  },
+  "sidebarFloatPanelHeaderCloseHint": {
+    "message": "關閉",
+    "description": "关闭按钮的提示"
+  },
+  "sidebarFloatPanelApiConfigLoading": {
+    "message": "⏳ 正在加載 API 配置，請稍候...",
+    "description": "API配置加载中的提示"
+  },
+  "sidebarFloatPanelApiKeyNotSet": {
+    "message": "❌ API 密鑰未設置，請在擴展設置中添加您的 API 密鑰。",
+    "description": "API密钥未设置的提示"
+  },
+  "sidebarFloatPanelAIError": {
+    "message": "❌ 錯誤:",
+    "description": "AI错误提示"
+  },
+  "sidebarFloatPanelSendFailed": {
+    "message": "❌ 發送失敗:",
+    "description": "发送失败提示"
+  }
 }

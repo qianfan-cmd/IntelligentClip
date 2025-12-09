@@ -212,11 +212,11 @@
     "description": "Floating button - notification for successful clipping"
   },
   "floatBtnNotificationPictureContaining": {
-    "message": "containing",
+    "message": "containing ",
     "description": "For indicating the number of images"
   },
   "floatBtnNotificationPictureCount": {
-    "message": "images",
+    "message": " images",
     "description": "Unit for image count"
   },
   "floatBtnNotificationSaveFailed": {
@@ -292,7 +292,159 @@
   "saveTypeChangeSelectAIClip": {
     "message": "AI Clip Selection",
     "description": "AI clip selection option"
-  }
+  },
 
-  
+
+  "sidebarFloatPanelErrorBoundaryMessage": {
+    "message": "Something went wrong",
+    "description": "错误边界组件的错误提示"
+  },
+  "sidebarFloatPanelErrorBoundaryUnknownError": {
+    "message": "Unknown error",
+    "description": "未知错误提示"
+  },
+  "sidebarFloatPanelErrorBoundaryRetry": {
+    "message": "Retry",
+    "description": "错误边界组件的重试"
+  },
+  "sidebarFloatPanelInitialTitle": {
+    "message": "Clip",
+    "description": "侧边栏初始标题"
+  },
+  "sidebarFloatPanelNotificationSaveFullPage": {
+    "message": "Successfully saved the entire page!",
+    "description": "侧边栏通知标题"
+  },
+  "sidebarFloatPanelNotificationPictureContaining": {
+    "message": "containing ",
+    "description": "用于说明图片的数量"
+  },
+  "sidebarFloatPanelNotificationPictureCount": {
+    "message": " images",
+    "description": "图片数量的单位"
+  },
+  "sidebarFloatPanelNotificationSaveFailed": {
+    "message": "Save failed",
+    "description": "保存失败的通知信息"
+  },
+  "sidebarFloatPanelNotificationPageAlreadySaved": {
+    "message": "This page has already been saved",
+    "description": "页面已保存的通知信息"
+  },
+  "sidebarFloatPanelSearchLabel": {
+    "message": "Search",
+    "description": "搜索标签"
+  },
+  "sidebarFloatPanelSearchPlaceholder": {
+    "message": "Search clips...",
+    "description": "搜索框的占位符"
+  },
+  "sidebarFloatPanelNoClips": {
+    "message": "No clips yet",
+    "description": "没有剪藏时的提示"
+  },
+  "sidebarFloatPanelRecentClips": {
+    "message": "Recent clips",
+    "description": "最近剪藏的标签"
+  },
+  "sidebarFloatPanelClearChat": {
+    "message": "Clear chat",
+    "description": "清空对话按钮的标题"
+  },
+  "sidebarFloatPanelAIAssistantTitle": {
+    "message": "AI Assistant",
+    "description": "AI助手标题"
+  },
+  "sidebarFloatPanelAIAssistantReadyText": {
+    "message": "Ready to answer your questions",
+    "description": "AI助手就绪提示"
+  },
+  "sidebarFloatPanelAISummaryPrompt": {
+    "message": "Help me summarize this page",
+    "description": "AI总结页面的快速提示"
+  },
+  "sidebarFloatPanelAIExplainPrompt": {
+    "message": "Explain this content",
+    "description": "AI解释内容的快速提示"
+  },
+  "sidebarFloatPanelAISuggestPrompt": {
+    "message": "Any suggestions?",
+    "description": "AI建议的快速提示"
+  },
+  "sidebarFloatPanelAIChatInputPlaceholder": {
+    "message": "Enter message... (Enter to send)",
+    "description": "AI助手聊天框的占位符"
+  },
+  "sidebarFloatPanelFooterSaveButton": {
+    "message": "Save",
+    "description": "保存按钮的标题"
+  },
+  "sidebarFloatPanelFooterChatButton": {
+    "message": "Chat",
+    "description": "对话按钮的提示"
+  },
+  "sidebarFloatPanelFooterYoutubeButton": {
+    "message": "YouTube",
+    "description": "Youtube 按钮的提示"
+  },
+  "sidebarFloatPanelFooterScreenshotButton": {
+    "message": "Screenshot",
+    "description": "截图按钮的提示"
+  },
+  "sidebarFloatPanelFooterClipsButton": {
+    "message": "Clips",
+    "description": "剪藏按钮的提示"
+  },
+  "sidebarFloatPanelFooterSettingsButton": {
+    "message": "Settings",
+    "description": "设置按钮的提示"
+  },
+  "sidebarFloatPanelHeaderOpenHomepageHint": {
+    "message": "Open homepage",
+    "description": "打开主页按钮的提示"
+  },
+  "sidebarFloatPanelHeaderWorkspaceLabel": {
+    "message": "Workspace",
+    "description": "侧边栏工作区标签"
+  },
+  "sidebarFloatPanelHeaderFeedbackHint": {
+    "message": "Feedback",
+    "description": "反馈按钮的提示"
+  },
+  "sidebarFloatPanelHeaderLightModeHint": {
+    "message": "Light mode",
+    "description": "浅色模式按钮的提示"
+  },
+  "sidebarFloatPanelHeaderDarkModeHint": {
+    "message": "Dark mode",
+    "description": "深色模式按钮的提示"
+  },
+  "sidebarFloatPanelHeaderHelpHint": {
+    "message": "Help",
+    "description": "帮助按钮的提示"
+  },
+  "sidebarFloatPanelHeaderRefreshHint": {
+    "message": "Refresh",
+    "description": "刷新按钮的提示"
+  },
+  "sidebarFloatPanelHeaderCloseHint": {
+    "message": "Close",
+    "description": "关闭按钮的提示"
+  },
+  "sidebarFloatPanelApiConfigLoading": {
+    "message": "⏳ Loading API configuration, please wait...",
+    "description": "API配置加载中的提示"
+  },
+  "sidebarFloatPanelApiKeyNotSet": {
+    "message": "❌ API key not set. Please add your API key in the extension settings.",
+    "description": "API密钥未设置的提示"
+  },
+  "sidebarFloatPanelAIError": {
+    "message": "❌ Error:",
+    "description": "AI错误提示"
+  },
+  "sidebarFloatPanelSendFailed": {
+    "message": "❌ Send failed:",
+    "description": "发送失败提示"
+  }
 }
