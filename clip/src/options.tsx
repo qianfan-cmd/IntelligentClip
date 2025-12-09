@@ -6,6 +6,7 @@ import { useApiConfig } from "@/lib/api-config-store"
 import { useI18n } from "@/lib/use-i18n"
 import { Save, AlertTriangle, Loader2, CheckCircle } from "lucide-react"
 import { useState, useEffect, useCallback } from "react"
+import {FiHelpCircle} from "react-icons/fi"
 import "./style.css"
 
 function OptionsPanel() {
@@ -81,12 +82,24 @@ function OptionsPanel() {
           <div>
             {/* ⚙️ Extension Settings */}
             <h1 className="text-3xl font-bold mb-2">⚙️ {t("optionsExtensionSettingsTitle")}</h1>
-            <p className="text-gray-500 dark:text-gray-400">
+            <p className="text-gray-500 dark:text-gray-400 flex items-center justify-center">
               {/* Configure your API keys and integration settings. */}
               {t("optionsSettingsDescription")}
+               <button
+                      className={`rounded-lg transition-colors `}
+                      onClick={() =>
+                        window.open(
+                          "https://gitee.com/qyf150128/clip-plugin",
+                          "_blank",
+                          "noopener,noreferrer"
+                        )
+                      }
+                      title="Help">
+                      <FiHelpCircle className="w-3 h-3" />
+                    </button>
             </p>
           </div>
-          
+                   
           {/* 语言选择下拉菜单 */}
           <div className="flex items-center gap-2">
             <label htmlFor="language-select" className="text-sm font-medium text-gray-700 dark:text-gray-300">
