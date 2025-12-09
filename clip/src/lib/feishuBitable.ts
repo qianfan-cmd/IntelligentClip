@@ -171,7 +171,9 @@ async function createField(
     },
     body: JSON.stringify({
       field_name: fieldName,
-      type: fieldType
+      type: fieldType,
+      // 日期字段：设置显示格式为包含时间（官方属性为 date_formatter）
+      property: fieldType === 5 ? { date_formatter: "yyyy-MM-dd HH:mm" } : undefined
     })
   })
 
@@ -222,6 +224,16 @@ async function ensureRequiredFields(
   }
 
   console.log("✅ 字段创建完成")
+
+  // 若已有“创建时间”字段，确保其属性包含时间
+  try {
+    const createdAtField = existingFields.find(f => f.field_name === "创建时间")
+    if (createdAtField) {
+      await updateDateFieldFormatter(appToken, tableId, tenantAccessToken, createdAtField.field_id)
+    }
+  } catch (e) {
+    console.warn("⚠️ 更新日期字段属性失败:", e)
+  }
 }
 
 /**
@@ -252,15 +264,8 @@ function buildRecordFields(
   addIfExists("summary", clip.summary)
   addIfExists("fullText", clip.rawTextFull || clip.rawTextSnippet)
   addIfExists("source", clip.source)
-  // 转换为可读的日期字符串格式（兼容文本字段和日期字段）
-  addIfExists("createdAt", new Date(clip.createdAt).toLocaleString("zh-CN", {
-    year: "numeric",
-    month: "2-digit", 
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit"
-  }))
+  // 日期字段：飞书多维表格的日期类型字段要求传入时间戳（毫秒）
+  addIfExists("createdAt", clip.createdAt)
   addIfExists("tags", clip.tags?.join(", ") || "")
   addIfExists("keyPoints", clip.keyPoints?.join("\n") || "")
 
@@ -286,6 +291,32 @@ function buildRecordFields(
     }
   }
   return record
+}
+
+/**
+ * 将日期字段更新为“包含时间”显示
+ */
+async function updateDateFieldFormatter(
+  appToken: string,
+  tableId: string,
+  tenantAccessToken: string,
+  fieldId: string
+): Promise<void> {
+  const url = `https://open.feishu.cn/open-apis/bitable/v1/apps/${appToken}/tables/${tableId}/fields/${fieldId}`
+  const response = await fetch(url, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${tenantAccessToken}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      property: { date_formatter: "yyyy-MM-dd HH:mm" }
+    })
+  })
+  const data = await response.json()
+  if (data.code !== 0) {
+    throw new Error("更新日期字段属性失败: " + (data.msg || "未知错误"))
+  }
 }
 
 /**
@@ -353,7 +384,7 @@ export async function createRecordFromClip(clip: Clip): Promise<string> {
       Summary: clip.summary,
       "Full Text": clip.rawTextFull || clip.rawTextSnippet,
       Source: clip.source,
-      "Created At": new Date(clip.createdAt).toISOString(),
+      "Created At": clip.createdAt,
       Tags: clip.tags?.join(", ") || "",
       "Key Points": clip.keyPoints?.join("\n") || ""
     }
