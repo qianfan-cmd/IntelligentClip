@@ -40,7 +40,6 @@ import { RiMagicLine, RiMessage2Line, RiRobot2Line } from "react-icons/ri"
 import { VscFileCode } from "react-icons/vsc"
 
 import { usePort } from "@plasmohq/messaging/hook"
-import { useContentScriptI18n } from "@/lib/use-content-script-i18n"
 
 import { Button } from "../components"
 
@@ -106,7 +105,6 @@ export const getStyle = () => {
 interface ErrorBoundaryProps {
   children: ReactNode
   onReset?: () => void
-  t?: (key: string, options?: any) => string
 }
 
 interface ErrorBoundaryState {
@@ -141,17 +139,14 @@ class PanelErrorBoundary extends Component<
     if (this.state.hasError) {
       return (
         <div className="p-6 text-center">
-          {/* <p className="text-red-500 font-medium mb-2">出现了一些问题</p> */}
-          <p className="text-red-500 font-medium mb-2">{this.props.t?.("sidebarFloatPanelErrorBoundaryMessage") || "出现了一些问题"}</p>
+          <p className="text-red-500 font-medium mb-2">出现了一些问题</p>
           <p className="text-slate-500 text-sm mb-4">
-            {/** {this.state.error?.message || "未知错误"} */}
-            {this.state.error?.message || this.props.t?.("sidebarFloatPanelErrorBoundaryUnknownError") || "未知错误"}
+            {this.state.error?.message || "未知错误"}
           </p>
           <button
             onClick={this.handleReset}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
-            {/** 重试 */}
-            {this.props.t?.("sidebarFloatPanelErrorBoundaryRetry") || "重试"}
+            重试
           </button>
         </div>
       )
@@ -169,9 +164,7 @@ function PanelContent({
   onRefresh: () => void
   initialChatText?: string
 }) {
-  const { t } = useContentScriptI18n()
-  // const [title, setTitle] = useState("Clip")
-  const [title, setTitle] = useState(t("sidebarFloatPanelInitialTitle"))
+  const [title, setTitle] = useState("Clip")
   const [searchValue, setSearchValue] = useState("")
   const [clips, setClips] = useState<Clip[]>([])
   const [notification, setNotification] = useState<{
@@ -414,7 +407,7 @@ function PanelContent({
           newMessages[newMessages.length - 1].role === "assistant"
         ) {
           newMessages[newMessages.length - 1].content =
-            `${t("sidebarFloatPanelAIError")} ${port.data.error}`
+            `❌ 错误: ${port.data.error}`
         }
         return newMessages
       })
@@ -448,24 +441,22 @@ function PanelContent({
 
       // 【修复】正确区分"加载中"和"真正未设置"
       if (isApiKeyLoading) {
-        // { role: "assistant", content: "⏳ 正在加载 API 配置，请稍候..." }
         setChatMessages((prev) => [
           ...prev,
           { role: "user", content: trimmedInput },
-          { role: "assistant", content: t("sidebarFloatPanelApiConfigLoading") }
+          { role: "assistant", content: "⏳ 正在加载 API 配置，请稍候..." }
         ])
         setInputValue("")
         return
       }
 
       if (!openAIKey || openAIKey.trim() === "") {
-        // { role: "assistant", content: "❌ API 密钥未设置，请在扩展设置中添加您的 API 密钥。" }
         setChatMessages((prev) => [
           ...prev,
           { role: "user", content: trimmedInput },
           {
             role: "assistant",
-            content: t("sidebarFloatPanelApiKeyNotSet")
+            content: "❌ API 密钥未设置，请在扩展设置中添加您的 API 密钥。"
           }
         ])
         setInputValue("")
@@ -539,7 +530,7 @@ function PanelContent({
             newMsgs[newMsgs.length - 1].role === "assistant"
           ) {
             newMsgs[newMsgs.length - 1].content =
-              `${t("sidebarFloatPanelSendFailed")} ${sendErr instanceof Error ? sendErr.message : String(sendErr)}`
+              `❌ 发送失败: ${sendErr instanceof Error ? sendErr.message : String(sendErr)}`
           }
           return newMsgs
         })
@@ -697,23 +688,13 @@ function PanelContent({
     try {
       const content = await extractContent()
 
-      // 检查文本长度并提醒用户
-      const textLength = content?.text?.length || 0
-      if (textLength >= 60000) {
-        setNotification({
-          message: `⚠️ 原文过长，已自动截断到 60k 字符（原文约 ${Math.floor(textLength / 1000)}k 字）`,
-          type: "warning"
-        })
-      }
-
       // 检查当前页面是否已保存过
       const contentUrlNorm = content?.url ? normalizeUrl(content.url) : normalizeUrl(window.location.href)
       if (contentUrlNorm) {
         const latest = await ClipStore.getAll()
         if (latest.some((c) => normalizeUrl(c.url) === contentUrlNorm)) {
-          // message: "当前页面已保存过",
           setNotification({
-            message: t("sidebarFloatPanelNotificationPageAlreadySaved"),
+            message: "当前页面已保存过",
             type: "error"
           })
           return
@@ -747,18 +728,14 @@ function PanelContent({
       })
 
       const imgCount = content?.images?.length || 0
-      const fullPageSaveInfo = t("sidebarFloatPanelNotificationSaveFullPage")
-      const imgCountInfo = t("sidebarFloatPanelNotificationPictureContaining") + imgCount + t("sidebarFloatPanelNotificationPictureCount")
-      // message: `已直接保存整页！${imgCount > 0 ? `（含${imgCount}张图片）` : ""}`,
       setNotification({
-        message: imgCount > 0 ? fullPageSaveInfo + imgCountInfo : fullPageSaveInfo,
+        message: `已直接保存整页！${imgCount > 0 ? `（含${imgCount}张图片）` : ""}`,
         type: "success"
       })
     } catch (e) {
       console.error("❌ Direct save error:", e)
-      // message: "保存失败",
       setNotification({
-        message: t("sidebarFloatPanelNotificationSaveFailed"),
+        message: "保存失败",
         type: "error"
       })
     }
@@ -823,7 +800,6 @@ function PanelContent({
         } opacity-80 group-hover:opacity-100`} />
         
         <div className="flex items-center gap-3">
-          {/** title="Open Homepage"  */}
           <button
             className={`w-9 h-9 flex items-center justify-center rounded-xl shadow-sm ring-1 transition-all active:scale-95 ${
               isDarkMode
@@ -831,14 +807,13 @@ function PanelContent({
                 : "bg-blue-50 text-black-600 ring-blue-100/50 hover:bg-blue-100"
             }`}
             onClick={openHomepage}
-            title={t("sidebarFloatPanelHeaderOpenHomepageHint")}>
+            title="Open Homepage">
             <AiFillAliwangwang className="w-5 h-5" />
           </button>
           <div className="flex flex-col">
-            {/** value={title} onChange={(e) => setTitle(e.target.value)} */}
             <input
-              value={t("sidebarFloatPanelInitialTitle")}
-              onChange={(e) => setTitle(t("sidebarFloatPanelInitialTitle"))}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
               className={`bg-transparent text-sm font-bold outline-none w-24 ${
                 isDarkMode
                   ? "text-slate-100 placeholder-slate-600"
@@ -846,13 +821,11 @@ function PanelContent({
               }`}
             />
             <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">
-              {/** Workspace */}
-              {t("sidebarFloatPanelHeaderWorkspaceLabel")}
+              Workspace
             </span>
           </div>
         </div>
         <div className="flex items-center gap-1">
-          {/** title="Feedback" */}
           <button
             onClick={() => setShowFeedback(true)}
             className={`p-2 rounded-lg transition-colors ${
@@ -860,12 +833,11 @@ function PanelContent({
                 ? "hover:bg-slate-800 text-slate-500 hover:text-slate-300"
                 : "hover:bg-slate-100 text-slate-400 hover:text-slate-600"
             }`}
-            title={t("sidebarFloatPanelHeaderFeedbackHint")}
+            title="Feedback"
           >
             <FiMessageSquare className="w-4 h-4" />
           </button>
-          
-          {/** title={isDarkMode ? "Light Mode" : "Dark Mode"} */}
+
           <button
             className={`p-2 rounded-lg transition-colors ${
               isDarkMode
@@ -873,14 +845,13 @@ function PanelContent({
                 : "hover:bg-slate-100 text-slate-400 hover:text-slate-600"
             }`}
             onClick={toggleTheme}
-            title={isDarkMode ? t("sidebarFloatPanelHeaderLightModeHint") : t("sidebarFloatPanelHeaderDarkModeHint")}>
+            title={isDarkMode ? "Light Mode" : "Dark Mode"}>
             {isDarkMode ? (
               <FiSun className="w-4 h-4" />
             ) : (
               <FiMoon className="w-4 h-4" />
             )}
           </button>
-          {/** title="Help" */}
           <button
             className={`p-2 rounded-lg transition-colors ${
               isDarkMode
@@ -894,10 +865,9 @@ function PanelContent({
                 "noopener,noreferrer"
               )
             }
-            title={t("sidebarFloatPanelHeaderHelpHint")}>
+            title="Help">
             <FiHelpCircle className="w-4 h-4" />
           </button>
-          {/** title="Refresh" */}
           <button
             className={`p-2 rounded-lg transition-colors ${
               isDarkMode
@@ -905,10 +875,9 @@ function PanelContent({
                 : "hover:bg-slate-100 text-slate-400 hover:text-slate-600"
             }`}
             onClick={onRefresh}
-            title={t("sidebarFloatPanelHeaderRefreshHint")}>
+            title="Refresh">
             <FiRefreshCcw className="w-4 h-4" />
           </button>
-          {/** title="Close" */}
           <button
             className={`p-2 rounded-lg transition-colors ${
               isDarkMode
@@ -916,7 +885,7 @@ function PanelContent({
                 : "hover:bg-red-50 text-slate-400 hover:text-red-500"
             }`}
             onClick={onClose}
-            title={t("sidebarFloatPanelHeaderCloseHint")}>
+            title="Close">
             <FiX className="w-4 h-4" />
           </button>
         </div>
@@ -929,8 +898,7 @@ function PanelContent({
             {/* Input Area */}
             <div className="flex flex-col gap-2">
               <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1">
-                {/** Search */}
-                {t("sidebarFloatPanelSearchLabel")}
+                Search
               </label>
               <div
                 className={`flex gap-2 p-1 rounded-xl border focus-within:ring-2 focus-within:ring-blue-100 transition-all ${
@@ -938,12 +906,11 @@ function PanelContent({
                     ? "bg-slate-800/50 border-slate-700"
                     : "bg-slate-50 border-slate-100"
                 }`}>
-                {/** placeholder="Search clips..." */}
                 <input
                   type="text"
                   value={searchValue}
                   onChange={(e) => setSearchValue(e.target.value)}
-                  placeholder={t("sidebarFloatPanelSearchPlaceholder")}
+                  placeholder="Search clips..."
                   className={`flex-1 bg-transparent px-3 py-2 text-sm outline-none ${
                     isDarkMode
                       ? "text-slate-200 placeholder:text-slate-600"
@@ -969,14 +936,12 @@ function PanelContent({
                     className={`w-6 h-6 ${isDarkMode ? "text-slate-600" : "text-slate-300"}`}
                   />
                 </div>
-                {/** <span className="text-xs font-medium">No clips yet</span> */}
-                <span className="text-xs font-medium">{t("sidebarFloatPanelNoClips")}</span>
+                <span className="text-xs font-medium">No clips yet</span>
               </div>
             ) : (
               <div className="flex flex-col gap-3 pb-2">
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1">
-                  {/** Recent Clips */}
-                  {t("sidebarFloatPanelRecentClips")}
+                  Recent Clips
                 </label>
                 {filteredClips.map((clip) => {
                   const firstImage =
@@ -1078,7 +1043,6 @@ function PanelContent({
                   </option>
                 ))}
               </select>
-              {/** title="清空对话" */}
               <button
                 type="button"
                 onClick={(e) => handleClearChat(e)}
@@ -1087,7 +1051,7 @@ function PanelContent({
                     ? "hover:bg-red-900/20 text-slate-500 hover:text-red-400"
                     : "hover:bg-red-50 text-slate-400 hover:text-red-500"
                 }`}
-                title={t("sidebarFloatPanelClearChat")}>
+                title="清空对话">
                 <FiTrash2 className="w-4 h-4" />
               </button>
             </div>
@@ -1106,22 +1070,19 @@ function PanelContent({
                   </div>
                   <div className="text-center">
                     <p className="text-sm font-medium text-slate-500">
-                      {/** AI 助手 */}
-                      {t("sidebarFloatPanelAIAssistantTitle")}
+                      AI 助手
                     </p>
                     <p className="text-xs text-slate-400 mt-1">
-                      {/** 随时为您解答问题 */}
-                      {t("sidebarFloatPanelAIAssistantReadyText")}
+                      随时为您解答问题
                     </p>
                   </div>
                   {/* Quick prompts */}
                   {/* [BUG FIX] 为模板按钮增加事件阻止，防止冒泡导致面板关闭 */}
                   <div className="flex flex-wrap gap-2 justify-center mt-2">
-                    {/** ["帮我总结这个页面", "解释一下这段内容", "有什么建议?"] */}
                     {[
-                      t("sidebarFloatPanelAISummaryPrompt"),
-                      t("sidebarFloatPanelAIExplainPrompt"),
-                      t("sidebarFloatPanelAISuggestPrompt")
+                      "帮我总结这个页面",
+                      "解释一下这段内容",
+                      "有什么建议?"
                     ].map((prompt, idx) => (
                       <button
                         key={idx}
@@ -1236,13 +1197,12 @@ function PanelContent({
                   : "bg-white border-slate-200"
               }`}
               onClick={(e) => e.stopPropagation()}>
-              {/** placeholder="输入消息... (Enter 发送)" */}
               <textarea
                 ref={inputRef}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={t("sidebarFloatPanelAIChatInputPlaceholder")}
+                placeholder="输入消息... (Enter 发送)"
                 className={`flex-1 bg-transparent px-3 py-2 text-sm outline-none resize-none min-h-[40px] max-h-[100px] ${
                   isDarkMode
                     ? "text-slate-200 placeholder:text-slate-500"
@@ -1294,14 +1254,14 @@ function PanelContent({
           {[
             {
               icon: FiSave,
-              label: t("sidebarFloatPanelFooterSaveButton"),  // Save
+              label: "Save",
               action: handleDirectSaveFullPage,
               active: false,
               show: !isYouTubePage // YouTube 页面隐藏，该功能在 YouTube 面板内
             },
             {
               icon: RiMessage2Line,
-              label: t("sidebarFloatPanelFooterChatButton"),  // Chat
+              label: "Chat",
               action: () =>
                 setPanelMode(panelMode === "chat" ? "clips" : "chat"),
               active: panelMode === "chat",
@@ -1310,7 +1270,7 @@ function PanelContent({
             // YouTube 按钮：只在 YouTube 页面显示
             {
               icon: BsYoutube,
-              label: t("sidebarFloatPanelFooterYoutubeButton"),  // YouTube
+              label: "YouTube",
               action: () =>
                 setPanelMode(panelMode === "youtube" ? "clips" : "youtube"),
               active: panelMode === "youtube",
@@ -1318,7 +1278,7 @@ function PanelContent({
             },
             {
               icon: FiCrop,
-              label: t("sidebarFloatPanelFooterScreenshotButton"),  // Screenshot
+              label: "Screenshot",
               action: () => {
                 setIsScreenshotMode(true)
                 chrome.runtime.sendMessage({ type: "clip:start-screenshot" }, () => {})
@@ -1328,14 +1288,14 @@ function PanelContent({
             },
             {
               icon: FiGrid,
-              label: t("sidebarFloatPanelFooterClipsButton"),  // Clips
+              label: "Clips",
               action: () => setPanelMode("clips"),
               active: panelMode === "clips",
               show: true
             },
             {
               icon: FiSettings,
-              label: t("sidebarFloatPanelFooterSettingsButton"),  // Settings
+              label: "Settings",
               action: () =>
                 chrome.runtime.sendMessage({ type: "clip:open-options" }),
               active: false,
@@ -1372,7 +1332,6 @@ function FloatClip() {
   const [pendingChatText, setPendingChatText] = useState<string | undefined>(
     undefined
   )
-  const { t } = useContentScriptI18n()
 
   const handleRefresh = () => {
     setVisible(false)
@@ -1450,7 +1409,7 @@ function FloatClip() {
   // [BUG FIX] 使用 Error Boundary 包裹 PanelContent，防止内部错误导致整个扩展崩溃
   return (
     <div id="plasmo-float-root">
-      <PanelErrorBoundary onReset={handleRefresh} t={t}>
+      <PanelErrorBoundary onReset={handleRefresh}>
         <PanelContent
           key={refreshKey}
           onClose={() => {
