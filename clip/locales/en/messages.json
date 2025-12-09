@@ -1,4 +1,4 @@
-  {
+{
   "extensionName": {
     "message": "Smart Clip",
     "description": "扩展名称"
@@ -446,5 +446,368 @@
   "sidebarFloatPanelSendFailed": {
     "message": "❌ Send failed:",
     "description": "发送失败提示"
+  },
+  
+
+  "historyConfirmDeleteSingle": {
+    "message": "Are you sure you want to delete the selected clip?",
+    "description": "Confirm deletion of a single clip"
+  },
+  "historyConfirmDeleteSingleWithFeishu": {
+    "message": "Are you sure you want to delete this clip?\n\nThis clip has been synced to Feishu. Do you want to delete the record from Feishu table as well?\n\nClick \"OK\" to delete both records\nClick \"Cancel\" to do nothing",
+    "description": "Confirm deletion of a single clip with Feishu sync"
+  },
+  "historyAlertSaveNotesFailed": {
+    "message": "❌ Failed to save notes",
+    "description": "Failed to save notes alert"
+  },
+  "historyAlertFeishuUploadSuccess": {
+    "message": "✅ Feishu record uploaded successfully",
+    "description": "Feishu upload success alert"
+  },  
+  "historyAlertFeishuUploadFailed": {
+    "message": "❌ Export failed: ",
+    "description": "Export failed alert"
+  },  
+  "historyAlertNoSyncedRecords": {
+    "message": "ℹ️ No synced records to check",
+    "description": "No synced records alert"
+  },
+  "historyConfirmCheckSyncStatus": {
+    "message": "Will check the status of %s synced records, this may take some time. Continue?",
+    "description": "Confirm checking synced records status"
+  },
+  "historyAlertAllSyncStatusNormal": {
+    "message": "✅ All sync records status are normal",
+    "description": "All sync records status normal alert"
+  },
+  "historyAlertSyncStatusUpdated": {
+    "message": "🔄 Updated sync status for all records (deleted from Feishu side)",
+    "description": "Sync status updated alert"
+  },
+  "historyAlertSyncStatusRefreshFailed": {
+    "message": "❌ Failed to refresh sync status: ",
+    "description": "Refresh sync status failed alert"
+  },
+  "historyAlertRemoveFromReviewFailed": {
+    "message": "Removal failed",
+    "description": "Failed to remove from review alert"
+  },
+  "historyConfirmFeishuConfigIncomplete": {
+    "message": "Complete Feishu configuration not detected (requires App Token, Table ID, App ID and App Secret). Go to extension settings page now to configure?",
+    "description": "Incomplete Feishu configuration alert"
+  },
+  "historyConfirmFeishuConfigReadFailed": {
+    "message": "Failed to read Feishu configuration. Go to extension settings page now to configure?",
+    "description": "Failed to read Feishu configuration alert"
+  },
+  "historyConfirmFeishuConfigMissing": {
+    "message": "Feishu configuration is missing or incomplete. Go to extension settings to configure?\nRequired: App Token, Table ID, App ID and App Secret",
+    "description": "Missing Feishu configuration alert"
+  },
+  "historyAlertSelectClipToExportAsCSV": {
+    "message": "Please select clips to export",
+    "description": "Select clips to export alert"
+  },
+  "historyAlertAddToReviewFailed": {
+    "message": "Failed to add to review",
+    "description": "Failed to add to review alert"
+  },
+  "historyConfirmRemoveFromReview": {
+    "message": "Are you sure you want to remove from review plan?",
+    "description": "Confirm removal from review plan"
+  },
+
+
+  "historyMyClipsTitle": {
+    "message": "My Clips",
+    "description": "History page title"
+  },
+  "historyItemCount": {
+    "message": "items",
+    "description": "Clip count text"
+  },
+  "historyRefreshFeishuStatusHint": {
+    "message": "Refresh Feishu sync status",
+    "description": "Refresh Feishu sync status button hint"
+  },
+  "historyStartReviewHint": {
+    "message": "Start Review",
+    "description": "Start review button hint"
+  },
+  "historyPendingReview": {
+    "message": "Pending Review",
+    "description": "Pending review text"
+  },
+  "historyDeselectAll": {
+    "message": "Deselect All",
+    "description": "Deselect all button text"
+  },
+  "historySelectAll": {
+    "message": "Select All",
+    "description": "Select all button text"
+  },
+  "historyAlreadySelected": {
+    "message": "Selected",
+    "description": "Selected clip count prefix"
+  },
+  "historyDeleteButton": {
+    "message": "Delete",
+    "description": "Delete button text"
+  },
+  "historySearchPlaceholder": {
+    "message": "Search clips...",
+    "description": "Search box placeholder text"
+  },
+  "historyAllSources": {
+    "message": "All Sources",
+    "description": "All sources option text"
+  },
+  "historyNoClips": {
+    "message": "No clips yet",
+    "description": "No clips hint text"
+  },
+  "historyStartClipping": {
+    "message": "Start browsing and clipping content",
+    "description": "Start clipping hint text"
+  },
+  "historyKeyPoints": {
+    "message": "Key Points",
+    "description": "Key points title text"
+  },
+  "historyAISummary": {
+    "message": "AI Summary",
+    "description": "AI summary title"
+  },
+  "historyOriginalContent": {
+    "message": "Original Content",
+    "description": "Original content title"
+  },
+  "historyContentCharacters": {
+    "message": "characters",
+    "description": "Content character count text"
+  },
+
+  "historyCollapse": {
+    "message": "Collapse",
+    "description": "Collapse button text"
+  },
+  "historyExpand": {
+    "message": "Expand",
+    "description": "Expand button text"
+  },
+  "historyMyNotes": {
+    "message": "My Notes",
+    "description": "My notes title"
+  },
+
+  "historyNotesEdit": {
+    "message": "Edit",
+    "description": "Edit button text"
+  },
+  "historyNotesAdd": {
+    "message": "Add",
+    "description": "Add button text"
+  },
+
+  "historyNotesCancel": {
+    "message": "Cancel",
+    "description": "Cancel button text"
+  },
+  "historyNotesSave": {
+    "message": "Save",
+    "description": "Save button text"
+  },
+
+
+  "historyWriteIdeasPlaceholder": {
+    "message": "Record your thoughts...",
+    "description": "Record thoughts placeholder text"
+  },
+  "historyAddNotesPlaceholder": {
+    "message": "Click to add notes...",
+    "description": "Add notes placeholder text"
+  },
+  "historyImagesSectionLabel": {
+    "message": "Images",
+    "description": "Images section title text"
+  },
+  "historyImageAlt": {
+    "message": "Image",
+    "description": "Image description"
+  },
+  "historyViewOriginalImage": {
+    "message": "View Original Image",
+    "description": "View original image button text"
+  },
+  "historyTagsSectionLabel": {
+    "message": "Tags",
+    "description": "Tags section title text"
+  },
+  "historySelectOneClip": {
+    "message": "Select a clip",
+    "description": "Select a clip hint"
+  },
+  "historySelectClipDetail": {
+    "message": "Select from left list to view details",
+    "description": "Select clip detail hint"
+  },
+  "historyAIAssistantLabel": {
+    "message": "AI Assistant",
+    "description": "AI assistant label text"
+  },
+  "historyIFlowDriverLabel": {
+    "message": "iFlow Driver",
+    "description": "iFlow driver label text"
+  },
+  "historySaveChatButton": {
+    "message": "Save",
+    "description": "Save chat record button text"
+  },
+  "historyAIChat": {
+    "message": "AI Chat",
+    "description": "AI chat title"
+  },
+  "historyAIChatHint": {
+    "message": "Select a clip to discuss content with AI assistant",
+    "description": "AI chat hint"
+  },
+
+
+  "historyToggleThemeLight": {
+    "message": "Switch to Light Mode",
+    "description": "Switch to light mode button text"
+  },
+  "historyToggleThemeDark": {
+    "message": "Switch to Dark Mode",
+    "description": "Switch to dark mode button text"
+  },
+  "historySelectModeDone": {
+    "message": "✓ Done",
+    "description": "Select mode done button text"
+  },
+  "historySelectModeManage": {
+    "message": "Manage",
+    "description": "Select mode manage button text"
+  },
+  "historyFilterAll": {
+    "message": "All",
+    "description": "All clips filter text"
+  },
+  "historyFilterToday": {
+    "message": "Today",
+    "description": "Today's clips filter text"
+  },
+  "historyFilterWithImages": {
+    "message": "With Images",
+    "description": "Clips with images filter text"
+  },
+  "historyFilterSynced": {
+    "message": "Synced",
+    "description": "Synced clips filter text"
+  },
+  
+  "historySortNewest": {
+    "message": "Newest First",
+    "description": "Newest first sorting hint"
+  },
+  "historySortOldest": {
+    "message": "Oldest First",
+    "description": "Oldest first sorting hint"
+  },
+  "historyAlreadySyncedToFeishu": {
+    "message": "✓ Synced",
+    "description": "Synced to Feishu marker"
+  },
+  "historyRemoveFromReview": {
+    "message": "Click to remove from review plan",
+    "description": "Remove from review plan hint"
+  },
+  "historyAddToReview": {
+    "message": "Add to review plan",
+    "description": "Add to review plan hint"
+  },
+
+  "historyAlreadyInReview": {
+    "message": "Already in review",
+    "description": "Already in review text"
+  },
+  "historyReview": {
+    "message": "Review",
+    "description": "Review button text"
+  },
+  "historyExport": {
+    "message": "Export",
+    "description": "Export button text"
+  },
+  "historyAlreadySynced": {
+    "message": "Synced",
+    "description": "Synced to Feishu"
+  },
+
+  "historySyncing": {
+    "message": "Syncing...",
+    "description": "Syncing status text"
+  },
+  "historySyncToFeishu": {
+    "message": "Sync to Feishu",
+    "description": "Sync to Feishu button text"
+  },
+
+  "historyExportAsCsv": {
+    "message": "Export as CSV",
+    "description": "Export as CSV button text"
+  },
+  "historyDeleteClip": {
+    "message": "Delete Clip",
+    "description": "Delete clip hint"
+  },
+  "historyEditClipHint": {
+    "message": "Edit",
+    "description": "Edit clip hint"
+  },
+  "historyEditActionButton": {
+    "message": "Edit",
+    "description": "Edit clip button text"
+  },
+  
+
+
+  "selectionClipperClip": {
+    "message": "Clip",
+    "description": "Clip button text"
+  },
+  "selectionClipperSaveSelected": {
+    "message": "Save Selected",
+    "description": "Save selected content button text"
+  },
+  "selectionClipperAIGenerating": {
+    "message": "AI Generating...",
+    "description": "AI generating status text"
+  },
+  "selectionClipperAISummarySave": {
+    "message": "Save AI Summary",
+    "description": "Save AI summary button text"
+  },
+  "selectionClipperAskAI": {
+    "message": "Ask AI",
+    "description": "Ask AI button text"
+  },
+  "selectionClipperSaving": {
+    "message": "Saving...",
+    "description": "Saving status text"
+  },
+  "selectionClipperSaveDirect": {
+    "message": "Save Directly",
+    "description": "Save directly button text"
+  },
+  "selectionClipperSelectedCharactersLeft": {
+    "message": "Selected",
+    "description": "Selected characters count text"
+  },
+  "selectionClipperSelectedCharactersRight": {
+    "message": "characters",
+    "description": "Selected characters count text"
   }
+
 }

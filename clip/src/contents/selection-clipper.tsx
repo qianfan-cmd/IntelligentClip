@@ -11,6 +11,7 @@ import { Provider } from "jotai"
 // 【修复】使用统一的 API 配置模块，解决跨页面不同步问题
 import { useApiConfig } from "@/lib/api-config-store"
 import { usePort } from "@plasmohq/messaging/hook"
+import { useContentScriptI18n } from "@/lib/use-content-script-i18n"
 
 // Plasmo 配置
 export const config: PlasmoCSConfig = {
@@ -129,6 +130,7 @@ function SelectionClipper() {
   const [selectedText, setSelectedText] = useState("")
   const [loading, setLoading] = useState(false)
   const [savingDirect, setSavingDirect] = useState(false)
+  const { translate: translateCurrentPage } = useContentScriptI18n()
   
   // 【修复】使用统一的 API 配置模块，包含加载状态
   const { apiKey: openAIKey, isLoading: isApiKeyLoading } = useApiConfig()
@@ -416,7 +418,8 @@ function SelectionClipper() {
           }}
         >
           <Icons.Scissors />
-          <span>剪藏</span>
+          {/** <span>剪藏</span> */}
+          <span>{translateCurrentPage("selectionClipperClip")}</span>
         </button>
       ) : (
         // 展开面板
@@ -437,7 +440,8 @@ function SelectionClipper() {
               }}>
                 <Icons.Scissors />
               </div>
-              <span style={{ fontWeight: "600", fontSize: "14px", color: "#1f2937", margin: 0 }}>保存选中内容</span>
+              {/* 保存选中内容 */}
+              <span style={{ fontWeight: "600", fontSize: "14px", color: "#1f2937", margin: 0 }}>{translateCurrentPage("selectionClipperSaveSelected")}</span>
             </div>
             <button
               style={{ 
@@ -487,7 +491,8 @@ function SelectionClipper() {
               onMouseLeave={(e) => { e.currentTarget.style.opacity = loading || savingDirect ? "0.6" : "1" }}
             >
               {loading ? <Icons.Loader /> : <Icons.Sparkles />}
-              <span>{loading ? "AI 生成中..." : "AI 摘要保存"}</span>
+              {/** <span>{loading ? "AI 生成中..." : "AI 摘要保存"}</span> */}
+              <span>{loading ? translateCurrentPage("selectionClipperAIGenerating") : translateCurrentPage("selectionClipperAISummarySave")}</span>
             </button>
             
             <button
@@ -502,7 +507,8 @@ function SelectionClipper() {
               onMouseLeave={(e) => { e.currentTarget.style.opacity = loading || savingDirect ? "0.6" : "1" }}
             >
               <Icons.Chat />
-              <span>询问 AI</span>
+              {/** 询问 AI */}
+              <span>{translateCurrentPage("selectionClipperAskAI")}</span>
             </button>
             
             <button
@@ -513,13 +519,15 @@ function SelectionClipper() {
               onMouseLeave={(e) => { e.currentTarget.style.background = "#f3f4f6" }}
             >
               {savingDirect ? <Icons.Loader /> : <Icons.Save />}
-              <span>{savingDirect ? "保存中..." : "直接保存"}</span>
+              {/** <span>{savingDirect ? "保存中..." : "直接保存"}</span> */}
+              <span>{savingDirect ? translateCurrentPage("selectionClipperSaving") : translateCurrentPage("selectionClipperSaveDirect")}</span>
             </button>
           </div>
 
           {/* 字数统计 */}
           <div style={{ marginTop: "10px", fontSize: "11px", color: "#9ca3af", textAlign: "center" }}>
-            已选中 {selectedText.length} 个字符
+            {/* 已选中 {selectedText.length} 个字符 */}
+            <span>{translateCurrentPage("selectionClipperSelectedCharactersLeft")} {selectedText.length} {translateCurrentPage("selectionClipperSelectedCharactersRight")}</span>
           </div>
         </div>
       )}
