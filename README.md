@@ -101,12 +101,8 @@ src/
 
 1. 飞书开放平台设置
 前往 飞书开放平台，登录并点击 “创建应用”，选择 “企业自建应用”。
-![输入图片说明](clip/assets/image.png)
-![输入图片说明](clip/assets/image2.png)
 
 进入应用详情页，在 “权限管理” 中搜索并开通 多维表格 (Bitable) 相关的读写权限（例如：bitable:app:read 和 bitable:app:read_write）。
-![输入图片说明](clip/assets/image3.png)
-![输入图片说明](clip/assets/image4.png)
 
 在版本管理与发布中发布应用。
 
@@ -120,7 +116,6 @@ src/
 在飞书云文档中新建一个 多维表格 (Base)。
 
 关键步骤：点击文档右上角的 “...” (更多) -> “添加应用”，搜索并在第一步创建的应用，将其添加为文档的 管理人员。
-![输入图片说明](clip/assets/7c2bdeaad6213a1f297c692906e57a2.png)
 
 获取数据表标识：
 
