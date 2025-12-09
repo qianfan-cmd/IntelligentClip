@@ -101,7 +101,7 @@ src/
 
 1. 飞书开放平台设置
 前往 飞书开放平台，登录并点击 “创建应用”，选择 “企业自建应用”。
-![输入图片说明](clip/assets/9c41cf2656587f3541665bc3e29d289.png)
+![输入图片说明](clip/assets/image.png)
 
 进入应用详情页，在 “权限管理” 中搜索并开通 多维表格 (Bitable) 相关的读写权限（例如：bitable:app:read 和 bitable:app:read_write）。
 ![输入图片说明](clip/assets/2c34eb494f34b6df29dbac48b7f3db2.png)
