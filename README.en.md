@@ -94,3 +94,33 @@ src/
    - Annotation & saving: Supports direct saving to the clipping library.
 4. **Data Management**: Local storage with support for viewing history, searching, and exporting.
 5. **Personalization**: Dark mode, interface dragging (simplified to fixed mode), and keyboard shortcut support.
+
+## ☁️ Feishu Export Configuration
+This plugin supports automatically syncing clipped content to Feishu Bitable (Base), enabling cloud-based data management. Please follow the steps below to complete the configuration:
+
+1. Feishu Open Platform Settings
+Go to the Feishu Open Platform, log in, click "Create App", and select "Custom App" (Enterprise Self-built App).
+
+Enter the app details page. Go to "Permissions", search for and enable permissions related to Bitable (e.g., bitable:app:read and bitable:app:read_write).
+
+Create and release an app version to make the permissions take effect.
+
+On the "Credentials & Basic Info" page, copy the App ID and App Secret.
+
+Open the plugin configuration page and enter these two values into the corresponding fields.
+
+2. Bitable (Base) Document Settings
+Create a new Bitable (Base) document in Feishu Docs.
+
+Key Step: Click the "..." (More) button in the top right corner of the document -> "Add App". Search for the app created in Step 1 and add it as an Administrator for the document.
+
+Get the Data Table Identifiers:
+
+Table Token (App Token): Open the Bitable. In the browser URL, locate the string starting with base_ (e.g., bascnXXXXXXXX).
+
+Table ID: Open the specific data table. In the browser URL, look for table=...&. Copy the content after the equals sign (=) and before the ampersand (&).
+
+Enter the Table Token and Table ID into the plugin configuration page.
+
+3. Finish Configuration
+After saving all the above configurations, the plugin will be able to automatically write clipped content (Title, Link, Summary, Tags, etc.) to the specified Feishu data table via API.
