@@ -104,6 +104,8 @@ src/
 
 进入应用详情页，在 “权限管理” 中搜索并开通 多维表格 (Bitable) 相关的读写权限（例如：bitable:app:read 和 bitable:app:read_write）。
 
+在版本管理与发布中发布应用。
+
 创建并发布一个应用版本以使权限生效。
 
 在 “凭证与基础信息” 页面，复制 App ID 和 App Secret。
@@ -120,6 +122,7 @@ src/
 Table Token (App Token): 打开多维表格，在浏览器 URL 中找到 base_ 开头的字符串（例如 bascnXXXXXXXX）。
 
 Table ID: 打开多维表格，在浏览器 URL 中找到 table=...& ,复制 等于号之后 到 & 符号之前的内容。
+
 
 将 Table Token 和 Table ID 填入插件配置页。
 
