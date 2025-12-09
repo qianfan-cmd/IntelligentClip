@@ -101,11 +101,11 @@ src/
 
 1. 飞书开放平台设置
 前往 飞书开放平台，登录并点击 “创建应用”，选择 “企业自建应用”。
-![输入图片说明](clip/assets/image.png)
+
 
 进入应用详情页，在 “权限管理” 中搜索并开通 多维表格 (Bitable) 相关的读写权限（例如：bitable:app:read 和 bitable:app:read_write）。
-![输入图片说明](clip/assets/2c34eb494f34b6df29dbac48b7f3db2.png)
-![输入图片说明](clip/assets/e78d712d04f7546f92ab77a2d954ea0.png)
+![输入图片说明](clip/assets/image.png)
+![输入图片说明](clip/assets/image.png)
 
 在版本管理与发布中发布应用。
 
@@ -119,14 +119,14 @@ src/
 在飞书云文档中新建一个 多维表格 (Base)。
 
 关键步骤：点击文档右上角的 “...” (更多) -> “添加应用”，搜索并在第一步创建的应用，将其添加为文档的 管理人员。
-![输入图片说明](clip/assets/7c2bdeaad6213a1f297c692906e57a2.png)
+![输入图片说明](clip/assets/image.png)
 
 获取数据表标识：
 
 Table Token (App Token): 打开多维表格，在浏览器 URL 中找到 base_ 开头的字符串（例如 bascnXXXXXXXX）。
 
 Table ID: 打开多维表格，在浏览器 URL 中找到 table=...& ,复制 等于号之后 到 & 符号之前的内容。
-![输入图片说明](clip/assets/image.png)
+
 
 将 Table Token 和 Table ID 填入插件配置页。
 
