@@ -1,6 +1,6 @@
 /**
  * 统一内容抽取层
- * 三层流水线：特定 Handler → Readability → Fallback
+ * 三层流水线：特定 Handler → Readability → Fallback → PostProcess
  */
 
 import { extractByReadability } from "./extractors/readability"
@@ -10,6 +10,7 @@ import { bilibiliHandler } from "./handlers/bilibili"
 import { baikeHandler } from "./handlers/baike"
 import { docsHandler, isDocsPage } from "./handlers/docs"
 import { extractImagesFromDocument, extractImagesFromSelection } from "./imageExtractor"
+import { postProcessExtractedContent } from "./post-process"
 
 // Re-export types from types.ts
 export type { ExtractedContent, ContentMetadata, SiteHandler, SiteHandlerConfig } from "./types"
@@ -90,11 +91,13 @@ export function detectSourceType(url: string): "youtube" | "bilibili" | "webpage
 
 /**
  * 主入口：统一内容提取
- * 三层流水线：特定 Handler → Readability → Fallback
+ * 四层流水线：特定 Handler → Readability → Fallback → PostProcess（字符串清洗）
  */
 export async function extractContent(): Promise<ExtractedContent> {
   const url = location.href
   console.log("🔍 Starting content extraction for:", url)
+
+  let rawContent: ExtractedContent | null = null
 
   // 1. 尝试站点特定处理器
   for (const { pattern, handler, name } of siteHandlers) {
@@ -104,7 +107,8 @@ export async function extractContent(): Promise<ExtractedContent> {
         const result = handler()
         if (result && result.text && result.text.length > 50) {
           console.log(`✅ Site handler ${name} succeeded, text length: ${result.text.length}`)
-          return normalize(result)
+          rawContent = normalize(result)
+          break
         }
         console.log(`⚠️ Site handler ${name} returned insufficient content`)
       } catch (e) {
@@ -114,13 +118,13 @@ export async function extractContent(): Promise<ExtractedContent> {
   }
 
   // 1.5 智能检测文档类站点
-  if (shouldUseDocsHandler(url)) {
+  if (!rawContent && shouldUseDocsHandler(url)) {
     console.log("📄 Detected docs-like page, trying docs handler...")
     try {
       const result = docsHandler()
       if (result && result.text && result.text.length > 100) {
         console.log(`✅ Docs handler succeeded, text length: ${result.text.length}`)
-        return normalize(result)
+        rawContent = normalize(result)
       }
     } catch (e) {
       console.warn("⚠️ Docs handler failed:", e)
@@ -128,23 +132,31 @@ export async function extractContent(): Promise<ExtractedContent> {
   }
 
   // 2. 尝试 Readability
-  console.log("📄 Trying Readability extractor...")
-  try {
-    const readabilityResult = extractByReadability()
-    if (readabilityResult && readabilityResult.text && readabilityResult.text.length > 100) {
-      console.log(`✅ Readability succeeded, text length: ${readabilityResult.text.length}`)
-      return normalize(readabilityResult)
+  if (!rawContent) {
+    console.log("📄 Trying Readability extractor...")
+    try {
+      const readabilityResult = extractByReadability()
+      if (readabilityResult && readabilityResult.text && readabilityResult.text.length > 100) {
+        console.log(`✅ Readability succeeded, text length: ${readabilityResult.text.length}`)
+        rawContent = normalize(readabilityResult)
+      } else {
+        console.log("⚠️ Readability returned insufficient content")
+      }
+    } catch (e) {
+      console.warn("⚠️ Readability failed:", e)
     }
-    console.log("⚠️ Readability returned insufficient content")
-  } catch (e) {
-    console.warn("⚠️ Readability failed:", e)
   }
 
   // 3. Fallback 到 body.innerText
-  console.log("📄 Using fallback extractor...")
-  const fallbackResult = extractByFallback()
-  console.log(`✅ Fallback extractor, text length: ${fallbackResult.text.length}`)
-  return normalize(fallbackResult)
+  if (!rawContent) {
+    console.log("📄 Using fallback extractor...")
+    const fallbackResult = extractByFallback()
+    console.log(`✅ Fallback extractor, text length: ${fallbackResult.text.length}`)
+    rawContent = normalize(fallbackResult)
+  }
+
+  // 4. 后处理：纯字符串级别的清洗（不影响 DOM 提取逻辑）
+  return postProcessExtractedContent(rawContent)
 }
 
 /**
@@ -153,13 +165,16 @@ export async function extractContent(): Promise<ExtractedContent> {
 export function extractContentSync(): ExtractedContent {
   const url = location.href
 
+  let rawContent: ExtractedContent | null = null
+
   // 1. 尝试站点特定处理器
   for (const { pattern, handler, name } of siteHandlers) {
     if (pattern.test(url)) {
       try {
         const result = handler()
         if (result && result.text && result.text.length > 50) {
-          return normalize(result)
+          rawContent = normalize(result)
+          break
         }
       } catch (e) {
         console.warn(`Site handler ${name} failed:`, e)
@@ -168,11 +183,11 @@ export function extractContentSync(): ExtractedContent {
   }
 
   // 1.5 智能检测文档类站点
-  if (shouldUseDocsHandler(url)) {
+  if (!rawContent && shouldUseDocsHandler(url)) {
     try {
       const result = docsHandler()
       if (result && result.text && result.text.length > 100) {
-        return normalize(result)
+        rawContent = normalize(result)
       }
     } catch (e) {
       console.warn("Docs handler failed:", e)
@@ -180,17 +195,24 @@ export function extractContentSync(): ExtractedContent {
   }
 
   // 2. 尝试 Readability
-  try {
-    const readabilityResult = extractByReadability()
-    if (readabilityResult && readabilityResult.text && readabilityResult.text.length > 100) {
-      return normalize(readabilityResult)
+  if (!rawContent) {
+    try {
+      const readabilityResult = extractByReadability()
+      if (readabilityResult && readabilityResult.text && readabilityResult.text.length > 100) {
+        rawContent = normalize(readabilityResult)
+      }
+    } catch (e) {
+      console.warn("Readability failed:", e)
     }
-  } catch (e) {
-    console.warn("Readability failed:", e)
   }
 
   // 3. Fallback
-  return normalize(extractByFallback())
+  if (!rawContent) {
+    rawContent = normalize(extractByFallback())
+  }
+
+  // 4. 后处理：纯字符串级别的清洗
+  return postProcessExtractedContent(rawContent)
 }
 
 /**
