@@ -556,6 +556,13 @@ const floatButton = () => { // 悬浮按钮主组件
     //检查当前网页是否保存过
     try {
       const content = await extractContent() // 提取内容
+      
+      // 检查文本长度并提醒用户
+      const textLength = content?.text?.length || 0
+      if (textLength > 60000) {
+        showNotification(`⚠️ 原文过长 (${Math.floor(textLength / 1000)}k 字符)，已自动截断到 60k 字符`, "warning")
+      }
+      
       try {
         const contentUrlNorm = content?.url ? normalizeUrl(content.url) : null
         if (contentUrlNorm) {
@@ -842,6 +849,13 @@ const floatButton = () => { // 悬浮按钮主组件
     try {
       const content = await extractContent() // 提取整页内容
       extractedContentRef.current = content
+      
+      // 检查文本长度并提醒用户
+      const textLength = content?.text?.length || 0
+      if (textLength >= 60000) {
+        showNotification(`⚠️ 原文过长，已自动截断到 60k 字符（原文约 ${Math.floor(textLength / 1000)}k 字）`, "warning")
+      }
+      
       port.send({ // 发送 AI 请求
         prompt: "请用中文对以下内容进行简洁总结，并列出3-5个要点。",
         model: "qwen3-max",

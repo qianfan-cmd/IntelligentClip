@@ -10,6 +10,10 @@ export type {
   SiteHandlerConfig 
 } from "./types"
 
+// 后处理相关导出
+export type { PostProcessOptions } from "./post-process"
+export { postProcessExtractedContent } from "./post-process"
+
 // 主函数导出
 export { 
   extractContent, 
