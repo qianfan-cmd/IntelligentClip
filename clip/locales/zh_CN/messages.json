@@ -420,6 +420,8 @@
     "description": "设置按钮的提示"
   },
 
+
+
   "sidebarFloatPanelHeaderOpenHomepageHint": {
     "message": "打开主页",
     "description": "打开主页按钮的提示"
@@ -468,6 +470,366 @@
   "sidebarFloatPanelSendFailed": {
     "message": "❌ 发送失败:",
     "description": "发送失败提示"
-  }
+  },
+
+
+  "historyConfirmDeleteSingle": {
+    "message": "确认删除选中的剪藏吗？",
+    "description": "确认删除单个剪藏的提示"
+  },
+  "historyConfirmDeleteSingleWithFeishu": {
+    "message": "确定要删除这个剪藏吗？\n\n该剪藏已同步到飞书，是否同时删除飞书表格中的记录？\n\n点击\"确定\"将同时删除飞书记录\n点击\"取消\"将不进行任何操作",
+    "description": "确认删除单个剪藏在飞书中的同步的提示"
+  },
+  "historyAlertSaveNotesFailed": {
+    "message": "❌ 保存笔记失败",
+    "description": "保存笔记失败提示"
+  },
+  "historyAlertFeishuUploadSuccess": {
+    "message": "✅ 飞书记录上传成功",
+    "description": "飞书记录上传成功提示"
+  },  
+  "historyAlertFeishuUploadFailed": {
+    "message": "❌ 导出失败: ",
+    "description": "导出失败提示"
+  },  
+  "historyAlertNoSyncedRecords": {
+    "message": "ℹ️ 没有已同步的记录需要检查",
+    "description": "暂无同步记录提示"
+  },
+  "historyConfirmCheckSyncStatus": {
+    "message": "将检查所有已同步记录的状态，这可能需要一些时间。是否继续？",
+    "description": "确认检查已同步记录状态的提示"
+  },
+  "historyAlertAllSyncStatusNormal": {
+    "message": "✅ 所有同步记录状态正常",
+    "description": "所有同步记录状态正常提示"
+  },
+  "historyAlertSyncStatusUpdated": {
+    "message": "🔄 已更新所有记录的同步状态（飞书端已删除）",
+    "description": "已更新同步状态提示"
+  },
+  "historyAlertSyncStatusRefreshFailed": {
+    "message": "❌ 刷新同步状态失败: ",
+    "description": "刷新同步状态失败提示"
+  },
+  "historyAlertRemoveFromReviewFailed": {
+    "message": "移除失败",
+    "description": "移除复习失败提示"
+  },
+  "historyConfirmFeishuConfigIncomplete": {
+    "message": "未检测到完整的飞书配置（需要 App Token、Table ID、App ID 和 App Secret）。现在前往扩展设置页进行配置吗？",
+    "description": "飞书配置不完整提示"
+  },
+  "historyConfirmFeishuConfigReadFailed": {
+    "message": "读取飞书配置失败。现在前往扩展设置页进行配置吗？",
+    "description": "飞书配置读取失败提示"
+  },
+  "historyConfirmFeishuConfigMissing": {
+    "message": "飞书配置缺失或不完整。是否前往扩展设置进行配置？\n需要：App Token、Table ID、App ID 和 App Secret",
+    "description": "飞书配置缺失提示"
+  },
+  "historyAlertSelectClipToExportAsCSV": {
+    "message": "请选择要导出的剪藏",
+    "description": "选择要导出的剪藏提示"
+  },
+  "historyAlertAddToReviewFailed": {
+    "message": "添加到复习失败",
+    "description": "添加到复习失败提示"
+  },
+  "historyConfirmRemoveFromReview": {
+    "message": "确定要从复习计划中移除吗？",
+    "description": "确认移除复习计划的提示"
+  },
+
+
+  "historyMyClipsTitle": {
+    "message": "我的剪藏",
+    "description": "历史记录页面标题"
+  },
+  "historyItemCount": {
+    "message": "条",
+    "description": "剪藏数量文本"
+  },
+  "historyRefreshFeishuStatusHint": {
+    "message": "刷新飞书同步状态",
+    "description": "刷新飞书同步状态按钮提示"
+  },
+  "historyStartReviewHint": {
+    "message": "开始复习",
+    "description": "开始复习按钮提示"
+  },
+  "historyPendingReview": {
+    "message": "待复习",
+    "description": "待复习文本"
+  },
+  "historyDeselectAll": {
+    "message": "取消全选",
+    "description": "取消全选按钮文本"
+  },
+  "historySelectAll": {
+    "message": "全选",
+    "description": "全选按钮文本"
+  },
+  "historyAlreadySelected": {
+    "message": "已选",
+    "description": "已选择剪藏数量前缀"
+  },
+  "historyDeleteButton": {
+    "message": "删除",
+    "description": "删除按钮文本"
+  },
+  "historySearchPlaceholder": {
+    "message": "搜索剪藏...",
+    "description": "搜索框占位符文本"
+  },
+  "historyAllSources": {
+    "message": "全部来源",
+    "description": "全部来源选项文本"
+  },
+  "historyNoClips": {
+    "message": "暂无剪藏",
+    "description": "暂无剪藏提示文本"
+  },
+  "historyStartClipping": {
+    "message": "开始浏览并剪藏内容吧",
+    "description": "开始剪藏提示文本"
+  },
+  "historyKeyPoints": {
+    "message": "关键要点",
+    "description": "关键要点标题文本"
+  },
+  "historyAISummary": {
+    "message": "AI 摘要",
+    "description": "AI摘要标题"
+  },
+  "historyOriginalContent": {
+    "message": "原文内容",
+    "description": "原文内容标题"
+  },
+  "historyContentCharacters": {
+    "message": "字",
+    "description": "内容字符数文本"
+  },
+
+  "historyCollapse": {
+    "message": "收起",
+    "description": "收起按钮文本"
+  },
+  "historyExpand": {
+    "message": "展开",
+    "description": "展开按钮文本"
+  },
+  "historyMyNotes": {
+    "message": "我的笔记",
+    "description": "我的笔记标题"
+  },
+
+  "historyNotesEdit": {
+    "message": "编辑",
+    "description": "编辑按钮文本"
+  },
+  "historyNotesAdd": {
+    "message": "添加",
+    "description": "添加按钮文本"
+  },
+
+  "historyNotesCancel": {
+    "message": "取消",
+    "description": "取消按钮文本"
+  },
+  "historyNotesSave": {
+    "message": "保存",
+    "description": "保存按钮文本"
+  },
+
+
+  "historyWriteIdeasPlaceholder": {
+    "message": "记录你的想法...",
+    "description": "记录想法占位符文本"
+  },
+  "historyAddNotesPlaceholder": {
+    "message": "点击添加笔记...",
+    "description": "添加笔记占位符文本"
+  },
+  "historyImagesSectionLabel": {
+    "message": "图片",
+    "description": "图片标题文本"
+  },
+  "historyImageAlt": {
+    "message": "图片",
+    "description": "图片描述"
+  },
+  "historyViewOriginalImage": {
+    "message": "查看原图",
+    "description": "查看原图按钮文本"
+  },
+  "historyTagsSectionLabel": {
+    "message": "标签",
+    "description": "标签标题文本"
+  },
+  "historySelectOneClip": {
+    "message": "选择一个剪藏",
+    "description": "选择一个剪藏提示"
+  },
+  "historySelectClipDetail": {
+    "message": "从左侧列表选择查看详情",
+    "description": "选择剪藏详情提示"
+  },
+  "historyAIAssistantLabel": {
+    "message": "AI 助手",
+    "description": "AI助手标签文本"
+  },
+  "historyIFlowDriverLabel": {
+    "message": "iFlow 驱动",
+    "description": "iFlow 驱动标签文本"
+  },
+  "historySaveChatButton": {
+    "message": "保存",
+    "description": "保存聊天记录按钮文本"
+  },
+  "historyAIChat": {
+    "message": "AI 对话",
+    "description": "AI对话标题"
+  },
+  "historyAIChatHint": {
+    "message": "选择剪藏后可与 AI 助手探讨内容",
+    "description": "AI对话提示"
+  },
+
+
+  "historyToggleThemeLight": {
+    "message": "切换到浅色模式",
+    "description": "切换到浅色模式按钮文本"
+  },
+  "historyToggleThemeDark": {
+    "message": "切换到深色模式",
+    "description": "切换到深色模式按钮文本"
+  },
+  "historySelectModeDone": {
+    "message": "✓ 完成",
+    "description": "选择模式完成按钮文本"
+  },
+  "historySelectModeManage": {
+    "message": "管理",
+    "description": "选择模式管理按钮文本"
+  },
+  "historyFilterAll": {
+    "message": "全部",
+    "description": "全部剪藏过滤器文本"
+  },
+  "historyFilterToday": {
+    "message": "今日",
+    "description": "今日剪藏过滤器文本"
+  },
+  "historyFilterWithImages": {
+    "message": "含图",
+    "description": "含图片剪藏过滤器文本"
+  },
+  "historyFilterSynced": {
+    "message": "已同步",
+    "description": "已同步剪藏过滤器文本"
+  },
   
+  "historySortNewest": {
+    "message": "最新优先",
+    "description": "最新优先排序提示"
+  },
+  "historySortOldest": {
+    "message": "最早优先",
+    "description": "最早优先排序提示"
+  },
+  "historyAlreadySyncedToFeishu": {
+    "message": "✓ 已同步",
+    "description": "已同步到飞书标记"
+  },
+  "historyRemoveFromReview": {
+    "message": "点击移除复习计划",
+    "description": "移除复习计划提示"
+  },
+  "historyAddToReview": {
+    "message": "添加到复习计划",
+    "description": "添加复习计划提示"
+  },
+
+  "historyAlreadyInReview": {
+    "message": "已加入复习",
+    "description": "已加入复习文本"
+  },
+  "historyReview": {
+    "message": "复习",
+    "description": "复习按钮文本"
+  },
+  "historyExport": {
+    "message": "导出",
+    "description": "导出按钮文本"
+  },
+  "historyAlreadySynced": {
+    "message": "已同步",
+    "description": "已同步至飞书"
+  },
+
+  "historySyncing": {
+    "message": "同步中...",
+    "description": "同步中状态文本"
+  },
+  "historySyncToFeishu": {
+    "message": "同步飞书",
+    "description": "同步飞书按钮文本"
+  },
+
+  "historyExportAsCsv": {
+    "message": "导出为CSV",
+    "description": "导出为CSV按钮文本"
+  },
+  "historyDeleteClip": {
+    "message": "删除剪藏",
+    "description": "删除剪藏提示"
+  },
+  "historyEditClipHint": {
+    "message": "编辑",
+    "description": "编辑剪藏按钮文本"
+  },
+  "historyEditActionButton": {
+    "message": "编辑",
+    "description": "编辑剪藏按钮文本"
+  },
+
+
+  "selectionClipperClip": {
+    "message": "剪藏",
+    "description": "剪藏按钮文本"
+  },
+  "selectionClipperSaveSelected": {
+    "message": "保存选中内容",
+    "description": "保存选中内容按钮文本"
+  },
+  "selectionClipperAIGenerating": {
+    "message": "AI 生成中...",
+    "description": "AI生成中状态文本"
+  },
+  "selectionClipperAISummarySave": {
+    "message": "AI 摘要保存",
+    "description": "AI摘要保存按钮文本"
+  },
+  "selectionClipperAskAI": {
+    "message": "询问 AI",
+    "description": "询问AI按钮文本"
+  },
+  "selectionClipperSaving": {
+    "message": "保存中...",
+    "description": "保存中状态文本"
+  },
+  "selectionClipperSaveDirect": {
+    "message": "直接保存",
+    "description": "直接保存按钮文本"
+  },
+  "selectionClipperSelectedCharactersLeft": {
+    "message": "已选中",
+    "description": "已选中字符数文本"
+  },
+  "selectionClipperSelectedCharactersRight": {
+    "message": "个字符",
+    "description": "已选中字符数文本"
+  }
 }

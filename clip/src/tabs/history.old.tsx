@@ -14,8 +14,7 @@ import ClipTagsPanel from "@/components/clip-tags-panel"
 import ClipEditModal from "@/components/clip-edit-modal"
 import FolderSidebar from "@/components/folder-sidebar"
 import MoveToFolderDropdown from "@/components/move-to-folder-dropdown"
-import { LiaFileDownloadSolid } from "react-icons/lia"
-import { useI18n } from "@/lib/use-i18n"
+import { LiaFileDownloadSolid } from "react-icons/lia";
 import "../style.css"
 
 
@@ -185,7 +184,6 @@ export default function HistoryPage() {
 
 function HistoryLayout() {
   const { theme, toggleTheme, t } = useTheme()
-  const { t: translate } = useI18n()
   const isDark = theme === "dark"
   
   // Layout state
@@ -432,8 +430,7 @@ function HistoryLayout() {
       }
     } catch (err) {
       console.error("Failed to add to review:", err)
-      // alert("添加到复习失败")
-      alert(translate("historyAlertAddToReviewFailed"))
+      alert("添加到复习失败")
     } finally {
       setAddingToReview(null)
     }
@@ -441,8 +438,7 @@ function HistoryLayout() {
 
   // 移除复习
   const handleRemoveFromReview = async (clipId: string) => {
-    // if (!confirm("确定要从复习计划中移除吗？")) return
-    if (!confirm(translate("historyConfirmRemoveFromReview"))) return
+    if (!confirm("确定要从复习计划中移除吗？")) return
     try {
       await ReviewStore.deleteByClipId(clipId)
       setReviewStatus(prev => {
@@ -452,8 +448,7 @@ function HistoryLayout() {
       })
     } catch (err) {
       console.error("Failed to remove from review:", err)
-      // alert("移除失败")
-      alert(translate("historyAlertRemoveFromReviewFailed"))
+      alert("移除失败")
     }
   }
 
@@ -473,11 +468,9 @@ function HistoryLayout() {
     // 检查是否已同步到飞书
     const hasSyncedToFeishu = clip.syncedToFeishu && clip.feishuRecordId
     
-    // let confirmMessage = "确定要删除这个剪藏吗？"
-    let confirmMessage = translate("historyConfirmDeleteSingle")
+    let confirmMessage = "确定要删除这个剪藏吗？"
     if (hasSyncedToFeishu) {
-      // confirmMessage = "确定要删除这个剪藏吗？\n\n该剪藏已同步到飞书，是否同时删除飞书表格中的记录？\n\n点击\"确定\"将同时删除飞书记录\n点击\"取消\"将不进行任何操作"
-      confirmMessage = translate("historyConfirmDeleteSingleWithFeishu")
+      confirmMessage = "确定要删除这个剪藏吗？\n\n该剪藏已同步到飞书，是否同时删除飞书表格中的记录？\n\n点击\"确定\"将同时删除飞书记录\n点击\"取消\"将不进行任何操作"
     }
     
     if (confirm(confirmMessage)) {
@@ -585,8 +578,7 @@ function HistoryLayout() {
       await loadClips()
     } catch (e) {
       console.error(e)
-      // alert("❌ 保存笔记失败")
-      alert(translate("historyAlertSaveNotesFailed"))
+      alert("保存笔记失败")
     } finally {
       setIsSavingNotes(false)
     }
@@ -599,8 +591,7 @@ function HistoryLayout() {
       const cfg = await storage.get<FeishuConfig>("feishuConfig")
       const missing = !cfg || !cfg.appToken || !cfg.tableId || !cfg.appId || !cfg.appSecret
       if (missing) {
-        // const goSettings = confirm("未检测到完整的飞书配置（需要 App Token、Table ID、App ID 和 App Secret）。现在前往扩展设置页进行配置吗？")
-        const goSettings = confirm(translate("historyConfirmFeishuConfigIncomplete"))
+        const goSettings = confirm("未检测到完整的飞书配置（需要 App Token、Table ID、App ID 和 App Secret）。现在前往扩展设置页进行配置吗？")
         if (goSettings && chrome?.runtime?.openOptionsPage) {
           chrome.runtime.openOptionsPage()
         }
@@ -608,8 +599,7 @@ function HistoryLayout() {
       }
     } catch (e) {
       console.warn("读取飞书配置失败", e)
-      // const goSettings = confirm("读取飞书配置失败。现在前往扩展设置页进行配置吗？")
-      const goSettings = confirm(translate("historyConfirmFeishuConfigReadFailed"))
+      const goSettings = confirm("读取飞书配置失败。现在前往扩展设置页进行配置吗？")
       if (goSettings && chrome?.runtime?.openOptionsPage) {
         chrome.runtime.openOptionsPage()
       }
@@ -626,21 +616,18 @@ function HistoryLayout() {
       })
       // 列表刷新：尽管 storage 监听会更新，这里显式刷新以确保 UI 反馈
       await loadClips()
-      // alert("✅ 成功上传到飞书多维表格！")
-      alert(translate("historyAlertFeishuUploadSuccess"))
+      alert("✅ 成功上传到飞书多维表格！")
     } catch (e) {
       console.error(e)
       const msg = (e as Error)?.message || "未知错误"
       // 错误处理：配置缺失时提供快速跳转至设置页
       if (msg.includes("飞书配置缺失") || msg.includes("configuration missing")) {
-        // const go = confirm("飞书配置缺失或不完整。是否前往扩展设置进行配置？\n需要：App Token、Table ID、App ID 和 App Secret")
-        const go = confirm(translate("historyConfirmFeishuConfigMissing"))
+        const go = confirm("飞书配置缺失或不完整。是否前往扩展设置进行配置？\n需要：App Token、Table ID、App ID 和 App Secret")
         if (go && chrome?.runtime?.openOptionsPage) {
           chrome.runtime.openOptionsPage()
         }
       } else {
-        // alert("❌ 导出失败: " + msg)
-        alert(translate("historyAlertFeishuUploadFailed") + msg)
+        alert("❌ 导出失败: " + msg)
       }
     } finally {
       setExportingId(null)
@@ -652,13 +639,11 @@ function HistoryLayout() {
     const syncedClips = clips.filter(c => c.syncedToFeishu && c.feishuRecordId)
     
     if (syncedClips.length === 0) {
-      // alert("ℹ️ 没有已同步的记录需要检查")
-      alert(translate("historyAlertNoSyncedRecords"))
+      alert("ℹ️ 没有已同步的记录需要检查")
       return
     }
     
-    // const confirmCheck = confirm(`将检查 ${syncedClips.length} 条已同步记录的状态，这可能需要一些时间。是否继续？`)
-    const confirmCheck = confirm(translate("historyConfirmCheckSyncStatus"))
+    const confirmCheck = confirm(`将检查 ${syncedClips.length} 条已同步记录的状态，这可能需要一些时间。是否继续？`)
     if (!confirmCheck) return
     
     setIsRefreshingSyncStatus(true)
@@ -669,8 +654,7 @@ function HistoryLayout() {
       )
       
       if (invalidClipIds.length === 0) {
-        // alert("✅ 所有同步记录状态正常")
-        alert(translate("historyAlertAllSyncStatusNormal"))
+        alert("✅ 所有同步记录状态正常")
       } else {
         // 清除已删除记录的同步状态
         for (const clipId of invalidClipIds) {
@@ -680,13 +664,11 @@ function HistoryLayout() {
           })
         }
         await loadClips()
-        // alert(`🔄 已更新 ${invalidClipIds.length} 条记录的同步状态（飞书端已删除）`)
-        alert(translate("historyAlertSyncStatusUpdated"))
+        alert(`🔄 已更新 ${invalidClipIds.length} 条记录的同步状态（飞书端已删除）`)
       }
     } catch (e) {
       console.error("刷新同步状态失败:", e)
-      // alert("❌ 刷新同步状态失败: " + (e as Error).message)
-      alert(translate("historyAlertSyncStatusRefreshFailed") + (e as Error).message)
+      alert("❌ 刷新同步状态失败: " + (e as Error).message)
     } finally {
       setIsRefreshingSyncStatus(false)
     }
@@ -699,8 +681,7 @@ function HistoryLayout() {
   // - 使用 Blob 将字符串变成“文件”，借助对象 URL 和一个临时的 <a download> 元素触发浏览器下载，最后释放资源
   const handleExportToCSV = async () => {
     if (!selectedClip) {
-      // alert("请选择一个剪藏")
-      alert(translate("historyAlertSelectClipToExportAsCSV"))
+      alert("请选择一个剪藏")
       return;
     }
     // 取当前选中剪藏数据：没有选中就无法导出
@@ -938,18 +919,15 @@ function HistoryLayout() {
                 <BookOpen className="w-4 h-4 text-white" />
               </div>
               <div>
-                {/** <h2 className={`text-sm font-bold ${t.textPrimary}`}>我的剪藏</h2>  */}
-                {/** <p className={`text-[10px] ${t.textFaint}`}>{stats.total} 条</p> */}
-                <h2 className={`text-sm font-bold ${t.textPrimary}`}>{translate("historyMyClipsTitle")}</h2>
-                <p className={`text-[10px] ${t.textFaint}`}>{stats.total} {translate("historyItemCount")}</p>
+                <h2 className={`text-sm font-bold ${t.textPrimary}`}>我的剪藏</h2>
+                <p className={`text-[10px] ${t.textFaint}`}>{stats.total} 条</p>
               </div>
             </div>
             <div className="flex items-center gap-1.5">
-              {/** title={theme === "dark" ? "切换到浅色模式" : "切换到深色模式"} */}
               <button
                 onClick={toggleTheme}
                 className={`p-1.5 rounded-lg transition-all duration-300 ${t.inputBg} ${t.inputBgHover} ${t.textDim} hover:text-indigo-400`}
-                title={theme === "dark" ? translate("historyToggleThemeLight") : translate("historyToggleThemeDark")}
+                title={theme === "dark" ? "切换到浅色模式" : "切换到深色模式"}
               >
                 {theme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
               </button>
@@ -961,8 +939,7 @@ function HistoryLayout() {
                     : `${t.inputBg} ${t.textDim} ${t.inputBgHover} hover:text-indigo-400`
                 }`}
               >
-                {/** {isSelectMode ? "✓ 完成" : "管理"} */}
-                {isSelectMode ? translate("historySelectModeDone") : translate("historySelectModeManage")}
+                {isSelectMode ? "✓ 完成" : "管理"}
               </button>
             </div>
           </div>
@@ -981,8 +958,7 @@ function HistoryLayout() {
                   }`}
                 >
                   <div className={`text-base font-bold transition-colors ${statsFilter === "all" ? "text-indigo-400" : `${t.textPrimary} group-hover:text-indigo-400`}`}>{stats.total}</div>
-                  {/** 全部 */}
-                  <div className={`text-[10px] ${statsFilter === "all" ? "text-indigo-300" : t.textFaint}`}>{translate("historyFilterAll")}</div>
+                  <div className={`text-[10px] ${statsFilter === "all" ? "text-indigo-300" : t.textFaint}`}>全部</div>
                 </button>
                 <button 
                   onClick={() => setStatsFilter(statsFilter === "today" ? "all" : "today")}
@@ -993,8 +969,7 @@ function HistoryLayout() {
                   }`}
                 >
                   <div className={`text-base font-bold transition-colors ${statsFilter === "today" ? "text-emerald-300" : "text-emerald-400 group-hover:text-emerald-300"}`}>{stats.today}</div>
-                  {/** 今日 */}
-                  <div className={`text-[10px] ${statsFilter === "today" ? "text-emerald-300" : t.textFaint}`}>{translate("historyFilterToday")}</div>
+                  <div className={`text-[10px] ${statsFilter === "today" ? "text-emerald-300" : t.textFaint}`}>今日</div>
                 </button>
                 <button 
                   onClick={() => setStatsFilter(statsFilter === "withImages" ? "all" : "withImages")}
@@ -1005,8 +980,7 @@ function HistoryLayout() {
                   }`}
                 >
                   <div className={`text-base font-bold transition-colors ${statsFilter === "withImages" ? "text-cyan-300" : "text-cyan-400 group-hover:text-cyan-300"}`}>{stats.withImages}</div>
-                  {/** 含图 */}
-                  <div className={`text-[10px] ${statsFilter === "withImages" ? "text-cyan-300" : t.textFaint}`}>{translate("historyFilterWithImages")}</div>
+                  <div className={`text-[10px] ${statsFilter === "withImages" ? "text-cyan-300" : t.textFaint}`}>含图</div>
                 </button>
                 <button 
                   onClick={() => setStatsFilter(statsFilter === "synced" ? "all" : "synced")}
@@ -1017,10 +991,8 @@ function HistoryLayout() {
                   }`}
                 >
                   <div className={`text-base font-bold transition-colors ${statsFilter === "synced" ? "text-amber-300" : "text-amber-400 group-hover:text-amber-300"}`}>{stats.synced}</div>
-                  {/** 已同步 */}
-                  <div className={`text-[10px] ${statsFilter === "synced" ? "text-amber-300" : t.textFaint}`}>{translate("historyFilterSynced")}</div>
+                  <div className={`text-[10px] ${statsFilter === "synced" ? "text-amber-300" : t.textFaint}`}>已同步</div>
                   {/* 刷新同步状态按钮 */}
-                  {/** title="刷新飞书同步状态" */}
                   {stats.synced > 0 && (
                     <button
                       onClick={(e) => {
@@ -1029,22 +1001,20 @@ function HistoryLayout() {
                       }}
                       disabled={isRefreshingSyncStatus}
                       className={`absolute -top-1 -right-1 p-1 rounded-full ${t.inputBg} hover:bg-amber-500/20 transition-all ${isRefreshingSyncStatus ? 'animate-spin' : ''}`}
-                      title={translate("historyRefreshFeishuStatusHint")}
+                      title="刷新飞书同步状态"
                     >
                       <RefreshCw className={`h-3 w-3 ${isRefreshingSyncStatus ? 'text-amber-400' : t.textFaint + ' hover:text-amber-400'}`} />
                     </button>
                   )}
-                {/** title="开始复习" */}
                 </button>
                 {/* 待复习入口 */}
                 <button 
                   onClick={openReviewPage}
                   className={`${t.inputBg} backdrop-blur rounded-lg p-2 text-center transition-all cursor-pointer group ${t.inputBgHover} relative`}
-                  title={translate("historyStartReviewHint")}
+                  title="开始复习"
                 >
                   <div className={`text-base font-bold transition-colors text-purple-400 group-hover:text-purple-300`}>{dueReviewCount}</div>
-                  {/** <div className={`text-[10px] ${t.textFaint} group-hover:text-purple-300`}>待复习</div> */}
-                  <div className={`text-[10px] ${t.textFaint} group-hover:text-purple-300`}>{translate("historyPendingReview")}</div>
+                  <div className={`text-[10px] ${t.textFaint} group-hover:text-purple-300`}>待复习</div>
                   {dueReviewCount > 0 && (
                     <span className="absolute -top-1 -right-1 w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
                   )}
@@ -1065,12 +1035,10 @@ function HistoryLayout() {
                     ) : (
                       <Square className="h-4 w-4" />
                     )}
-                    {/** {selectedIds.size === processedClips.length && processedClips.length > 0 ? "取消全选" : "全选"} */}
-                    {selectedIds.size === processedClips.length && processedClips.length > 0 ? translate("historyDeselectAll") : translate("historySelectAll")}
+                    {selectedIds.size === processedClips.length && processedClips.length > 0 ? "取消全选" : "全选"}
                   </button>
                   <span className={`text-xs ${t.textDim}`}>
-                    {/** 已选 <span className="text-indigo-400 font-bold">{selectedIds.size}</span> */}
-                    {translate("historyAlreadySelected")} <span className="text-indigo-400 font-bold">{selectedIds.size}</span>
+                    已选 <span className="text-indigo-400 font-bold">{selectedIds.size}</span>
                   </span>
                   <button
                     onClick={handleBatchDelete}
@@ -1082,8 +1050,7 @@ function HistoryLayout() {
                     }`}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
-                    {/** 删除 */}
-                    {translate("historyDeleteButton")}
+                    删除
                   </button>
                 </div>
               </div>
@@ -1093,9 +1060,8 @@ function HistoryLayout() {
             <div className="px-4 pb-3">
               <div className="relative group">
                 <Search className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 ${t.textFaint} group-focus-within:text-indigo-400 transition-colors`} />
-                {/** placeholder={translate("historySearchPlaceholder")}  */}
                 <input 
-                  placeholder={translate("historySearchPlaceholder")} 
+                  placeholder="搜索剪藏..." 
                   className={`pl-10 pr-4 py-2 border-0 rounded-xl w-full text-sm ${t.inputBg} ${t.textPrimary} ${t.placeholderText} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${t.inputBgFocus} transition-all`}
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
@@ -1128,19 +1094,17 @@ function HistoryLayout() {
                     className={`px-2 py-1 text-xs ${t.inputBg} border-0 rounded-lg ${t.textMuted} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer ${t.inputBgHover} transition-colors appearance-none`}
                     style={{ backgroundImage: 'none' }}
                   >
-                    {/** <option value="all" className={t.optionBg}>全部来源</option> */}
-                    <option value="all" className={t.optionBg}>{translate("historyAllSources")}</option>
+                    <option value="all" className={t.optionBg}>全部来源</option>
                     {uniqueSources.map(source => (
                       <option key={source} value={source} className={t.optionBg}>{source}</option>
                     ))}
                   </select>
                   
                   {/* Sort Toggle */}
-                  {/** title={sortOrder === "newest" ? "最新优先" : "最早优先"} */}
                   <button
                     onClick={() => setSortOrder(sortOrder === "newest" ? "oldest" : "newest")}
                     className={`p-1.5 ${t.textDim} hover:text-indigo-400 ${t.inputBg} ${t.inputBgHover} rounded-lg transition-all`}
-                    title={sortOrder === "newest" ? translate("historySortNewest") : translate("historySortOldest")}
+                    title={sortOrder === "newest" ? "最新优先" : "最早优先"}
                   >
                     {sortOrder === "newest" ? <SortDesc className="h-4 w-4" /> : <SortAsc className="h-4 w-4" />}
                   </button>
@@ -1171,10 +1135,8 @@ function HistoryLayout() {
                   <div className={`w-16 h-16 mx-auto mb-4 ${t.inputBg} rounded-2xl flex items-center justify-center`}>
                     <Search className={`h-8 w-8 ${t.textDisabled}`} />
                   </div>
-                  {/** <p className={`${t.textDim} text-sm font-medium`}>暂无剪藏</p> */}
-                  {/** <p className={`${t.textDisabled} text-xs mt-1`}>开始浏览并剪藏内容吧</p> */}
-                  <p className={`${t.textDim} text-sm font-medium`}>{translate("historyNoClips")}</p>
-                  <p className={`${t.textDisabled} text-xs mt-1`}>{translate("historyStartClipping")}</p>
+                  <p className={`${t.textDim} text-sm font-medium`}>暂无剪藏</p>
+                  <p className={`${t.textDisabled} text-xs mt-1`}>开始浏览并剪藏内容吧</p>
                 </div>
               ) : viewMode === "list" ? (
                 /* List View */
@@ -1273,8 +1235,7 @@ function HistoryLayout() {
                           {/* Synced */}
                           {clip.syncedToFeishu && (
                             <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full">
-                              {/** ✓ 已同步 */}
-                              {translate("historyAlreadySyncedToFeishu")}
+                              ✓ 已同步
                             </span>
                           )}
                           
@@ -1290,7 +1251,6 @@ function HistoryLayout() {
                         {/* Actions row - only show on hover when not in select mode */}
                         {!isSelectMode && hoveredId === clip.id && (
                           <div className="flex items-center gap-1 mt-2" onClick={(e) => e.stopPropagation()}>
-                            {/* title="编辑" */}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()
@@ -1299,7 +1259,7 @@ function HistoryLayout() {
                               className={`p-1.5 rounded-lg transition-colors ${
                                 isDark ? "hover:bg-white/10 text-gray-400 hover:text-indigo-400" : "hover:bg-gray-100 text-gray-500 hover:text-indigo-600"
                               }`}
-                              title={translate("historyEditClipHint")}
+                              title="编辑"
                             >
                               <Pencil className="h-3.5 w-3.5" />
                             </button>
@@ -1438,8 +1398,7 @@ function HistoryLayout() {
                       className={`px-4 py-2 rounded-xl transition-all duration-300 flex items-center gap-2 text-sm font-medium ${t.textMuted} ${t.inputBg} hover:bg-indigo-500/20 hover:text-indigo-300 hover:ring-1 hover:ring-indigo-500/30`}
                     >
                       <Pencil className="h-4 w-4" />
-                      {/** 编辑  */}
-                      <span>{translate("historyEditActionButton")}</span>
+                      <span>编辑</span>
                     </button>
                     
                     {/* Move to Folder */}
@@ -1451,7 +1410,6 @@ function HistoryLayout() {
                     />
                     
                     {/* Review Button */}
-                    {/** title={reviewStatus[selectedClip.id] ? "点击移除复习计划" : "添加到复习计划"} */}
                     <button
                       onClick={() => reviewStatus[selectedClip.id] 
                         ? handleRemoveFromReview(selectedClip.id) 
@@ -1463,15 +1421,14 @@ function HistoryLayout() {
                           ? "text-purple-400 bg-purple-500/10 ring-1 ring-purple-500/30 hover:bg-purple-500/20"
                           : `${t.textMuted} ${t.inputBg} hover:bg-purple-500/20 hover:text-purple-300 hover:ring-1 hover:ring-purple-500/30`
                       }`}
-                      title={reviewStatus[selectedClip.id] ? translate("historyRemoveFromReview") : translate("historyAddToReview")}
+                      title={reviewStatus[selectedClip.id] ? "点击移除复习计划" : "添加到复习计划"}
                     >
                       {addingToReview === selectedClip.id ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <>
                           <Brain className="h-4 w-4" />
-                          {/** <span>{reviewStatus[selectedClip.id] ? "已加入复习" : "复习"}</span> */}
-                          <span>{reviewStatus[selectedClip.id] ? translate("historyAlreadyInReview") : translate("historyReview")}</span>
+                          <span>{reviewStatus[selectedClip.id] ? "已加入复习" : "复习"}</span>
                         </>
                       )}
                     </button>
@@ -1482,15 +1439,13 @@ function HistoryLayout() {
                       onMouseEnter={handleMenuMouseEnter}
                       onMouseLeave={handleMenuMouseLeave}
                     >
-                      {/** title={translate("historyExport")} */}
                       <button
                         onClick={(e) => { e.stopPropagation(); setIsExportMenuOpen(v => !v) }}
                         className={`px-4 py-2 rounded-xl transition-all duration-300 flex items-center gap-2 text-sm font-medium ${t.textMuted} ${t.inputBg} hover:bg-indigo-500/20 hover:text-indigo-300 hover:ring-1 hover:ring-indigo-500/30`}
-                        title={translate("historyExport")}
+                        title="导出"
                       >
                         <LiaFileDownloadSolid className="h-4 w-4"/>
-                        {/** 导出 */}
-                        {translate("historyExport")}
+                        导出
                       </button>
                       {isExportMenuOpen && (
                         <div
@@ -1509,25 +1464,22 @@ function HistoryLayout() {
                             ) : (
                               <Share className="h-4 w-4" />
                             )}
-                            {/** <span>{selectedClip.syncedToFeishu ? '已同步' : exportingId ===  selectedClip.id ? '同步中…' : '同步飞书'}</span> */}
-                            <span>{selectedClip.syncedToFeishu ? translate("historyAlreadySynced") : exportingId === selectedClip.id ? translate("historySyncing") : translate("historySyncToFeishu")}</span>
+                            <span>{selectedClip.syncedToFeishu ? '已同步' : exportingId === selectedClip.id ? '同步中…' : '同步飞书'}</span>
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); handleExportToCSV() }}
                             className={`flex items-center gap-2 w-full text-sm font-medium px-4 py-2 rounded-md transition-all ${t.inputBg} ${t.textDim} hover:bg-indigo-500/20 hover:text-indigo-300`}
                           >
                             <FileText className="h-4 w-4" />
-                            {/** <span>导出为CSV</span> */}
-                            <span>{translate("historyExportAsCsv")}</span>
+                            <span>导出为CSV</span>
                           </button>
                         </div>
                       )}
                     </div>
-                    {/* title={translate("historyDeleteClip")} */}
                     <button 
                       onClick={() => handleDelete(selectedClip.id)}
                       className={`p-2 ${t.textFaint} hover:text-red-400 ${t.inputBg} hover:bg-red-500/10 rounded-xl transition-all duration-300 hover:ring-1 hover:ring-red-500/30`}
-                      title={translate("historyDeleteClip")}
+                      title="删除剪藏"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -1550,8 +1502,7 @@ function HistoryLayout() {
                       <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
                         <TrendingUp className="h-3.5 w-3.5 text-white" />
                       </div>
-                      {/** 关键要点 */}
-                      {translate("historyKeyPoints")}
+                      关键要点
                     </h3>
                     <div className="space-y-2">
                       {selectedClip.keyPoints.map((point, i) => (
@@ -1574,8 +1525,7 @@ function HistoryLayout() {
                     <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center">
                       <Sparkles className="h-3.5 w-3.5 text-white" />
                     </div>
-                    {/** AI 摘要 */}
-                    {translate("historyAISummary")}
+                    AI 摘要
                   </h3>
                   <div className={`${t.sectionBg} rounded-xl p-4`}>
                     <Markdown 
@@ -1593,12 +1543,10 @@ function HistoryLayout() {
                         <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-gray-500 to-slate-600 flex items-center justify-center">
                           <FileText className="h-3.5 w-3.5 text-white" />
                         </div>
-                        {/** 原文内容 */}
-                        {translate("historyOriginalContent")}
+                        原文内容
                         {selectedClip.rawTextFull && (
                           <span className={`text-xs font-normal ${t.textFaint} ml-2`}>
-                            {/** {selectedClip.rawTextFull.length.toLocaleString()} 字  */}
-                            {selectedClip.rawTextFull.length.toLocaleString()} {translate("historyContentCharacters")}
+                            {selectedClip.rawTextFull.length.toLocaleString()} 字
                           </span>
                         )}
                       </h3>
@@ -1610,14 +1558,12 @@ function HistoryLayout() {
                           {isRawTextExpanded ? (
                             <>
                               <ChevronUp className="h-3 w-3" />
-                              {/** 收起 */}
-                              {translate("historyCollapse")}
+                              收起
                             </>
                           ) : (
                             <>
                               <ChevronDown className="h-3 w-3" />
-                              {/** 展开 */}
-                              {translate("historyExpand")}
+                              展开
                             </>
                           )}
                         </button>
@@ -1652,8 +1598,7 @@ function HistoryLayout() {
                       <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
                         <Edit3 className="h-3.5 w-3.5 text-white" />
                       </div>
-                      {/* 我的笔记 */}
-                      {translate("historyMyNotes")}
+                      我的笔记
                     </h3>
                     {!isEditingNotes ? (
                       <button
@@ -1661,8 +1606,7 @@ function HistoryLayout() {
                         className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-300 bg-amber-500/10 rounded-lg hover:bg-amber-500/20 transition-all"
                       >
                         <Edit3 className="h-3 w-3" />
-                        {/** {selectedClip.notes ? "编辑" : "添加"} */}
-                        {selectedClip.notes ? translate("historyNotesEdit") : translate("historyNotesAdd")}
+                        {selectedClip.notes ? "编辑" : "添加"}
                       </button>
                     ) : (
                       <div className="flex items-center gap-2">
@@ -1671,8 +1615,7 @@ function HistoryLayout() {
                           className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium ${t.textDim} ${t.inputBg} rounded-lg ${t.inputBgHover} transition-all`}
                         >
                           <X className="h-3 w-3" />
-                          {/** 取消 */}
-                          {translate("historyNotesCancel")}
+                          取消
                         </button>
                         <button
                           onClick={saveNotes}
@@ -1680,19 +1623,17 @@ function HistoryLayout() {
                           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg hover:from-amber-400 hover:to-orange-400 transition-all disabled:opacity-50"
                         >
                           {isSavingNotes ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
-                          {/** 保存 */}
-                          {translate("historyNotesSave")}
+                          保存
                         </button>
                       </div>
                     )}
                   </div>
                   
-                  {/* placeholder="记录你的想法..." */}
                   {isEditingNotes ? (
                     <textarea
                       value={editedNotes}
                       onChange={(e) => setEditedNotes(e.target.value)}
-                      placeholder={translate("historyWriteIdeasPlaceholder")}
+                      placeholder="记录你的想法..."
                       className={`w-full h-32 p-3 text-sm rounded-xl border-0 ${t.sectionBg} ${t.textPrimary} ${t.placeholderText} focus:outline-none focus:ring-1 focus:ring-amber-500/50 resize-none`}
                       autoFocus
                     />
@@ -1704,8 +1645,7 @@ function HistoryLayout() {
                         </p>
                       ) : (
                         <p className={`${t.textFaint} text-sm text-center py-3`}>
-                          {/* 点击添加笔记... */}
-                          {translate("historyAddNotesPlaceholder")}
+                          点击添加笔记...
                         </p>
                       )}
                     </div>
@@ -1721,8 +1661,7 @@ function HistoryLayout() {
                       <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center">
                         <ImageIcon className="h-3.5 w-3.5 text-white" />
                       </div>
-                      {/* 图片 */}
-                      {translate("historyImagesSectionLabel")}
+                      图片
                       <span className={`text-sm font-normal ${t.textFaint}`}>
                         ({selectedClip.images.length})
                       </span>
@@ -1738,7 +1677,7 @@ function HistoryLayout() {
                         >
                           <img
                             src={img.src}
-                            alt={img.alt ||  translate("historyImageAlt") + ` ${i + 1}`}
+                            alt={img.alt || `图片 ${i + 1}`}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                             loading="lazy"
                             onError={(e) => {
@@ -1750,8 +1689,7 @@ function HistoryLayout() {
                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-2">
                             <div className="flex items-center gap-1 text-white text-xs">
                               <ExternalLink className="h-3 w-3" />
-                              {/* 查看原图 */}
-                              {translate("historyViewOriginalImage")}
+                              查看原图
                             </div>
                           </div>
                         </a>
@@ -1767,8 +1705,7 @@ function HistoryLayout() {
                       <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center">
                         <Tag className="h-3.5 w-3.5 text-white" />
                       </div>
-                      {/* 标签 */}
-                      {translate("historyTagsSectionLabel")}
+                      标签
                     </h3>
                     <div className="flex flex-wrap gap-2">
                       {selectedClip.tags.map((tag, i) => (
@@ -1789,10 +1726,8 @@ function HistoryLayout() {
                 </div>
                 <div className="absolute -inset-4 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-3xl blur-xl -z-10" />
               </div>
-              {/* <p className={`${t.textDim} font-medium mt-6`}>选择一个剪藏</p> */}
-              <p className={`${t.textDim} font-medium mt-6`}>{translate("historySelectOneClip")}</p>
-              {/* <p className={`${t.textDisabled} text-sm mt-1`}>从左侧列表选择查看详情</p> */}
-              <p className={`${t.textDisabled} text-sm mt-1`}>{translate("historySelectClipDetail")}</p>
+              <p className={`${t.textDim} font-medium mt-6`}>选择一个剪藏</p>
+              <p className={`${t.textDisabled} text-sm mt-1`}>从左侧列表选择查看详情</p>
             </div>
           )}
        </div>
@@ -1830,12 +1765,10 @@ function HistoryLayout() {
                       </div>
                     </div>
                     <div>
-                      {/** <h2 className={`font-semibold text-sm ${t.textPrimary}`}>AI 助手</h2> */}
-                      <h2 className={`font-semibold text-sm ${t.textPrimary}`}>{translate("historyAIAssistantLabel")}</h2>
+                      <h2 className={`font-semibold text-sm ${t.textPrimary}`}>AI 助手</h2>
                       <p className={`text-[10px] ${t.textFaint} flex items-center gap-1`}>
                         <Zap className="h-2.5 w-2.5 text-amber-400" />
-                        {/** iFlow 驱动 */}
-                        {translate("historyIFlowDriverLabel")}
+                        iFlow 驱动
                       </p>
                     </div>
                   </div>
@@ -1844,8 +1777,7 @@ function HistoryLayout() {
                     className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-xs font-medium rounded-lg hover:from-indigo-400 hover:to-purple-500 transition-all duration-300 shadow-lg shadow-indigo-500/20"
                   >
                     <Save className="w-3.5 h-3.5" />
-                    {/** 保存 */}
-                    {translate("historySaveChatButton")}
+                    保存
                   </button>
                 </div>
               </div>
@@ -1861,10 +1793,8 @@ function HistoryLayout() {
                 </div>
                 <div className="absolute -inset-4 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-3xl blur-xl -z-10" />
               </div>
-              {/** AI 对话 */}
-              <p className={`${t.textDim} font-medium mt-5`}>{translate("historyAIChat")}</p>
-              {/** 选择剪藏后可与 AI 助手探讨内容 */}
-              <p className={`${t.textDisabled} text-xs mt-1 max-w-[180px]`}>{translate("historyAIChatHint")}</p>
+              <p className={`${t.textDim} font-medium mt-5`}>AI 对话</p>
+              <p className={`${t.textDisabled} text-xs mt-1 max-w-[180px]`}>选择剪藏后可与 AI 助手探讨内容</p>
             </div>
           )}
        </div>

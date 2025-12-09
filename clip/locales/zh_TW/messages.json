@@ -441,5 +441,355 @@
   "sidebarFloatPanelSendFailed": {
     "message": "❌ 發送失敗:",
     "description": "发送失败提示"
+  },
+
+  
+  "historyConfirmDeleteSingle": {
+    "message": "確認刪除選中的剪藏嗎？",
+    "description": "確認刪除單個剪藏"
+  },
+  "historyConfirmDeleteSingleWithFeishu": {
+    "message": "確認要刪除此剪藏嗎？\n\n此剪藏已同步至飛書。您是否也要從飛書表格中刪除此記錄？\n\n點擊\"確定\"將刪除兩者\n點擊\"取消\"將不執行任何操作",
+    "description": "確認刪除帶有飛書同步的單個剪藏"
+  },
+  "historyAlertSaveNotesFailed": {
+    "message": "❌ 保存筆記失敗",
+    "description": "保存筆記失敗提示"
+  },
+  "historyAlertFeishuUploadSuccess": {
+    "message": "✅ 飛書記錄上傳成功",
+    "description": "飛書上傳成功提示"
+  },
+  "historyAlertFeishuUploadFailed": {
+    "message": "❌ 導出失敗：",
+    "description": "導出失敗提示"
+  },
+  "historyAlertNoSyncedRecords": {
+    "message": "ℹ️ 無可檢查的同步記錄",
+    "description": "無同步記錄提示"
+  },
+  "historyConfirmCheckSyncStatus": {
+    "message": "將檢查 %s 條同步記錄的狀態，這可能需要一些時間。繼續？",
+    "description": "確認檢查同步記錄狀態"
+  },
+  "historyAlertAllSyncStatusNormal": {
+    "message": "✅ 所有同步記錄狀態正常",
+    "description": "所有同步記錄狀態正常提示"
+  },
+  "historyAlertSyncStatusUpdated": {
+    "message": "🔄 更新了所有記錄的同步狀態（已在飛書端刪除）",
+    "description": "同步狀態已更新提示"
+  },
+  "historyAlertSyncStatusRefreshFailed": {
+    "message": "❌ 刷新同步狀態失敗：",
+    "description": "刷新同步狀態失敗提示"
+  },
+  "historyAlertRemoveFromReviewFailed": {
+    "message": "移除失敗",
+    "description": "從複習中移除失敗提示"
+  },
+  "historyConfirmFeishuConfigIncomplete": {
+    "message": "未檢測到完整的飛書配置（需要 App Token、表格 ID、App ID 和 App Secret）。現在前往擴展設置頁面進行配置？",
+    "description": "飛書配置不完整提示"
+  },
+  "historyConfirmFeishuConfigReadFailed": {
+    "message": "讀取飛書配置失敗。現在前往擴展設置頁面進行配置？",
+    "description": "讀取飛書配置失敗提示"
+  },
+  "historyConfirmFeishuConfigMissing": {
+    "message": "飛書配置缺失或不完整。前往擴展設置進行配置？\n需要：App Token、表格 ID、App ID 和 App Secret",
+    "description": "飛書配置缺失提示"
+  },
+  "historyAlertSelectClipToExportAsCSV": {
+    "message": "請選擇要導出的剪藏",
+    "description": "選擇要導出的剪藏提示"
+  },
+  "historyAlertAddToReviewFailed": {
+    "message": "添加到複習失敗",
+    "description": "添加到複習失敗提示"
+  },
+  "historyConfirmRemoveFromReview": {
+    "message": "確認要從複習計劃中移除嗎？",
+    "description": "確認從複習計劃中移除"
+  },
+  "historyMyClipsTitle": {
+    "message": "我的剪藏",
+    "description": "歷史頁面標題"
+  },
+  "historyItemCount": {
+    "message": "條",
+    "description": "剪藏計數文字"
+  },
+  "historyRefreshFeishuStatusHint": {
+    "message": "刷新飛書同步狀態",
+    "description": "刷新飛書同步狀態按鈕提示"
+  },
+  "historyStartReviewHint": {
+    "message": "開始複習",
+    "description": "開始複習按鈕提示"
+  },
+  "historyPendingReview": {
+    "message": "待複習",
+    "description": "待複習文字"
+  },
+  "historyDeselectAll": {
+    "message": "取消全選",
+    "description": "取消全選按鈕文字"
+  },
+  "historySelectAll": {
+    "message": "全選",
+    "description": "全選按鈕文字"
+  },
+  "historyAlreadySelected": {
+    "message": "已選擇",
+    "description": "已選擇剪藏計數前綴"
+  },
+  "historyDeleteButton": {
+    "message": "刪除",
+    "description": "刪除按鈕文字"
+  },
+  "historySearchPlaceholder": {
+    "message": "搜索剪藏...",
+    "description": "搜索框占位符文字"
+  },
+  "historyAllSources": {
+    "message": "所有來源",
+    "description": "所有來源選項文字"
+  },
+  "historyNoClips": {
+    "message": "暫無剪藏",
+    "description": "無剪藏提示文字"
+  },
+  "historyStartClipping": {
+    "message": "開始瀏覽並剪藏內容",
+    "description": "開始剪藏提示文字"
+  },
+  "historyKeyPoints": {
+    "message": "關鍵點",
+    "description": "關鍵點標題文字"
+  },
+  "historyAISummary": {
+    "message": "AI 摘要",
+    "description": "AI 摘要標題"
+  },
+  "historyOriginalContent": {
+    "message": "原始內容",
+    "description": "原始內容標題"
+  },
+  "historyContentCharacters": {
+    "message": "字",
+    "description": "內容字數文字"
+  },
+  "historyCollapse": {
+    "message": "收起",
+    "description": "收起按鈕文字"
+  },
+  "historyExpand": {
+    "message": "展開",
+    "description": "展開按鈕文字"
+  },
+  "historyMyNotes": {
+    "message": "我的筆記",
+    "description": "我的筆記標題"
+  },
+  "historyNotesEdit": {
+    "message": "編輯",
+    "description": "編輯按鈕文字"
+  },
+  "historyNotesAdd": {
+    "message": "添加",
+    "description": "添加按鈕文字"
+  },
+  "historyNotesCancel": {
+    "message": "取消",
+    "description": "取消按鈕文字"
+  },
+  "historyNotesSave": {
+    "message": "保存",
+    "description": "保存按鈕文字"
+  },
+  "historyWriteIdeasPlaceholder": {
+    "message": "記錄您的想法...",
+    "description": "記錄想法占位符文字"
+  },
+  "historyAddNotesPlaceholder": {
+    "message": "點擊添加筆記...",
+    "description": "添加筆記占位符文字"
+  },
+  "historyImagesSectionLabel": {
+    "message": "圖片",
+    "description": "圖片部分標題文字"
+  },
+  "historyImageAlt": {
+    "message": "圖片",
+    "description": "圖片描述"
+  },
+  "historyViewOriginalImage": {
+    "message": "查看原始圖片",
+    "description": "查看原始圖片按鈕文字"
+  },
+  "historyTagsSectionLabel": {
+    "message": "標籤",
+    "description": "標籤部分標題文字"
+  },
+  "historySelectOneClip": {
+    "message": "選擇一個剪藏",
+    "description": "選擇剪藏提示"
+  },
+  "historySelectClipDetail": {
+    "message": "從左側列表選擇以查看詳細信息",
+    "description": "選擇剪藏詳情提示"
+  },
+  "historyAIAssistantLabel": {
+    "message": "AI 助手",
+    "description": "AI 助手標籤文字"
+  },
+  "historyIFlowDriverLabel": {
+    "message": "iFlow 驅動",
+    "description": "iFlow 驅動標籤文字"
+  },
+  "historySaveChatButton": {
+    "message": "保存",
+    "description": "保存聊天記錄按鈕文字"
+  },
+  "historyAIChat": {
+    "message": "AI 聊天",
+    "description": "AI 聊天標題"
+  },
+  "historyAIChatHint": {
+    "message": "選擇剪藏與 AI 助手討論內容",
+    "description": "AI 聊天提示"
+  },
+  "historyToggleThemeLight": {
+    "message": "切換至明亮模式",
+    "description": "切換至明亮模式按鈕文字"
+  },
+  "historyToggleThemeDark": {
+    "message": "切換至暗黑模式",
+    "description": "切換至暗黑模式按鈕文字"
+  },
+  "historySelectModeDone": {
+    "message": "✓ 完成",
+    "description": "選擇模式完成按鈕文字"
+  },
+  "historySelectModeManage": {
+    "message": "管理",
+    "description": "選擇模式管理按鈕文字"
+  },
+  "historyFilterAll": {
+    "message": "全部",
+    "description": "全部剪藏過濾文字"
+  },
+  "historyFilterToday": {
+    "message": "今日",
+    "description": "今日剪藏過濾文字"
+  },
+  "historyFilterWithImages": {
+    "message": "包含圖片",
+    "description": "包含圖片的剪藏過濾文字"
+  },
+  "historyFilterSynced": {
+    "message": "已同步",
+    "description": "已同步剪藏過濾文字"
+  },
+  "historySortNewest": {
+    "message": "最新在前",
+    "description": "最新在前列出提示"
+  },
+  "historySortOldest": {
+    "message": "最舊在前",
+    "description": "最舊在前列出提示"
+  },
+  "historyAlreadySyncedToFeishu": {
+    "message": "✓ 已同步",
+    "description": "已同步至飛書標記"
+  },
+  "historyRemoveFromReview": {
+    "message": "點擊從複習計劃中移除",
+    "description": "從複習計劃中移除提示"
+  },
+  "historyAddToReview": {
+    "message": "添加到複習計劃",
+    "description": "添加到複習計劃提示"
+  },
+  "historyAlreadyInReview": {
+    "message": "已在複習中",
+    "description": "已在複習文字"
+  },
+  "historyReview": {
+    "message": "複習",
+    "description": "複習按鈕文字"
+  },
+  "historyExport": {
+    "message": "導出",
+    "description": "導出按鈕文字"
+  },
+  "historyAlreadySynced": {
+    "message": "已同步",
+    "description": "已同步至飛書"
+  },
+  "historySyncing": {
+    "message": "同步中...",
+    "description": "同步中狀態文字"
+  },
+  "historySyncToFeishu": {
+    "message": "同步到飛書",
+    "description": "同步到飛書按鈕文字"
+  },
+  "historyExportAsCsv": {
+    "message": "導出為 CSV",
+    "description": "導出為 CSV 按鈕文字"
+  },
+  "historyDeleteClip": {
+    "message": "刪除剪藏",
+    "description": "刪除剪藏提示"
+  },
+  "historyEditClipHint": {
+    "message": "編輯",
+    "description": "編輯剪藏按鈕文字"
+  },
+  "historyEditActionButton": {
+    "message": "編輯",
+    "description": "編輯剪藏按鈕文字"
+  },
+
+  
+
+  "selectionClipperClip": {
+    "message": "剪藏",
+    "description": "剪藏按鈕文字"
+  },
+  "selectionClipperSaveSelected": {
+    "message": "保存選中內容",
+    "description": "保存選中內容按鈕文字"
+  },
+  "selectionClipperAIGenerating": {
+    "message": "AI 生成中...",
+    "description": "AI 生成中狀態文字"
+  },
+  "selectionClipperAISummarySave": {
+    "message": "保存 AI 摘要",
+    "description": "保存 AI 摘要按鈕文字"
+  },
+  "selectionClipperAskAI": {
+    "message": "詢問 AI",
+    "description": "詢問 AI 按鈕文字"
+  },
+  "selectionClipperSaving": {
+    "message": "保存中...",
+    "description": "保存中狀態文字"
+  },
+  "selectionClipperSaveDirect": {
+    "message": "直接保存",
+    "description": "直接保存按鈕文字"
+  },
+  "selectionClipperSelectedCharactersLeft": {
+    "message": "已選擇",
+    "description": "已選擇文字計數文字"
+  },
+  "selectionClipperSelectedCharactersRight": {
+    "message": "字",
+    "description": "已選擇文字計數文字"
   }
+
 }
