@@ -271,11 +271,39 @@ export function postProcessExtractedContent(
   }
   
   // 执行字符串级清洗
-  const cleanedText = buildCleanText(
+  let cleanedText = buildCleanText(
     originalText, 
     content.url,
     options?.enableGarbageFilter
   )
+  
+  // 字符数量限制：超过 6w 字符时截断到 6w 字符
+  const MAX_CHARS = 60000  // 6万字符
+  const TRUNCATE_TO = 60000  // 截断到6万字符
+  let isTruncated = false
+  
+  if (cleanedText.length > MAX_CHARS) {
+    console.warn(`⚠️ 文本过长 (${cleanedText.length} 字符)，已截断到 ${TRUNCATE_TO} 字符`)
+    cleanedText = cleanedText.slice(0, TRUNCATE_TO)
+    isTruncated = true
+    
+    // 尝试在截断处找到合适的句子结尾，避免截断在句子中间
+    const lastPeriod = Math.max(
+      cleanedText.lastIndexOf('。'),
+      cleanedText.lastIndexOf('！'),
+      cleanedText.lastIndexOf('？'),
+      cleanedText.lastIndexOf('.'),
+      cleanedText.lastIndexOf('!'),
+      cleanedText.lastIndexOf('?')
+    )
+    
+    // 如果在最后 1000 字符内找到了句子结尾，就在那里截断
+    if (lastPeriod > TRUNCATE_TO - 1000) {
+      cleanedText = cleanedText.slice(0, lastPeriod + 1)
+    }
+    
+    cleanedText += '\n\n[注：原文过长，已自动截断...]'
+  }
   
   // 生成新的 snippet（清洗后的前 500 字符）
   const maxSnippetLength = 500
@@ -299,6 +327,10 @@ export function postProcessExtractedContent(
   const reduction = originalText.length - cleanedText.length
   if (reduction > 0) {
     console.log(`📝 Post-process cleaned ${reduction} chars (${originalText.length} → ${cleanedText.length})`)
+  }
+  
+  if (isTruncated) {
+    console.log(`✂️ 文本已截断: ${originalText.length} → ${cleanedText.length} 字符`)
   }
   
   return result

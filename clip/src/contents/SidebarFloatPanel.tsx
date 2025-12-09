@@ -688,6 +688,15 @@ function PanelContent({
     try {
       const content = await extractContent()
 
+      // 检查文本长度并提醒用户
+      const textLength = content?.text?.length || 0
+      if (textLength >= 60000) {
+        setNotification({
+          message: `⚠️ 原文过长，已自动截断到 60k 字符（原文约 ${Math.floor(textLength / 1000)}k 字）`,
+          type: "warning"
+        })
+      }
+
       // 检查当前页面是否已保存过
       const contentUrlNorm = content?.url ? normalizeUrl(content.url) : normalizeUrl(window.location.href)
       if (contentUrlNorm) {
