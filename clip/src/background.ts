@@ -84,6 +84,39 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true
   }
 
+  // 块级 HTML 翻译（保留标签与结构）
+  if (request.action === "translate-html") {
+    const run = async () => {
+      try {
+        const raw = await chrome.storage.local.get("clipper_api_config")
+        const apiKey = raw?.clipper_api_config?.apiKey?.trim()
+        if (!apiKey) { sendResponse({ success: false, error: "NO_KEY" }); return }
+
+        const llm = createLlm(apiKey, "qwen3-max")
+        const html = String(request.html || "")
+        const targetLang = String(request.targetLang || "zh-CN")
+
+        const completion = await llmLimiter(() => llm.chat.completions.create({
+          model: "qwen3-max",
+          messages: [
+            { role: "system", content: `You are a strict HTML-preserving translator. Translate visible text in the HTML to ${targetLang}. Keep all tags, attributes, classes, data-*, code blocks, inline code, URLs and formatting unchanged. Return ONLY the translated HTML.` },
+            { role: "user", content: html }
+          ],
+          temperature: 0,
+          max_tokens: 4000
+        }))
+
+        const out = completion?.choices?.[0]?.message?.content || html
+        sendResponse({ success: true, data: out })
+      } catch (err: any) {
+        const msg = err?.message || String(err)
+        sendResponse({ success: false, error: msg })
+      }
+    }
+    run().catch(()=>{})
+    return true
+  }
+
   // translate-html removed (Youdao disabled) - 旧的 HTML 翻译逻辑已移除
 
   // 处理 LLM 连通性诊断请求

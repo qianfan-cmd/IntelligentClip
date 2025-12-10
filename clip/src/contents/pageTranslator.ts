@@ -1028,15 +1028,13 @@ async function runBulkRound(nodes: Node[], targetLang: string) {
     __clipPending.add(nodes[i]) // 标记为处理中
   }
   if (!payload.length) return
-  
   const SEP = "|||CLIP_SEP|||"
-  const CHUNK = 16
-  // 分批发送
-  for (let start = 0; start < payload.length; start += CHUNK) {
-    const end = Math.min(start + CHUNK, payload.length)
-    const sub = payload.slice(start, end)
-    await new Promise<void>((resolve) => {
-      try {
+      const CHUNK = 16
+      for (let start = 0; start < payload.length; start += CHUNK) {
+        const end = Math.min(start + CHUNK, payload.length)
+        const sub = payload.slice(start, end)
+        await new Promise<void>((resolve) => {
+          try {
         if (!isTranslatorActive) { resolve(); return }
         // 直接调用 background 的 LLM 接口 (这里逻辑似乎是专门为 LLM 补漏设计的？或者复用接口)
         chrome.runtime.sendMessage({ action: 'translate-text-llm', text: sub.join(SEP), targetLang }, (resp) => {
@@ -1081,47 +1079,86 @@ async function runBulkRound(nodes: Node[], targetLang: string) {
                         })
                       } catch { __clipPending.delete(nodes[ni]); done() }
                     }, delay)
-                  } catch { done() }
+                  } catch { __clipPending.delete(nodes[ni]); done() }
                 }))
               }
-              Promise.all(promises).then(() => resolve())
+              Promise.all(promises).then(() => { resolve() })
               return
             }
-            // 其他错误，直接标记完成（保持原文）
-            sub.forEach((_, i) => {
-               const gi = start + i; const ni = valid[gi]
-               if (ni !== undefined) __clipPending.delete(nodes[ni])
-            })
-            resolve()
-            return
+            if (code === 'RETRYABLE') {
+              const promises: Promise<void>[] = []
+              for (let i = 0; i < sub.length; i++) {
+                const gi = start + i
+                const ni = valid[gi]
+                if (ni === undefined) continue
+                promises.push(new Promise<void>((done) => {
+                  try {
+                    if (!isTranslatorActive) { __clipPending.delete(nodes[ni]); done(); return }
+                    chrome.runtime.sendMessage({ action: 'translate-text-llm', text: sub[i], targetLang }, (resp2) => {
+                      const err2 = chrome.runtime.lastError
+                      const node = nodes[ni]
+                      const srcText = texts[ni]
+                      let val = srcText
+                      if (!err2 && resp2?.success && typeof resp2.data === 'string') {
+                        const out = String(resp2.data || '').trim()
+                        if (out) val = out
+                      }
+                      if (!__clipOriginal.has(node)) __clipOriginal.set(node, srcText)
+                      const isZhTarget = /^zh/i.test(targetLang)
+                      const hasTargetVal = isZhTarget ? /[\u4e00-\u9fa5]/.test(val) : /[A-Za-z]/.test(val)
+                      if (hasTargetVal || val !== srcText) {
+                        try { node.nodeValue = val } catch {}
+                        __clipTranslated.set(node, val)
+                        if (srcText && hasTargetVal) __clipLexicon.set(norm(srcText), val)
+                      }
+                      __clipPending.delete(node)
+                      done()
+                    })
+                  } catch { __clipPending.delete(nodes[ni]); done() }
+                }))
+              }
+              Promise.all(promises).then(() => { __clipSweepDelayMs = 8000; resolve() })
+              return
+            }
+            for (let i = 0; i < sub.length; i++) { const gi = start + i; const ni = valid[gi]; if (ni !== undefined) __clipPending.delete(nodes[ni]) }
+            resolve(); return
           }
-          
-          // 成功分支
-          const normalized = resp.data.replace(/｜/g, "|")
-          let parts = normalized.split(SEP).map((s: string) => s.trim())
-          // ... 同样的拆分容错逻辑 ...
-          if (parts.length === 1) { const alt = normalized.split("\n" + SEP + "\n").map((s:string) => s.trim()); if (alt.length > 1) parts = alt }
-          
-          // 回填结果
-          for (let i = 0; i < sub.length; i++) {
-             const gi = start + i
-             const ni = valid[gi]
-             if (ni === undefined) continue
-             const node = nodes[ni]
-             const srcText = texts[ni]
-             
-             const val = parts[i] || srcText
-             if (!__clipOriginal.has(node)) __clipOriginal.set(node, srcText)
-             
-             const isZhTarget = /^zh/i.test(targetLang)
-             const hasTargetVal = isZhTarget ? /[\u4e00-\u9fa5]/.test(val) : /[A-Za-z]/.test(val)
-             if (hasTargetVal || val !== srcText) {
+          let parts: string[] = []
+          try {
+            const maybeJson = resp.data.trim()
+            if (maybeJson.startsWith("[") || maybeJson.startsWith("{")) {
+              const arr = JSON.parse(maybeJson)
+              if (Array.isArray(arr)) parts = arr.map((x: any) => String(x || "").trim())
+            }
+          } catch {}
+          if (!parts.length) {
+            const normalized = resp.data.replace(/｜/g, "|")
+            parts = normalized.split(SEP).map(s => s.trim())
+          }
+          if (!isTranslatorActive) { __clipSweepDelayMs = 8000; resolve(); return }
+          for (let i = 0; i < parts.length; i++) {
+            const gi = start + i
+            const ni = valid[gi]
+            if (ni !== undefined) {
+              const node = nodes[ni]
+              if (!__clipOriginal.has(node)) __clipOriginal.set(node, texts[ni])
+              const val = parts[i] || texts[ni]
+              const isZhTarget = /^zh/i.test(targetLang)
+              const hasTargetVal = isZhTarget ? /[\u4e00-\u9fa5]/.test(val) : /[A-Za-z]/.test(val)
+              if (hasTargetVal || val !== texts[ni]) {
                 try { node.nodeValue = val } catch {}
                 __clipTranslated.set(node, val)
-                if (srcText && hasTargetVal) __clipLexicon.set(norm(srcText), val)
-             }
-             __clipPending.delete(node)
+                if (texts[ni] && hasTargetVal) __clipLexicon.set(norm(texts[ni]), val)
+              }
+              __clipPending.delete(node)
+            }
           }
+          if (isTranslatorActive && !__clipFirstReported && parts.length > 0) {
+            __clipFirstReported = true
+            try { chrome.runtime.sendMessage({ type: "CLIP_TRANSLATE_FIRST" }) } catch {}
+            try { window.postMessage({ source: "clip", type: "clip:translate-first" }, "*") } catch {}
+          }
+          __clipSweepDelayMs = 8000
           resolve()
         })
       } catch { resolve() }
