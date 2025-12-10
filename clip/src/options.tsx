@@ -85,6 +85,7 @@ function OptionsPanel() {
             <p className="text-gray-500 dark:text-gray-400 flex items-center justify-center">
               {/* Configure your API keys and integration settings. */}
               {t("optionsSettingsDescription")}
+              {/** title="Help"  */}
                <button
                       className={`rounded-lg transition-colors `}
                       onClick={() =>
@@ -94,7 +95,7 @@ function OptionsPanel() {
                           "noopener,noreferrer"
                         )
                       }
-                      title="Help">
+                      title={t("optionsHelpButtonHint")}>
                       <FiHelpCircle className="w-3 h-3" />
                     </button>
             </p>

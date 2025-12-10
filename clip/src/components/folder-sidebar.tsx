@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react"
 import { FolderStore, type Folder } from "@/lib/clip-store"
+import { useI18n } from "@/lib/use-i18n"
 import { 
   Folder as FolderIcon, 
   FolderPlus, 
@@ -37,6 +38,7 @@ const FOLDER_COLORS = [
   { name: "gray", class: "bg-gray-500" },
 ]
 
+
 export default function FolderSidebar({
   selectedFolderId,
   onSelectFolder,
@@ -48,6 +50,7 @@ export default function FolderSidebar({
   onToggleCollapse
 }: FolderSidebarProps) {
   const isDark = theme === "dark"
+  const { t } = useI18n()
   const [folders, setFolders] = useState<Folder[]>([])
   const [isCreating, setIsCreating] = useState(false)
   const [newFolderName, setNewFolderName] = useState("")
@@ -153,7 +156,8 @@ export default function FolderSidebar({
           <h3 className={`text-xs font-semibold uppercase tracking-wider ${
             isDark ? "text-gray-500" : "text-gray-400"
           }`}>
-            文件夹
+            {/** 文件夹 */}
+            {t("folderSidebarTitle")}
           </h3>
           {collapsed && (
             <span className={`text-xs px-1.5 py-0.5 rounded ${
@@ -163,6 +167,7 @@ export default function FolderSidebar({
             </span>
           )}
         </div>
+        {/** title="新建文件夹" */}
         <button
           onClick={(e) => {
             e.stopPropagation()
@@ -173,7 +178,7 @@ export default function FolderSidebar({
               ? "hover:bg-white/10 text-gray-500 hover:text-indigo-400" 
               : "hover:bg-gray-100 text-gray-400 hover:text-indigo-600"
           }`}
-          title="新建文件夹"
+          title={t("folderSidebarCreateFolder")}
         >
           <FolderPlus className="w-4 h-4" />
         </button>
@@ -188,7 +193,8 @@ export default function FolderSidebar({
             {selectedFolderId === "uncategorized" ? (
               <>
                 <FolderIcon className="w-4 h-4" />
-                <span>未归类</span>
+                {/** 未归类 */}
+                <span>{t("folderSidebarUncategorized")}</span>
               </>
             ) : (
               <>
@@ -196,7 +202,8 @@ export default function FolderSidebar({
                   folders.find(f => f.id === selectedFolderId)?.color
                 )}`} />
                 <span className="truncate">
-                  {folders.find(f => f.id === selectedFolderId)?.name || "未知"}
+                  {/** {folders.find(f => f.id === selectedFolderId)?.name || "未知"} */}
+                  {folders.find(f => f.id === selectedFolderId)?.name || t("folderSidebarUnknown")}
                 </span>
               </>
             )}
@@ -209,6 +216,7 @@ export default function FolderSidebar({
         <div className={`mb-3 p-3 rounded-xl ${
           isDark ? "bg-white/5" : "bg-gray-50"
         }`}>
+          {/** placeholder="文件夹名称..." */}
           <input
             ref={inputRef}
             type="text"
@@ -218,7 +226,7 @@ export default function FolderSidebar({
               if (e.key === "Enter") handleCreate()
               if (e.key === "Escape") setIsCreating(false)
             }}
-            placeholder="文件夹名称..."
+            placeholder={t("folderSidebarFolderNamePlaceholder")}
             className={`w-full px-3 py-2 rounded-lg border-0 text-sm mb-2 ${
               isDark 
                 ? "bg-white/5 text-white placeholder:text-gray-500" 
@@ -247,14 +255,16 @@ export default function FolderSidebar({
                 isDark ? "text-gray-400 hover:bg-white/10" : "text-gray-500 hover:bg-gray-100"
               }`}
             >
-              取消
+              {/* 取消 */}
+              {t("folderSidebarCancel")}
             </button>
             <button
               onClick={handleCreate}
               disabled={!newFolderName.trim()}
               className="px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              创建
+              {/** 创建 */}
+              {t("folderSidebarCreate")}
             </button>
           </div>
         </div>
@@ -277,7 +287,8 @@ export default function FolderSidebar({
           }`}
         >
           <Inbox className="w-4 h-4" />
-          <span className="flex-1 text-left text-sm font-medium">全部剪藏</span>
+          {/** 全部剪藏 */}
+          <span className="flex-1 text-left text-sm font-medium">{t("folderSidebarAllClips")}</span>
           <span className={`text-xs px-2 py-0.5 rounded-full ${
             isDark ? "bg-white/10" : "bg-gray-200"
           }`}>
@@ -299,7 +310,8 @@ export default function FolderSidebar({
           }`}
         >
           <FolderIcon className="w-4 h-4" />
-          <span className="flex-1 text-left text-sm font-medium">未归类</span>
+          {/** 未归类 */}
+          <span className="flex-1 text-left text-sm font-medium">{t("folderSidebarUncategorized")}</span>
           <span className={`text-xs px-2 py-0.5 rounded-full ${
             isDark ? "bg-white/10" : "bg-gray-200"
           }`}>
@@ -403,7 +415,8 @@ export default function FolderSidebar({
                         }`}
                       >
                         <Edit3 className="w-3.5 h-3.5" />
-                        重命名
+                        {/** 重命名 */}
+                        {t("folderSidebarRename")}
                       </button>
                       <button
                         onClick={() => {
@@ -415,7 +428,8 @@ export default function FolderSidebar({
                         }`}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                        删除
+                        {/** 删除 */}
+                        {t("folderSidebarDelete")}
                       </button>
                     </div>
                   )}
@@ -434,10 +448,12 @@ export default function FolderSidebar({
             isDark ? "bg-[#1a1a24]" : "bg-white"
           }`}>
             <h3 className={`font-bold mb-2 ${isDark ? "text-white" : "text-gray-900"}`}>
-              删除文件夹
+              {/** 删除文件夹 */}
+              {t("folderSidebarDeleteFolder")}
             </h3>
             <p className={`text-sm mb-4 ${isDark ? "text-gray-400" : "text-gray-500"}`}>
-              确定要删除这个文件夹吗？文件夹内的剪藏将移动到"未归类"。
+              {/** 确定要删除这个文件夹吗？文件夹内的剪藏将移动到"未归类"。 */}
+              {t("folderSidebarDeleteConfirm")}
             </p>
             <div className="flex justify-end gap-2">
               <button
@@ -446,13 +462,13 @@ export default function FolderSidebar({
                   isDark ? "text-gray-400 hover:bg-white/10" : "text-gray-500 hover:bg-gray-100"
                 }`}
               >
-                取消
+                {t("folderSidebarCancelButton")}
               </button>
               <button
                 onClick={() => handleDelete(deletingId)}
                 className="px-4 py-2 rounded-lg text-sm font-medium bg-red-500 text-white hover:bg-red-600"
               >
-                删除
+                {t("folderSidebarDeleteButton")}
               </button>
             </div>
           </div>

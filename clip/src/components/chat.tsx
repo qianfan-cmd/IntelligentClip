@@ -13,6 +13,7 @@ import { ClipStore, type Clip } from "@/lib/clip-store"
 import { cn } from "@/lib/utils"
 import { Sparkles } from "lucide-react"
 import React, { useEffect, useState } from "react"
+import { useI18n } from "@/lib/use-i18n"
 
 import ChatActions from "./chat-actions"
 import ChatList from "./chat-list"
@@ -29,6 +30,7 @@ export default function Chat({ className, theme: propTheme }: ChatProps) {
   const theme = propTheme || extensionTheme
   const [currentClip, setCurrentClip] = useState<Clip | null>(null)
   const [isTipOpen, setIsTipOpen] = useState(true)
+  const { t } = useI18n()
   // 用作“聚焦信号”的计数器。每次递增都会触发 PromptForm 内的 useEffect 执行 focus()
   const [focusTrigger, setFocusTrigger] = useState(0);
 
@@ -82,11 +84,14 @@ export default function Chat({ className, theme: propTheme }: ChatProps) {
             <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 justify-between">
               <Sparkles className="h-3.5 w-3.5 text-indigo-500" />
               <span>
-                提示：你可以说
+                {/** 提示：你可以说 */}
+                {t('chatTip')}
                 <span className="text-indigo-600 dark:text-indigo-400 font-medium">
-                  "帮我打标签和评分"
+                  {/** "帮我打标签和评分" */}
+                  {t("chatTipTagging")}
                 </span>
-                来更新当前剪藏的标注
+                {/** 来更新当前剪藏的标注 */}
+                {t("chatTipUpdateClip")}
               </span>
               <span onClick={handleCloseTip} className="cursor-pointer">
                 x

@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button"
 import { TooltipWrapper } from "@/components/ui/tooltip-wrapper"
 import { useChat } from "@/contexts/chat-context"
 import { useExtension } from "@/contexts/extension-context"
+import { useI18n } from "@/lib/use-i18n"
 // 【修复】使用统一的 API 配置模块，解决跨页面不同步问题
 import { useApiConfig } from "@/lib/api-config-store"
 import { cn } from "@/lib/utils"
@@ -39,6 +40,7 @@ export default function PromptForm({ className, theme, focusTrigger }: PromptFor
   const { extensionData, currentClipId } = useExtension()
   // 【修复】使用统一的 API 配置模块，包含加载状态
   const { apiKey: openAIKey, isLoading: isApiKeyLoading } = useApiConfig()
+  const { t } = useI18n()
 
   const {
     chatMessages,
@@ -90,17 +92,19 @@ export default function PromptForm({ className, theme, focusTrigger }: PromptFor
       console.error("Cannot generate chat: No transcript data available")
       setChatIsError(true)
       setChatIsGenerating(false)
+      // content: "❌ 当前视频没有字幕，无法进行对话。请选择一个有字幕的视频。"
       setChatMessages([
         ...chatMessages,
         {
           role: "assistant",
-          content: "❌ 当前视频没有字幕，无法进行对话。请选择一个有字幕的视频。"
+          content: t("chatPromptFormChatNoSubtitle")
         }
       ])
       return
     }
 
     // 【修复】正确区分"加载中"和"真正未设置"
+    // content: "⏳ 正在加载 API 配置，请稍候重试..."
     if (isApiKeyLoading) {
       console.log("API config is still loading, please wait...")
       setChatIsError(true)
@@ -109,13 +113,14 @@ export default function PromptForm({ className, theme, focusTrigger }: PromptFor
         ...chatMessages,
         {
           role: "assistant",
-          content: "⏳ 正在加载 API 配置，请稍候重试..."
+          content: t("chatPromptFormLoadingApiKey")
         }
       ])
       return
     }
 
     // 验证 API Key
+    // content: "❌ API 密钥未设置，请在设置中添加您的 API 密钥。"
     if (!openAIKey || openAIKey.trim() === "") {
       console.error("Cannot generate chat: No OpenAI API key")
       setChatIsError(true)
@@ -124,7 +129,7 @@ export default function PromptForm({ className, theme, focusTrigger }: PromptFor
         ...chatMessages,
         {
           role: "assistant",
-          content: "❌ API 密钥未设置，请在设置中添加您的 API 密钥。"
+          content: t("chatPromptFormApiKeyNotSet")
         }
       ])
       return
@@ -276,11 +281,12 @@ export default function PromptForm({ className, theme, focusTrigger }: PromptFor
       onSubmit={handleSubmit}
     >
       <div className="relative flex items-end gap-2 w-full bg-gray-50 text-black dark:text-white dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-zinc-700 focus-within:border-indigo-400 dark:focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-100 dark:focus-within:ring-indigo-900/30 transition-all">
+        {/** placeholder="输入消息，Enter 发送..."  */}
         <Textarea
           ref={inputRef}
           tabIndex={0}
           onKeyDown={handleKeyDown}
-          placeholder="输入消息，Enter 发送..."
+          placeholder={t("chatPromptFormTextareaPlaceholder")}
           className="flex-1 min-h-[44px] max-h-[120px] w-full resize-none bg-transparent px-4 py-3 focus:outline-none text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500"
           autoFocus
           spellCheck={false}
@@ -294,7 +300,8 @@ export default function PromptForm({ className, theme, focusTrigger }: PromptFor
         />
 
         <div className="absolute h-full flex-shrink-0 pr-2 pb-2 left-full top-1/2 -translate-y-1/2 ">
-          <TooltipWrapper text={chatIsGenerating ? "生成中..." : "发送消息"}>
+          {/** <TooltipWrapper text={chatIsGenerating ? "生成中..." : "发送消息"}> */}
+          <TooltipWrapper text={chatIsGenerating ? t("chatPromptFormGenerating") : t("chatPromptFormSendMessage")}>
             <Button
               type="submit"
               size="icon"
@@ -317,9 +324,10 @@ export default function PromptForm({ className, theme, focusTrigger }: PromptFor
       </div>
       
       {/* 快捷键提示 */}
+      {/** 按 Enter 发送，Shift+Enter 换行 */}
       <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-2 text-center">
-        按 <kbd className="px-1 py-0.5 bg-gray-100 dark:bg-zinc-800 rounded text-[10px]">Enter</kbd> 发送，
-        <kbd className="px-1 py-0.5 bg-gray-100 dark:bg-zinc-800 rounded text-[10px]">Shift+Enter</kbd> 换行
+        {t("chatPromptFormShortcutPress")} <kbd className="px-1 py-0.5 bg-gray-100 dark:bg-zinc-800 rounded text-[10px]">Enter</kbd> {t("chatPromptFormShortcutSend")}，
+        <kbd className="px-1 py-0.5 bg-gray-100 dark:bg-zinc-800 rounded text-[10px]">Shift+Enter</kbd> {t("chatPromptFormShortcutLineBreak")}
       </p>
     </form>
   )

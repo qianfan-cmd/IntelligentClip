@@ -12,6 +12,7 @@ import { useExtension } from "@/contexts/extension-context"
 import { cn } from "@/lib/utils"
 import { Plus, Save, Loader2 } from "lucide-react"
 import { ClipStore } from "@/lib/clip-store"
+import { useI18n } from "@/lib/use-i18n"
 
 interface ChatActionProps {
   className?: string
@@ -30,6 +31,7 @@ export default function ChatAction({ className, theme }: ChatActionProps) {
   } = useChat()
 
   const { extensionLoading } = useExtension()
+  const { t } = useI18n()
 
   // 重置对话
   function resetChat() {
@@ -41,7 +43,8 @@ export default function ChatAction({ className, theme }: ChatActionProps) {
   // 保存对话到剪藏
   async function handleSaveChat() {
     if (!chatMessages || chatMessages.length === 0) {
-      alert("没有可保存的对话内容")
+      // alert("没有可保存的对话内容")
+      alert(t("chatActionsChatNoContentToSave"))
       return
     }
     
@@ -63,10 +66,12 @@ export default function ChatAction({ className, theme }: ChatActionProps) {
       // 通知其他页面刷新
       chrome.runtime.sendMessage({ action: 'clips-updated' }).catch(() => {})
       
-      alert("✅ 对话已保存到剪藏!")
+      // alert("✅ 对话已保存到剪藏!")
+      alert(t("chatActionsChatSaveSuccess"))
     } catch (e) {
       console.error(e)
-      alert("保存失败，请重试")
+      // alert("保存失败，请重试")
+      alert(t("chatActionsChatSaveFailed"))
     }
   }
 
@@ -89,7 +94,8 @@ export default function ChatAction({ className, theme }: ChatActionProps) {
         }
       >
         <SelectTrigger className="w-auto min-w-[140px] h-9 text-xs bg-white text-black dark:bg-black border-gray-200 dark:border-zinc-700 dark:text-white dark:hover:bg-black-10">
-          <SelectValue placeholder="选择模型" />
+          {/** placeholder="选择模型" */}
+          <SelectValue placeholder={t("chatActionsChatSelectModel")} />
         </SelectTrigger>
         <SelectContent>
           {models.map((model: Model) => (
@@ -106,7 +112,8 @@ export default function ChatAction({ className, theme }: ChatActionProps) {
       {/* 右侧：操作按钮 */}
       <div className="flex flex-row items-center gap-1">
         {/* 保存按钮 */}
-        <TooltipWrapper text="保存对话">
+        {/** text=保存对话 */}
+        <TooltipWrapper text={t("chatActionsChatSaveTooltip")}>
           <Button
             variant="ghost"
             size="icon"
@@ -119,7 +126,8 @@ export default function ChatAction({ className, theme }: ChatActionProps) {
         </TooltipWrapper>
 
         {/* 新建对话按钮 */}
-        <TooltipWrapper text="新建对话">
+        {/** text=新建对话 */}
+        <TooltipWrapper text={t("chatActionsChatNewTooltip")}>
           <Button
             variant="outline"
             onClick={resetChat}
@@ -131,7 +139,8 @@ export default function ChatAction({ className, theme }: ChatActionProps) {
             ) : (
               <Plus className="h-3.5 w-3.5" />
             )}
-            <span>新对话</span>
+            {/** text=新对话 */}
+            <span>{t("chatActionsChatNewText")}</span>
           </Button>
         </TooltipWrapper>
       </div>

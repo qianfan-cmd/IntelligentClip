@@ -26,6 +26,10 @@
     "message": "Configure your API keys and integration settings.",
     "description": "扩展设置界面描述"
   },
+  "optionsHelpButtonHint": {
+    "message": "Help",
+    "description": "扩展设置界面帮助按钮"
+  },
   "optionsOpenAIConfigTitle": {
     "message": "OpenAI Configuration",
     "description": "OpenAI 配置界面标题"
@@ -447,6 +451,45 @@
     "message": "❌ Send failed:",
     "description": "发送失败提示"
   },
+
+
+
+  "selectionClipperClip": {
+    "message": "Clip",
+    "description": "Clip button text"
+  },
+  "selectionClipperSaveSelected": {
+    "message": "Save Selected",
+    "description": "Save selected content button text"
+  },
+  "selectionClipperAIGenerating": {
+    "message": "AI Generating...",
+    "description": "AI generating status text"
+  },
+  "selectionClipperAISummarySave": {
+    "message": "Save AI Summary",
+    "description": "Save AI summary button text"
+  },
+  "selectionClipperAskAI": {
+    "message": "Ask AI",
+    "description": "Ask AI button text"
+  },
+  "selectionClipperSaving": {
+    "message": "Saving...",
+    "description": "Saving status text"
+  },
+  "selectionClipperSaveDirect": {
+    "message": "Save Directly",
+    "description": "Save directly button text"
+  },
+  "selectionClipperSelectedCharactersLeft": {
+    "message": "Selected",
+    "description": "Selected characters count text"
+  },
+  "selectionClipperSelectedCharactersRight": {
+    "message": "characters",
+    "description": "Selected characters count text"
+  },
   
 
   "historyConfirmDeleteSingle": {
@@ -770,44 +813,254 @@
     "message": "Edit",
     "description": "Edit clip button text"
   },
+
+  "chatPromptFormChatNoSubtitle": {
+    "message": "❌ No subtitles found for the current video, conversation not available. Please select a video with subtitles.",
+    "description": "没有字幕时的提示信息"
+  },
+  "chatPromptFormLoadingApiKey": {
+    "message": "⏳ Loading API configuration, please try again later...",
+    "description": "加载 API 配置时的提示信息"
+  },
+  "chatPromptFormApiKeyNotSet": {
+    "message": "❌ API key not set, please add your API key in settings.",
+    "description": "API密钥未设置时的提示信息"
+  },
+  "chatPromptFormTextareaPlaceholder": {
+    "message": "Enter message, press Enter to send...",
+    "description": "聊天输入框占位符"
+  },
+  "chatPromptFormGenerating": {
+    "message": "Generating...",
+    "description": "生成中状态文本"
+  },
+  "chatPromptFormSendMessage": {
+    "message": "Send Message",
+    "description": "发送消息按钮文本"
+  },
+
+  "chatPromptFormShortcutPress": {
+    "message": "Press",
+    "description": "快捷键提示前缀"
+  },
+  "chatPromptFormShortcutSend": {
+    "message": "Send",
+    "description": "发送消息快捷键提示"
+  },
+  "chatPromptFormShortcutLineBreak": {
+    "message": "Line Break",
+    "description": "换行快捷键提示"
+  },
+
+
+
+  "chatActionsChatNoContentToSave": {
+    "message": "No conversation content to save",
+    "description": "没有可保存对话内容提示"
+  },
+  "chatActionsChatSaveSuccess": {
+    "message": "✅ Conversation saved to clips!",
+    "description": "对话保存成功提示"
+  },
+  "chatActionsChatSaveFailed": {
+    "message": "Save failed, please try again",
+    "description": "对话保存失败提示"
+  },
+  "chatActionsChatSelectModel": {
+    "message": "Select Model",
+    "description": "选择模型下拉框文本"
+  },
+  "chatActionsChatSaveTooltip": {
+    "message": "Save Conversation",
+    "description": "保存对话按钮提示"
+  },
+  "chatActionsChatNewTooltip": {
+    "message": "New Conversation",
+    "description": "新建对话按钮提示"
+  },
+  "chatActionsChatNewText": {
+    "message": "New Chat",
+    "description": "新建对话按钮文本"
+  },
+
+
+
+  "chatTip": {
+    "message": "Tip: You can say",
+    "description": "聊天提示文本"
+  },
+  "chatTipTagging": {
+    "message": "\"Help me tag and rate\"",
+    "description": "聊天标签提示"
+  },
+  "chatTipUpdateClip": {
+    "message": "to update the annotation of the current clip",
+    "description": "聊天更新剪藏提示"
+  },
+
+
+
+  "chatEmptyScreenFailToGetContent": {
+    "message": "Failed to get content",
+    "description": "没有可用内容时的标题"
+  },
+  "chatEmptyScreenChatNoContent": {
+    "message": "No text content available for the current clip, conversation feature requires content to work. Please select a clip with content.",
+    "description": "没有可用内容时的描述"
+  },
+  "chatEmptyScreenClipAssistant": {
+    "message": "AI Clip Assistant",
+    "description": "AI助手标题"
+  },
+  "chatEmptyScreenAssistantDescription": {
+    "message": "AI-powered Q&A based on clip content, helping you quickly understand and explore knowledge within it",
+    "description": "AI助手描述"
+  },
+  "chatEmptyScreenTryTheseQuestions": {
+    "message": "Try these questions:",
+    "description": "示例问题提示"
+  },
+  "chatEmptyScreenQuickSummary": {
+    "message": "📝 Quick overview of the clip content?",
+    "description": "快速概括示例标题"
+  },
+  "chatEmptyScreenQuickSummaryPrompt": {
+    "message": "Please briefly summarize the main information of the clip content",
+    "description": "快速概括示例提示"
+  },
+  "chatEmptyScreenKeyPoints": {
+    "message": "💡 What are the key points?",
+    "description": "关键要点示例标题"
+  },
+  "chatEmptyScreenKeyPointsPrompt": {
+    "message": "What are the key points and core viewpoints in this clip content?",
+    "description": "关键要点示例提示"
+  },
+  "chatEmptyScreenMainTakeaways": {
+    "message": "🎯 Summary of main takeaways",
+    "description": "主要收获示例标题"
+  },
+  "chatEmptyScreenMainTakeawaysPrompt": {
+    "message": "What main takeaways and inspirations can be gained from reading this clip content?",
+    "description": "主要收获示例提示"
+  },
+  "chatEmptyScreenDeepDive": {
+    "message": "❓ Deep dive into a topic",
+    "description": "深入了解示例标题"
+  },
+  "chatEmptyScreenDeepDivePrompt": {
+    "message": "Can you explain in detail the main concepts mentioned in the clip content?",
+    "description": "深入了解示例提示"
+  },
+
+
+
+  "folderSidebarTitle": {
+    "message": "Folders",
+    "description": "文件夹侧边栏标题"
+  },
+  "folderSidebarCreateFolder": {
+    "message": "Create New Folder",
+    "description": "新建文件夹按钮提示"
+  },
+  "folderSidebarUncategorized": {
+    "message": "Uncategorized",
+    "description": "未归类选项"
+  },
+  "folderSidebarUnknown": {
+    "message": "Unknown",
+    "description": "未知文件夹名称"
+  },
+  "folderSidebarFolderNamePlaceholder": {
+    "message": "Folder name...",
+    "description": "新建文件夹输入框占位符"
+  },
+  "folderSidebarCancel": {
+    "message": "Cancel",
+    "description": "取消按钮"
+  },
+  "folderSidebarCreate": {
+    "message": "Create",
+    "description": "创建文件夹按钮"
+  },
+  "folderSidebarAllClips": {
+    "message": "All Clips",
+    "description": "全部剪藏选项"
+  },
+  "folderSidebarRename": {
+    "message": "Rename",
+    "description": "重命名文件夹选项"
+  },
+  "folderSidebarDelete": {
+    "message": "Delete",
+    "description": "删除文件夹选项"
+  },
+
+
+  "folderSidebarDeleteFolder": {
+    "message": "Delete Folder",
+    "description": "删除文件夹确认对话框标题"
+  },
+  "folderSidebarDeleteConfirm": {
+    "message": "Are you sure you want to delete this folder? All clips in the folder will be moved to 'Uncategorized'.",
+    "description": "删除文件夹确认信息"
+  },
+  "folderSidebarCancelButton": {
+    "message": "Cancel",
+    "description": "取消删除文件夹按钮"
+  },
+  "folderSidebarDeleteButton": {
+    "message": "Delete",
+    "description": "删除文件夹按钮"
+  },
   
-
-
-  "selectionClipperClip": {
-    "message": "Clip",
-    "description": "Clip button text"
+  "moveToFolderDropdownMoveToFolder": {
+    "message": "Move to Folder",
+    "description": "移动到文件夹选项"
   },
-  "selectionClipperSaveSelected": {
-    "message": "Save Selected",
-    "description": "Save selected content button text"
+  "moveToFolderDropdownMoveTo": {
+    "message": "Move to...",
+    "description": "移动到文件夹下拉框默认文本"
   },
-  "selectionClipperAIGenerating": {
-    "message": "AI Generating...",
-    "description": "AI generating status text"
+  "moveToFolderDropdownUncategorized": {
+    "message": "Uncategorized",
+    "description": "未归类选项"
   },
-  "selectionClipperAISummarySave": {
-    "message": "Save AI Summary",
-    "description": "Save AI summary button text"
+  "moveToFolderDropdownNoFolders": {
+    "message": "No folders yet",
+    "description": "无文件夹时的提示信息"
   },
-  "selectionClipperAskAI": {
-    "message": "Ask AI",
-    "description": "Ask AI button text"
+  
+  "clipTagsPanelNoTagsTitle": {
+    "message": "No AI Tags Yet",
+    "description": "没有AI标注时的提示标题"
   },
-  "selectionClipperSaving": {
-    "message": "Saving...",
-    "description": "Saving status text"
+  "clipTagsPanelNoTagsHint": {
+    "message": "Say \"Help me add tags and ratings\" in the conversation to add annotations",
+    "description": "没有AI标注时的提示信息"
   },
-  "selectionClipperSaveDirect": {
-    "message": "Save Directly",
-    "description": "Save directly button text"
+  "clipTagsPanelTitle": {
+    "message": "AI Annotations",
+    "description": "AI标注面板标题"
   },
-  "selectionClipperSelectedCharactersLeft": {
-    "message": "Selected",
-    "description": "Selected characters count text"
+  "clipTagsPanelRatingLabel": {
+    "message": "Rating:",
+    "description": "评分标签"
   },
-  "selectionClipperSelectedCharactersRight": {
-    "message": "characters",
-    "description": "Selected characters count text"
+  "clipTagsPanelCategoriesLabel": {
+    "message": "Categories:",
+    "description": "分类标签"
+  },
+  "clipTagsPanelScenariosLabel": {
+    "message": "Scenarios:",
+    "description": "适用场景标签"
+  },
+  "clipTagsPanelTagsLabel": {
+    "message": "Tags:",
+    "description": "标签标签"
+  },
+  "clipTagsPanelCommentLabel": {
+    "message": "Personal Comment:",
+    "description": "个人感想标签"
   }
-
 }

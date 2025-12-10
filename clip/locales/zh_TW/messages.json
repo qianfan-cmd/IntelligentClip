@@ -27,6 +27,10 @@
     "message": "配置您的 API 密鑰和集成設置。",
     "description": "扩展设置界面描述"
   },
+  "optionsHelpButtonHint": {
+    "message": "幫助",
+    "description": "扩展设置界面帮助按钮"
+  },
   "optionsOpenAIConfigTitle": {
     "message": "OpenAI 配置",
     "description": "OpenAI 配置界面标题"
@@ -443,6 +447,46 @@
     "description": "发送失败提示"
   },
 
+
+
+  "selectionClipperClip": {
+    "message": "剪藏",
+    "description": "剪藏按鈕文字"
+  },
+  "selectionClipperSaveSelected": {
+    "message": "保存選中內容",
+    "description": "保存選中內容按鈕文字"
+  },
+  "selectionClipperAIGenerating": {
+    "message": "AI 生成中...",
+    "description": "AI 生成中狀態文字"
+  },
+  "selectionClipperAISummarySave": {
+    "message": "保存 AI 摘要",
+    "description": "保存 AI 摘要按鈕文字"
+  },
+  "selectionClipperAskAI": {
+    "message": "詢問 AI",
+    "description": "詢問 AI 按鈕文字"
+  },
+  "selectionClipperSaving": {
+    "message": "保存中...",
+    "description": "保存中狀態文字"
+  },
+  "selectionClipperSaveDirect": {
+    "message": "直接保存",
+    "description": "直接保存按鈕文字"
+  },
+  "selectionClipperSelectedCharactersLeft": {
+    "message": "已選擇",
+    "description": "已選擇文字計數文字"
+  },
+  "selectionClipperSelectedCharactersRight": {
+    "message": "字",
+    "description": "已選擇文字計數文字"
+  },
+
+
   
   "historyConfirmDeleteSingle": {
     "message": "確認刪除選中的剪藏嗎？",
@@ -753,43 +797,255 @@
     "description": "編輯剪藏按鈕文字"
   },
 
+  "chatPromptFormChatNoSubtitle": {
+    "message": "❌ 當前影片沒有字幕，無法進行對話。請選擇一個有字幕的影片。",
+    "description": "沒有字幕時的提示信息"
+  },
+  "chatPromptFormLoadingApiKey": {
+    "message": "⏳ 正在載入 API 配置，請稍候重試...",
+    "description": "載入 API 配置時的提示信息"
+  },
+  "chatPromptFormApiKeyNotSet": {
+    "message": "❌ API 密鑰未設置，請在設置中添加您的 API 密鑰。",
+    "description": "API密鑰未設置時的提示信息"
+  },
+  "chatPromptFormTextareaPlaceholder": {
+    "message": "輸入消息，Enter 發送...",
+    "description": "聊天輸入框占位符"
+  },
+  "chatPromptFormGenerating": {
+    "message": "生成中...",
+    "description": "生成中狀態文本"
+  },
+  "chatPromptFormSendMessage": {
+    "message": "發送消息",
+    "description": "發送消息按鈕文本"
+  },
+
+  "chatPromptFormShortcutPress": {
+    "message": "按",
+    "description": "快捷鍵提示前綴"
+  },
+  "chatPromptFormShortcutSend": {
+    "message": "發送",
+    "description": "發送消息快捷鍵提示"
+  },
+  "chatPromptFormShortcutLineBreak": {
+    "message": "換行",
+    "description": "換行快捷鍵提示"
+  },
+
+
+
+  "chatActionsChatNoContentToSave": {
+    "message": "沒有可保存的對話內容",
+    "description": "沒有可保存對話內容提示"
+  },
+  "chatActionsChatSaveSuccess": {
+    "message": "✅ 對話已保存到剪藏!",
+    "description": "對話保存成功提示"
+  },
+  "chatActionsChatSaveFailed": {
+    "message": "保存失敗，請重試",
+    "description": "對話保存失敗提示"
+  },
+  "chatActionsChatSelectModel": {
+    "message": "選擇模型",
+    "description": "選擇模型下拉框文本"
+  },
+  "chatActionsChatSaveTooltip": {
+    "message": "保存對話",
+    "description": "保存對話按鈕提示"
+  },
+  "chatActionsChatNewTooltip": {
+    "message": "新建對話",
+    "description": "新建對話按鈕提示"
+  },
+  "chatActionsChatNewText": {
+    "message": "新對話",
+    "description": "新建對話按鈕文本"
+  },
+
+
+
+  "chatTip": {
+    "message": "提示：你可以說",
+    "description": "聊天提示文本"
+  },
+  "chatTipTagging": {
+    "message": "\"幫我打標籤和評分\"",
+    "description": "聊天標籤提示"
+  },
+  "chatTipUpdateClip": {
+    "message": "來更新當前剪藏的標註",
+    "description": "聊天更新剪藏提示"
+  },
+
+
+
+  "chatEmptyScreenFailToGetContent": {
+    "message": "無法獲取內容",
+    "description": "沒有可用內容時的標題"
+  },
+  "chatEmptyScreenChatNoContent": {
+    "message": "當前剪藏沒有可用的文本內容，對話功能需要內容才能工作。請選擇一個有內容的剪藏。",
+    "description": "沒有可用內容時的描述"
+  },
+  "chatEmptyScreenClipAssistant": {
+    "message": "AI 剪藏助手",
+    "description": "AI助手標題"
+  },
+  "chatEmptyScreenAssistantDescription": {
+    "message": "基於剪藏內容進行智能問答，幫助你快速理解和探索其中的知識",
+    "description": "AI助手描述"
+  },
+  "chatEmptyScreenTryTheseQuestions": {
+    "message": "試試這些問題：",
+    "description": "示例問題提示"
+  },
+  "chatEmptyScreenQuickSummary": {
+    "message": "📝 快速了解剪藏內容？",
+    "description": "快速概括示例標題"
+  },
+  "chatEmptyScreenQuickSummaryPrompt": {
+    "message": "請簡要概括剪藏內容的主要信息",
+    "description": "快速概括示例提示"
+  },
+  "chatEmptyScreenKeyPoints": {
+    "message": "💡 有哪些關鍵要點？",
+    "description": "關鍵要點示例標題"
+  },
+  "chatEmptyScreenKeyPointsPrompt": {
+    "message": "這篇剪藏內容有哪些關鍵要點和核心觀點？",
+    "description": "關鍵要點示例提示"
+  },
+  "chatEmptyScreenMainTakeaways": {
+    "message": "🎯 總結主要收穫",
+    "description": "主要收穫示例標題"
+  },
+  "chatEmptyScreenMainTakeawaysPrompt": {
+    "message": "閱讀這篇剪藏內容能獲得哪些主要收穫和啟發？",
+    "description": "主要收穫示例提示"
+  },
+  "chatEmptyScreenDeepDive": {
+    "message": "❓ 深入某個話題",
+    "description": "深入了解示例標題"
+  },
+  "chatEmptyScreenDeepDivePrompt": {
+    "message": "能詳細解釋一下剪藏內容中提到的主要概念嗎？",
+    "description": "深入了解示例提示"
+  },
+
+
+
+  "folderSidebarTitle": {
+    "message": "文件夾",
+    "description": "文件夾側邊欄標題"
+  },
+  "folderSidebarCreateFolder": {
+    "message": "新建文件夾",
+    "description": "新建文件夾按鈕提示"
+  },
+  "folderSidebarUncategorized": {
+    "message": "未分類",
+    "description": "未分類選項"
+  },
+  "folderSidebarUnknown": {
+    "message": "未知",
+    "description": "未知文件夾名稱"
+  },
+  "folderSidebarFolderNamePlaceholder": {
+    "message": "文件夾名稱...",
+    "description": "新建文件夾輸入框占位符"
+  },
+  "folderSidebarCancel": {
+    "message": "取消",
+    "description": "取消按鈕"
+  },
+  "folderSidebarCreate": {
+    "message": "創建",
+    "description": "創建文件夾按鈕"
+  },
+  "folderSidebarAllClips": {
+    "message": "全部剪藏",
+    "description": "全部剪藏選項"
+  },
+  "folderSidebarRename": {
+    "message": "重命名",
+    "description": "重命名文件夾選項"
+  },
+  "folderSidebarDelete": {
+    "message": "刪除",
+    "description": "刪除文件夾選項"
+  },
+
+
+  "folderSidebarDeleteFolder": {
+    "message": "刪除文件夾",
+    "description": "刪除文件夾確認對話框標題"
+  },
+  "folderSidebarDeleteConfirm": {
+    "message": "確定要刪除這個文件夾嗎？文件夾內的剪藏將移動到\"未分類\"。",
+    "description": "刪除文件夾確認信息"
+  },
+  "folderSidebarCancelButton": {
+    "message": "取消",
+    "description": "取消刪除文件夾按鈕"
+  },
+  "folderSidebarDeleteButton": {
+    "message": "刪除",
+    "description": "刪除文件夾按鈕"
+  },
+  
+  "moveToFolderDropdownMoveToFolder": {
+    "message": "移動到文件夾",
+    "description": "移動到文件夾選項"
+  },
+  "moveToFolderDropdownMoveTo": {
+    "message": "移動到...",
+    "description": "移動到文件夾下拉框默認文本"
+  },
+  "moveToFolderDropdownUncategorized": {
+    "message": "未分類",
+    "description": "未分類選項"
+  },
+  "moveToFolderDropdownNoFolders": {
+    "message": "暫無文件夾",
+    "description": "無文件夾時的提示信息"
+  },
   
 
-  "selectionClipperClip": {
-    "message": "剪藏",
-    "description": "剪藏按鈕文字"
+  
+  "clipTagsPanelNoTagsTitle": {
+    "message": "暫無 AI 標註",
+    "description": "沒有AI標註時的提示標題"
   },
-  "selectionClipperSaveSelected": {
-    "message": "保存選中內容",
-    "description": "保存選中內容按鈕文字"
+  "clipTagsPanelNoTagsHint": {
+    "message": "在對話中說\"幫我打幾個標籤和評分\"來添加標註",
+    "description": "沒有AI標註時的提示信息"
   },
-  "selectionClipperAIGenerating": {
-    "message": "AI 生成中...",
-    "description": "AI 生成中狀態文字"
+  "clipTagsPanelTitle": {
+    "message": "AI 標註",
+    "description": "AI標註面板標題"
   },
-  "selectionClipperAISummarySave": {
-    "message": "保存 AI 摘要",
-    "description": "保存 AI 摘要按鈕文字"
+  "clipTagsPanelRatingLabel": {
+    "message": "評分:",
+    "description": "評分標籤"
   },
-  "selectionClipperAskAI": {
-    "message": "詢問 AI",
-    "description": "詢問 AI 按鈕文字"
+  "clipTagsPanelCategoriesLabel": {
+    "message": "分類:",
+    "description": "分類標籤"
   },
-  "selectionClipperSaving": {
-    "message": "保存中...",
-    "description": "保存中狀態文字"
+  "clipTagsPanelScenariosLabel": {
+    "message": "適用場景:",
+    "description": "適用場景標籤"
   },
-  "selectionClipperSaveDirect": {
-    "message": "直接保存",
-    "description": "直接保存按鈕文字"
+  "clipTagsPanelTagsLabel": {
+    "message": "標籤:",
+    "description": "標籤標籤"
   },
-  "selectionClipperSelectedCharactersLeft": {
-    "message": "已選擇",
-    "description": "已選擇文字計數文字"
-  },
-  "selectionClipperSelectedCharactersRight": {
-    "message": "字",
-    "description": "已選擇文字計數文字"
+  "clipTagsPanelCommentLabel": {
+    "message": "個人感想:",
+    "description": "個人感想標籤"
   }
-
 }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
 import { FolderStore, ClipStore, type Folder } from "@/lib/clip-store"
+import { useI18n } from "@/lib/use-i18n"
 import { Folder as FolderIcon, FolderOpen, ChevronDown, Check, Inbox } from "lucide-react"
 
 interface MoveToFolderDropdownProps {
@@ -64,6 +65,7 @@ export default function MoveToFolderDropdown({
   compact = false
 }: MoveToFolderDropdownProps) {
   const isDark = theme === "dark"
+  const { t } = useI18n()
   const [folders, setFolders] = useState<Folder[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const [isMoving, setIsMoving] = useState(false)
@@ -216,6 +218,7 @@ export default function MoveToFolderDropdown({
       {/* 自定义滚动条样式 */}
       <ScrollbarStyles />
       {/* Trigger Button */}
+      {/** title="移动到文件夹" */}
       <button
         ref={buttonRef}
         onClick={(e) => {
@@ -232,7 +235,7 @@ export default function MoveToFolderDropdown({
                   : "bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-700"
               }`
         }`}
-        title="移动到文件夹"
+        title={t("moveToFolderDropdownMoveToFolder")}
       >
         {isMoving ? (
           <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
@@ -244,7 +247,8 @@ export default function MoveToFolderDropdown({
         {!compact && (
           <>
             <span className="max-w-[80px] truncate">
-              {currentFolder?.name || "移动到..."}
+              {/** {currentFolder?.name || "移动到..."} */}
+              {currentFolder?.name || t("moveToFolderDropdownMoveTo")}
             </span>
             <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? "rotate-180" : ""}`} />
           </>
@@ -281,7 +285,8 @@ export default function MoveToFolderDropdown({
             }`}
           >
             <Inbox className="w-4 h-4" />
-            <span className="flex-1 text-left">未归类</span>
+            {/** 未归类 */}
+            <span className="flex-1 text-left">{t("moveToFolderDropdownUncategorized")}</span>
             {!currentFolderId && <Check className="w-4 h-4 text-indigo-500" />}
           </button>
 
@@ -308,7 +313,8 @@ export default function MoveToFolderDropdown({
 
           {folders.length === 0 && (
             <div className={`px-3 py-4 text-center text-sm ${isDark ? "text-gray-500" : "text-gray-400"}`}>
-              暂无文件夹
+              {/** 暂无文件夹 */}
+              {t("moveToFolderDropdownNoFolders")}
             </div>
           )}
         </div>,

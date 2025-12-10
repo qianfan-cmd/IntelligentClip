@@ -11,6 +11,7 @@
 import { Star, Tag, FolderOpen, Target, MessageCircle, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Clip } from "@/lib/clip-store"
+import { useI18n } from "@/lib/use-i18n"
 
 interface ClipTagsPanelProps {
   clip: Partial<Clip> | null
@@ -101,6 +102,7 @@ function TagSection({
 }
 
 export default function ClipTagsPanel({ clip, className, compact = false, theme }: ClipTagsPanelProps) {
+  const { t } = useI18n()
   // 检查是否有任何标注数据
   const hasCategories = clip?.categories && clip.categories.length > 0
   const hasScenarios = clip?.scenarios && clip.scenarios.length > 0
@@ -119,10 +121,12 @@ export default function ClipTagsPanel({ clip, className, compact = false, theme 
       )}>
         <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500">
           <Sparkles className="h-4 w-4" />
-          <span className="text-sm">暂无 AI 标注</span>
+          {/** 暂无 AI 标注 */}
+          <span className="text-sm">{t("clipTagsPanelNoTagsTitle")}</span>
         </div>
         <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
-          在对话中说"帮我打几个标签和评分"来添加标注
+          {/** 在对话中说"帮我打几个标签和评分"来添加标注 */}
+          {t("clipTagsPanelNoTagsHint")}
         </p>
       </div>
     )
@@ -139,19 +143,20 @@ export default function ClipTagsPanel({ clip, className, compact = false, theme 
         <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center">
           <Sparkles className="h-3.5 w-3.5 text-white" />
         </div>
-        <h4 className="font-semibold text-sm text-gray-800 dark:text-gray-200">AI 标注</h4>
+        {/** >AI 标注 */}
+        <h4 className="font-semibold text-sm text-gray-800 dark:text-gray-200">{t("clipTagsPanelTitle")}</h4>
       </div>
       
       {/* 评分 */}
       {hasRating && (
-        <TagSection icon={Star} title="评分" isEmpty={!hasRating}>
+        <TagSection icon={Star} title={t("clipTagsPanelRatingLabel")} isEmpty={!hasRating}>
           <RatingStars rating={clip.rating!} size={compact ? "sm" : "md"} />
         </TagSection>
       )}
       
       {/* 分类 */}
       {hasCategories && (
-        <TagSection icon={FolderOpen} title="分类" isEmpty={!hasCategories}>
+        <TagSection icon={FolderOpen} title={t("clipTagsPanelCategoriesLabel")} isEmpty={!hasCategories}>
           <div className="flex flex-wrap gap-1.5">
             {clip.categories!.map((cat, i) => (
               <Chip key={i} variant="category">{cat}</Chip>
@@ -162,7 +167,7 @@ export default function ClipTagsPanel({ clip, className, compact = false, theme 
       
       {/* 适用场景 */}
       {hasScenarios && (
-        <TagSection icon={Target} title="适用场景" isEmpty={!hasScenarios}>
+        <TagSection icon={Target} title={t("clipTagsPanelScenariosLabel")} isEmpty={!hasScenarios}>
           <div className="flex flex-wrap gap-1.5">
             {clip.scenarios!.map((scenario, i) => (
               <Chip key={i} variant="scenario">{scenario}</Chip>
@@ -173,7 +178,7 @@ export default function ClipTagsPanel({ clip, className, compact = false, theme 
       
       {/* 标签 */}
       {hasTags && (
-        <TagSection icon={Tag} title="标签" isEmpty={!hasTags}>
+        <TagSection icon={Tag} title={t("clipTagsPanelTagsLabel")} isEmpty={!hasTags}>
           <div className="flex flex-wrap gap-1.5">
             {clip.tags!.map((tag, i) => (
               <Chip key={i} variant="tag">#{tag}</Chip>
@@ -184,7 +189,7 @@ export default function ClipTagsPanel({ clip, className, compact = false, theme 
       
       {/* 个人感想 */}
       {hasComment && (
-        <TagSection icon={MessageCircle} title="个人感想" isEmpty={!hasComment}>
+        <TagSection icon={MessageCircle} title={t("clipTagsPanelCommentLabel")} isEmpty={!hasComment}>
           <p className="text-sm text-gray-600 dark:text-gray-300 italic leading-relaxed bg-white/50 dark:bg-zinc-800/50 rounded-lg p-2">
             "{clip.personalComment}"
           </p>
