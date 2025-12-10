@@ -1047,5 +1047,480 @@
   "clipTagsPanelCommentLabel": {
     "message": "個人感想:",
     "description": "個人感想標籤"
+  },
+
+
+  
+  "cardGeneratorCardTypeQA": {
+    "message": "問答題",
+    "description": "问答卡片类型"
+  },
+  "cardGeneratorCardTypeCloze": {
+    "message": "填空題",
+    "description": "完形填空卡片类型"
+  },
+  "cardGeneratorCardTypeSummary": {
+    "message": "摘要回歸",
+    "description": "摘要卡片类型"
+  },
+  "cardGeneratorCardTypeKeypoint": {
+    "message": "要點回顧",
+    "description": "关键点卡片类型"
+  },
+  "cardGeneratorCardTypeUnknown": {
+    "message": "未知類型",
+    "description": "未知卡片类型"
+  },
+
+  "cardGeneratorThisContent": {
+    "message": "該內容",
+    "description": "生成卡片时指代当前内容"
+  },
+  "cardGeneratorReferToOriginal": {
+    "message": "請參考原文回顧。",
+    "description": "提示用户参考原文"
+  },
+  "cardGeneratorReferToOriginalKeypoints": {
+    "message": "請參考原文中的關鍵要點。",
+    "description": "提示用户参考原文中的关键要点"
+  },
+  "cardGeneratorSummaryQuestionLeft": {
+    "message": "請用自己的話複述《",
+    "description": "摘要卡片的问题"
+  },
+  "cardGeneratorSummaryQuestionRight": {
+    "message": "》的核心結論或關鍵因果鏈（避免只回答「主要內容是什麼」）。",
+    "description": "摘要卡片的问题"
+  },
+
+  "cardGeneratorQADetailQuestion": {
+    "message": "這篇內容的關鍵細節/數據/結論是什麼？請回答要點。",
+    "description": "QA卡片的细节问题"
+  },
+  "cardGeneratorKeypointQuestionLeft": {
+    "message": "關於《",
+    "description": "要点卡片的问题"
+  },
+  "cardGeneratorKeypointQuestionRight": {
+    "message": "》，哪個關鍵要點最能體現其價值/影響？",
+    "description": "要点卡片的问题"
+  },
+
+  "cardGeneratorClozeHint": {
+    "message": "填空為原文中的關鍵詞",
+    "description": "填空题的提示"
+  },
+  "cardGeneratorQACoreQuestion": {
+    "message": "這篇內容的核心觀點是什麼？",
+    "description": "兜底QA卡片的问题"
+  },
+
+
+  "reviewConfirmDeleteCard": {
+    "message": "確定要刪除這個卡片嗎？",
+    "description": "删除卡片确认信息"
+  },
+
+
+  "reviewItemStatusPaused": {
+    "message": "已暫停",
+    "description": "复习状态 - 已暂停"
+  },
+  "reviewItemStatusUpcoming": {
+    "message": "即將複習",
+    "description": "复习状态 - 即将复习"
+  },
+  "reviewItemStatusDue": {
+    "message": "待複習",
+    "description": "复习状态 - 待复习"
+  },
+  "reviewItemImmediateReview": {
+    "message": "立即複習",
+    "description": "复习状态 - 立即复习"
+  },
+  "reviewTextOverdue": {
+    "message": "逾期",
+    "description": "逾期文本"
+  },
+  "reviewTextDays": {
+    "message": "天",
+    "description": "天文本"
+  },
+  "reviewItemTomorrow": {
+    "message": "明天",
+    "description": "明天文本"
+  },
+  "reviewItemDaysLater": {
+    "message": "天後",
+    "description": "几天后文本"
+  },
+  "reviewItemWeeksLater": {
+    "message": "週後",
+    "description": "几周后文本"
+  },
+  
+  "reviewLoadingContent": {
+    "message": "加載複習內容...",
+    "description": "加载复习内容时的提示"
+  },
+
+
+  "reviewCreateCard": {
+    "message": "新建卡片",
+    "description": "新建卡片按钮文本"
+  },
+  "reviewEditCard": {
+    "message": "編輯卡片",
+    "description": "编辑卡片按钮文本"
+  },
+  "reviewPageTitle": {
+    "message": "AI 複習助手",
+    "description": "复习页面标题"
+  },
+  "reviewDueReviewToday": {
+    "message": "今日待複習:",
+    "description": "今日待复习卡片计数前缀"
+  },
+  "reviewCompleted": {
+    "message": "已完成:",
+    "description": "已完成卡片计数前缀"
+  },
+  "reviewButtonReturnToReview": {
+    "message": "返回複習",
+    "description": "返回复习按钮文本"
+  },
+  "reviewButtonViewAllCards": {
+    "message": "查看全部複習卡片",
+    "description": "查看全部复习卡片按钮文本"
+  },
+  "reviewGeneratingCards": {
+    "message": "AI 正在生成複習卡片...",
+    "description": "生成复习卡片时的提示"
+  },
+  "reviewCardName": {
+    "message": "卡片",
+    "description": "卡片名称"
+  },
+  "reviewButtonAddCard": {
+    "message": "添加新卡片",
+    "description": "添加新卡片按钮提示"
+  },
+  "reviewButtonEditCard": {
+    "message": "編輯卡片",
+    "description": "编辑卡片按钮提示"
+  },
+  "reviewButtonDeleteCard": {
+    "message": "刪除卡片",
+    "description": "删除卡片按钮提示"
+  },
+  "reviewCurrentCardHintLabel": {
+    "message": "💡 提示:",
+    "description": "当前卡片提示标签"
+  },
+  "reviewCurrentCardAnswerLabel": {
+    "message": "答案",
+    "description": "当前卡片答案标签"
+  },
+  "reviewButtonSkip": {
+    "message": "跳過",
+    "description": "跳过按钮文本"
+  },
+  "reviewButtonShowAnswer": {
+    "message": "顯示答案",
+    "description": "显示答案按钮文本"
+  },
+  "reviewDidYouAnswerCorrectly": {
+    "message": "你答對了嗎？",
+    "description": "是否答对了当前卡片"
+  },
+  "reviewNextCardAfterRating": {
+    "message": "評分後將顯示下一張卡片",
+    "description": "评分后显示下一张卡片提示"
+  },
+  "reviewButtonForgot": {
+    "message": "忘了",
+    "description": "评分选项 - 忘了"
+  },
+  "reviewButtonHard": {
+    "message": "困難",
+    "description": "评分选项 - 困难"
+  },
+  "reviewButtonRemembered": {
+    "message": "記得",
+    "description": "评分选项 - 记得"
+  },
+  "reviewButtonEasy": {
+    "message": "簡單",
+    "description": "评分选项 - 简单"
+  },
+  "reviewItemsCount": {
+    "message": "項",
+    "description": "项数"
+  },
+  "reviewButtonImmediateReview": {
+    "message": "立即複習",
+    "description": "立即复习按钮文本"
+  },
+  "reviewButtonEarlyReview": {
+    "message": "提前複習",
+    "description": "提前复习按钮文本"
+  },
+  "reviewItemsReviewLabelLeft": {
+    "message": "複習",
+    "description": "复习标签左部"
+  },
+  "reviewItemsReviewLabelRight": {
+    "message": "次",
+    "description": "复习标签右部"
+  },
+  "reviewMemoryStrength": {
+    "message": "記憶強度",
+    "description": "记忆强度标签"
+  },
+  "reviewNextReview": {
+    "message": "下次複習",
+    "description": "下次复习标签"
+  },
+  "reviewSearchPlaceholder": {
+    "message": "輸入關鍵詞實時搜索卡片內容...",
+    "description": "搜索卡片输入框占位符"
+  },
+  "reviewButtonSearchClear": {
+    "message": "清除",
+    "description": "搜索框清除按钮文本"
+  },
+  "reviewSearchResultsLabelLeft": {
+    "message": "找到",
+    "description": "搜索结果数量前缀"
+  },
+  "reviewSearchResultsLabelRight": {
+    "message": "張卡片",
+    "description": "搜索结果数量后缀"
+  },
+  "reviewSearchCardLabel": {
+    "message": "卡片",
+    "description": "搜索结果卡片标签"
+  },
+  "reviewSearchNoResults": {
+    "message": "未找到匹配的卡片",
+    "description": "搜索无结果提示"
+  },
+  "reviewLabelStatusDue": {
+    "message": "待複習",
+    "description": "待复习卡片状态标签"
+  },
+  "reviewLabelStatusUpcoming": {
+    "message": "即將複習",
+    "description": "即将复习卡片状态标签"
+  },
+  "reviewLabelStatusPaused": {
+    "message": "已暫停",
+    "description": "已暂停卡片状态标签"
+  },
+  "reviewSectionDue": {
+    "message": "待複習",
+    "description": "待复习卡片状态标签"
+  },
+  "reviewSectionUpcoming": {
+    "message": "即將複習",
+    "description": "即将复习卡片状态标签"
+  },
+  "reviewSectionPaused": {
+    "message": "已暫停",
+    "description": "已暂停卡片状态标签"
+  },
+  "reviewNoDueContent": {
+    "message": "今天沒有待複習內容",
+    "description": "待复习卡片无内容提示"
+  },
+  "reviewNoUpcomingContent": {
+    "message": "未來暫無計劃",
+    "description": "即将复习卡片无内容提示"
+  },
+  "reviewNoPausedContent": {
+    "message": "暫無暫停的複習計劃",
+    "description": "已暂停卡片无内容提示"
+  },
+  "reviewGreat": {
+    "message": "太棒了！",
+    "description": "复习完成标题1"
+  },
+  "reviewAlreadyCompleteToday": {
+    "message": "今日已完成",
+    "description": "复习完成标题2"
+  },
+  "reviewCompleteLeft": {
+    "message": "你已完成",
+    "description": "复习完成统计前缀"
+  },
+  "reviewCompleteRight": {
+    "message": "個複習任務",
+    "description": "复习完成统计后缀"
+  },
+  "reviewCompleteCount": {
+    "message": "完成數量",
+    "description": "复习完成统计"
+  },
+  "reviewMinutes": {
+    "message": "分鐘",
+    "description": "复习用时统计"
+  },
+  "reviewButtonReturn": {
+    "message": "返回",
+    "description": "返回按钮文本"
+  },
+  "reviewButtonViewAll": {
+    "message": "查看全部剪藏",
+    "description": "查看全部剪藏按钮文本"
+  },
+
+  "reviewWithNoCards": {
+    "message": "無複習卡片",
+    "description": "无复习卡片"
+  },
+  "reviewMainContent": {
+    "message": "請回顧這篇內容的主要信息",
+    "description": "复习主要内容提示"
+  },
+  "reviewPendingEvaluation": {
+    "message": "待評估",
+    "description": "待评估状态"
+  },
+
+
+
+  "cardEditorAlertEmptyError": {
+    "message": "問題和答案不能為空",
+    "description": "卡片编辑器空值错误提示"
+  },
+  "cardEditorPlaceholderQAQuestion": {
+    "message": "輸入問題，例如：什麼是組件化開發？",
+    "description": "卡片编辑器问题占位符"
+  },
+  "cardEditorPlaceholderQAAnswer": {
+    "message": "輸入答案，例如：將 UI 拆分為獨立、可複用的部分...",
+    "description": "卡片编辑器答案占位符"
+  },
+  "cardEditorPlaceholderClozeQuestion": {
+    "message": "輸入填空題，用 ___ 表示空白，例如：React 使用 ___ 來管理狀態",
+    "description": "卡片编辑器填空题占位符"
+  },
+  "cardEditorPlaceholderClozeAnswer": {
+    "message": "輸入答案，例如：useState Hook",
+    "description": "卡片编辑器填空题答案占位符"
+  },
+  "cardEditorPlaceholderSummaryQuestion": {
+    "message": "輸入需要總結的主題，例如：總結這篇文章的核心觀點",
+    "description": "卡片编辑器总结占位符"
+  },
+  "cardEditorPlaceholderSummaryAnswer": {
+    "message": "輸入總結內容",
+    "description": "卡片编辑器总结答案占位符"
+  },
+  "cardEditorPlaceholderKeypointQuestion": {
+    "message": "輸入要點標題，例如：React Hooks 的關鍵規則",
+    "description": "卡片编辑器要点占位符"
+  },
+  "cardEditorPlaceholderKeypointAnswer": {
+    "message": "輸入要點列表（可以分行）",
+    "description": "卡片编辑器要点答案占位符"
+  },
+  "cardEditorCardEdit": {
+    "message": "編輯卡片",
+    "description": "卡片编辑器编辑按钮文本"
+  },
+  "cardEditorCardCreate": {
+    "message": "新建卡片",
+    "description": "卡片编辑器新建按钮文本"
+  },
+  "cardEditorTypeLabel": {
+    "message": "卡片類型",
+    "description": "卡片编辑器卡片类型标签"
+  },
+  "cardEditorQuestionAndHintLabel": {
+    "message": "問題/提示",
+    "description": "卡片编辑器问题/提示标签"
+  },
+  "cardEditorAnswerLabel": {
+    "message": "答案",
+    "description": "卡片编辑器答案标签"
+  },
+  "cardEditorHintLabel": {
+    "message": "提示",
+    "description": "卡片编辑器提示标签"
+  },
+  "cardEditorOptionalLabel": {
+    "message": "（可選）",
+    "description": "卡片编辑器可选标签"
+  },
+  "cardEditorHintPlaceholder": {
+    "message": "輸入提示內容，幫助回憶答案...",
+    "description": "卡片编辑器提示占位符"
+  },
+  "cardEditorButtonCancel": {
+    "message": "取消",
+    "description": "卡片编辑器取消按钮文本"
+  },
+  "cardEditorButtonSave": {
+    "message": "保存",
+    "description": "卡片编辑器保存按钮文本"
+  },
+
+  
+  "sm2AlgorithmStatusNew": {
+    "message": "新學習",
+    "description": "复习状态 - 新学习"
+  },
+  "sm2AlgorithmStatusLearning": {
+    "message": "學習中",
+    "description": "复习状态 - 学习中"
+  },
+  "sm2AlgorithmStatusOverdueLeft": {
+    "message": "逾期",
+    "description": "复习状态 - 逾期"
+  },
+  "sm2AlgorithmStatusOverdueRight": {
+    "message": "天",
+    "description": "复习状态 - 逾期天"
+  },
+  "sm2AlgorithmStatusDue": {
+    "message": "待複習",
+    "description": "复习状态 - 待复习"
+  },
+  "sm2AlgorithmStatusMastered": {
+    "message": "已掌握",
+    "description": "复习状态 - 已掌握"
+  },
+  "sm2AlgorithmDateNow": {
+    "message": "現在",
+    "description": "复习日期 - 现在"
+  },
+  "sm2AlgorithmDateWithinHour": {
+    "message": "1 小時內",
+    "description": "复习日期 - 1小时内"
+  },
+  "sm2AlgorithmDateHoursLater": {
+    "message": "小時後",
+    "description": "复习日期 - 几小时后"
+  },
+  "sm2AlgorithmDateTomorrow": {
+    "message": "明天",
+    "description": "复习日期 - 明天"
+  },
+  "sm2AlgorithmDateDaysLater": {
+    "message": "天後",
+    "description": "复习日期 - 几天后"
+  },
+  "sm2AlgorithmDateWeeksLater": {
+    "message": "週後",
+    "description": "复习日期 - 几周后"
+  },
+  "sm2AlgorithmDateMonthsLater": {
+    "message": "個月後",
+    "description": "复习日期 - 几个月后"
+  },
+  "sm2AlgorithmDateYearsLater": {
+    "message": "年後",
+    "description": "复习日期 - 几年后"
   }
 }

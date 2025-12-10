@@ -49,7 +49,8 @@ const CARD_GENERATION_PROMPT = `你是一位教育专家，擅长基于给定内
  * @returns 生成的复习卡片数组
  */
 export async function generateReviewCards(
-  reviewData: ReviewWithClip
+  reviewData: ReviewWithClip,
+  t: (key: string, options?: Record<string, any>) => string
 ): Promise<ReviewCard[]> {
   const { clip } = reviewData
   let rawFull = clip.rawTextFull
@@ -126,7 +127,7 @@ export async function generateReviewCards(
     
     if (!apiKey) {
       console.warn("[CardGenerator] No OpenAI API key configured")
-      return generateFallbackCards(clip)
+      return generateFallbackCards(clip, t)
     }
     
     // 调用 OpenAI API
@@ -177,7 +178,7 @@ export async function generateReviewCards(
     
     if (parsed.length === 0) {
       console.warn("[CardGenerator] No cards parsed, using fallback")
-      return generateFallbackCards(clip)
+      return generateFallbackCards(clip, t)
     }
     
     console.log(`[CardGenerator] Generated ${parsed.length} cards`)
@@ -185,7 +186,7 @@ export async function generateReviewCards(
     
   } catch (error) {
     console.error("[CardGenerator] Failed to generate cards:", error)
-    return generateFallbackCards(clip)
+    return generateFallbackCards(clip, t)
   }
 }
 
@@ -235,31 +236,38 @@ function parseCardsFromResponse(content: string): ReviewCard[] {
 /**
  * 生成后备卡片（当 AI 不可用时）
  */
-function generateFallbackCards(clip: ReviewWithClip['clip']): ReviewCard[] {
+function generateFallbackCards(clip: ReviewWithClip['clip'], t: (key: string, options?: Record<string, any>) => string): ReviewCard[] {
   const cards: ReviewCard[] = []
   const rawSnippet = (clip as any)?.rawTextSnippet as string | undefined
   
+  const summaryQuestion = `${t("cardGeneratorSummaryQuestionLeft")}${clip.title || t("cardGeneratorThisContent")}${t("cardGeneratorSummaryQuestionRight")}`
   // Summary 卡
   cards.push({
     type: 'summary',
-    question: `请用自己的话复述《${clip.title || '该内容'}》的核心结论或关键因果链（避免只回答“主要内容是什么”）。`,
-    answer: clip.summary || rawSnippet || '请参考原文回顾。'
+    // questionText: `请用自己的话复述《${clip.title || '该内容'}》的核心结论或关键因果链（避免只回答“主要内容是什么”）。`,
+    // answerText: clip.summary || rawSnippet || '请参考原文回顾。',
+    question: summaryQuestion,
+    answer: clip.summary || rawSnippet || t('cardGeneratorReferToOriginal')
   })
   
   // QA 卡：基于摘要或原文具体细节
-  const detailSource = clip.keyPoints?.[0] || clip.summary || rawSnippet || clip.title || '该内容'
+  const detailSource = clip.keyPoints?.[0] || clip.summary || rawSnippet || clip.title || t('cardGeneratorThisContent')
   cards.push({
     type: 'qa',
-    question: `这篇内容的关键细节/数据/结论是什么？请回答要点。`,
+    // questionText: `这篇内容的关键细节/数据/结论是什么？请回答要点。`,
+    question: t('cardGeneratorQADetailQuestion'),
     answer: detailSource.length > 220 ? detailSource.slice(0, 220) + '...' : detailSource
   })
   
   // Keypoint 卡：取一个关键要点或原文里的具体事实
   const kp = clip.keyPoints && clip.keyPoints.length > 0 ? clip.keyPoints[0] : (rawSnippet || clip.summary || '')
+  const keypointQuestion = `${t("cardGeneratorKeypointQuestionLeft")}${clip.title || t('cardGeneratorThisContent')}${t("cardGeneratorKeypointQuestionRight")}`
   cards.push({
     type: 'keypoint',
-    question: `关于《${clip.title || '该内容'}》，哪个关键要点最能体现其价值/影响？`,
-    answer: kp || '请参考原文中的关键要点。'
+    //question: `关于《${clip.title || '该内容'}》，哪个关键要点最能体现其价值/影响？`,
+    // answer: kp || '请参考原文中的关键要点。',
+    question: keypointQuestion,
+    answer: kp || t('cardGeneratorReferToOriginalKeypoints')
   })
   
   // Cloze 卡：在摘要/原文中挖空一个关键词
@@ -274,7 +282,8 @@ function generateFallbackCards(clip: ReviewWithClip['clip']): ReviewCard[] {
         type: 'cloze',
         question: words.join(' '),
         answer: target,
-        hint: '填空为原文中的关键词'
+        // hint: '填空为原文中的关键词'
+        hint: t('cardGeneratorClozeHint')
       })
     }
   }
@@ -283,8 +292,10 @@ function generateFallbackCards(clip: ReviewWithClip['clip']): ReviewCard[] {
   if (cards.length === 0) {
     cards.push({
       type: 'qa',
-      question: '这篇内容的核心观点是什么？',
-      answer: clip.title || '请参考原文。'
+      // question: '这篇内容的核心观点是什么？',
+      // answer: clip.title || '请参考原文。',
+      question: t('cardGeneratorQACoreQuestion'),
+      answer: clip.title || t('cardGeneratorReferToOriginal')
     })
   }
   
@@ -305,7 +316,17 @@ export function isCardsCacheValid(generatedAt?: number): boolean {
 /**
  * 获取卡片类型的显示名称
  */
-export function getCardTypeLabel(type: ReviewCard['type']): string {
+export function getCardTypeLabel(type: ReviewCard['type'], t?: (key: string) => string): string {
+  if (t) {
+    const labels: Record<ReviewCard['type'], string> = {
+      qa: t('cardGeneratorCardTypeQA'),
+      cloze: t('cardGeneratorCardTypeCloze'),
+      summary: t('cardGeneratorCardTypeSummary'),
+      keypoint: t('cardGeneratorCardTypeKeypoint')
+    }
+    return labels[type] || t('cardGeneratorCardTypeUnknown')
+  }
+  // 回退到硬编码文本（用于不支持国际化的场景）
   const labels: Record<ReviewCard['type'], string> = {
     qa: '问答题',
     cloze: '填空题',

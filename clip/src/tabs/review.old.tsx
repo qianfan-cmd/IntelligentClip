@@ -5,7 +5,6 @@
  */
 
 import React, { useEffect, useState, useCallback, useMemo } from "react"
-import { useI18n } from "@/lib/use-i18n"
 import { ReviewStore } from "@/lib/review/review-store"
 import { generateReviewCards, isCardsCacheValid, getCardTypeLabel, getCardTypeIcon } from "@/lib/review/card-generator"
 import { calculateMemoryStrength, formatNextReviewDate, getReviewStatus } from "@/lib/review/sm2-algorithm"
@@ -58,8 +57,6 @@ const DAY_MS = 24 * 60 * 60 * 1000
 // ============================================
 
 export default function ReviewPage() {
-  const { t } = useI18n()
-  
   // 复习状态
   const [dueReviews, setDueReviews] = useState<ReviewWithClip[]>([])
   const [allReviews, setAllReviews] = useState<ReviewWithClip[]>([])
@@ -159,8 +156,7 @@ export default function ReviewPage() {
     setIsGeneratingCards(true)
     try {
       console.log("[ReviewPage] generating cards via AI")
-      // const cards = await generateReviewCards(reviewData)
-      const cards = await generateReviewCards(reviewData, t)
+      const cards = await generateReviewCards(reviewData)
       console.log("[ReviewPage] generated cards", { count: cards.length })
       setCurrentCards(cards)
       setCurrentCardIndex(targetCardIndex)
@@ -172,10 +168,9 @@ export default function ReviewPage() {
     } catch (err) {
       console.error("Failed to generate cards:", err)
       // 使用空卡片
-      // question: '请回顾这篇内容的主要信息',
       setCurrentCards([{
         type: 'summary',
-        question: t("reviewMainContent"),
+        question: '请回顾这篇内容的主要信息',
         answer: reviewData.clip.summary || reviewData.clip.title
       }])
     } finally {
@@ -300,33 +295,23 @@ export default function ReviewPage() {
   }, [allReviews])
 
   const getStatusBadge = (item: ReviewWithClip) => {
-    // if (item.review.paused) return { label: "已暂停", color: "bg-gray-500/20 text-gray-300" }
-    if (item.review.paused) return { label: t("reviewItemStatusPaused"), color: "bg-gray-500/20 text-gray-300" }
+    if (item.review.paused) return { label: "已暂停", color: "bg-gray-500/20 text-gray-300" }
     const now = Date.now()
-    // label: "待复习"  label: "即将复习"
-    if (item.review.nextReviewDate <= now) return { label: t("reviewItemStatusDue"), color: "bg-amber-500/20 text-amber-300" }
-    return { label: t("reviewItemStatusUpcoming"), color: "bg-blue-500/20 text-blue-300" }
+    if (item.review.nextReviewDate <= now) return { label: "待复习", color: "bg-amber-500/20 text-amber-300" }
+    return { label: "即将复习", color: "bg-blue-500/20 text-blue-300" }
   }
 
   const getDistanceLabel = (item: ReviewWithClip) => {
     const diff = item.review.nextReviewDate - Date.now()
-    // if (item.review.paused) return "已暂停" 
-    if (item.review.paused) return t("reviewItemStatusPaused")
+    if (item.review.paused) return "已暂停"
     if (diff <= 0) {
       const overdue = Math.ceil(Math.abs(diff) / DAY_MS)
-      // return overdue > 0 ? `逾期 ${overdue} 天` : "立即复习"
-      const overdueInfo = `${t("reviewTextOverdue")} ${overdue} ${t("reviewTextDays")}`
-      return overdue > 0 ? overdueInfo : t("reviewItemImmediateReview")
+      return overdue > 0 ? `逾期 ${overdue} 天` : "立即复习"
     }
     const days = Math.ceil(diff / DAY_MS)
-    /**
-     * if (days === 1) return "明天"
-     * if (days < 7) return `${days} 天后`
-     *return `${Math.ceil(days / 7)} 周后`
-     */
-    if (days === 1) return t("reviewItemTomorrow")
-    if (days < 7) return `${days} ${t("reviewItemDaysLater")}`
-    return `${Math.ceil(days / 7)} ${t("reviewItemWeeksLater")}`
+    if (days === 1) return "明天"
+    if (days < 7) return `${days} 天后`
+    return `${Math.ceil(days / 7)} 周后`
   }
 
   const startReviewFrom = (item: ReviewWithClip, initialCardIndex: number = 0) => {
@@ -353,8 +338,7 @@ export default function ReviewPage() {
   const handleDeleteCard = async () => {
     if (!currentReview || currentCardIndex === null) return
     
-    // confirm(`确定要删除这张卡片吗？`)
-    const confirmed = confirm(t("reviewConfirmDeleteCard"))
+    const confirmed = confirm(`确定要删除这张卡片吗？`)
     if (!confirmed) return
     
     const updatedReview = await ReviewStore.deleteCard(currentReview.review.id, currentCardIndex)
@@ -435,8 +419,7 @@ export default function ReviewPage() {
       <div className={`min-h-screen ${theme.pageBg} flex items-center justify-center`}>
         <div className="text-center">
           <Loader2 className={`h-12 w-12 ${theme.accentPurple} animate-spin mx-auto mb-4`} />
-          {/** 加载复习内容... */}
-          <p className={theme.textSecondary}>{t("reviewLoadingContent")}</p>
+          <p className={theme.textSecondary}>加载复习内容...</p>
         </div>
       </div>
     )
@@ -448,7 +431,6 @@ export default function ReviewPage() {
     <div className={`min-h-screen ${theme.pageBg} p-6`}>
       <div className="max-w-3xl mx-auto">
         {/* 卡片编辑器 */}
-        {/** title={editingCardIndex !== null ? '编辑卡片' : '新建卡片'} */}
         {isEditorOpen && (
           <CardEditor
             initialCard={editingCardIndex !== null ? currentCards[editingCardIndex] : undefined}
@@ -457,7 +439,7 @@ export default function ReviewPage() {
               setIsEditorOpen(false)
               setEditingCardIndex(null)
             }}
-            title={editingCardIndex !== null ? t('reviewEditCard') : t('reviewCreateCard')}
+            title={editingCardIndex !== null ? '编辑卡片' : '新建卡片'}
           />
         )}
         
@@ -468,11 +450,9 @@ export default function ReviewPage() {
               <Brain className="h-5 w-5 text-white" />
             </div>
             <div>
-              {/** AI 复习助手 */}
-              <h1 className={`text-xl font-bold ${theme.textPrimary}`}>{t("reviewPageTitle")}</h1>
+              <h1 className={`text-xl font-bold ${theme.textPrimary}`}>AI 复习助手</h1>
               <p className={`text-sm ${theme.textMuted}`}>
-                {/** 今日待复习: {dueReviews.length} | 已完成: {completedCount} */}
-                {`${t("reviewDueReviewToday")} ${dueReviews.length} | ${t("reviewCompleted")} ${completedCount}`}
+                今日待复习: {dueReviews.length} | 已完成: {completedCount}
               </p>
             </div>
           </div>
@@ -495,8 +475,7 @@ export default function ReviewPage() {
               onClick={() => setIsListView(v => !v)}
               className="px-3 py-2 rounded-xl bg-white/10 text-sm text-white hover:bg-white/20 transition-colors border border-white/10"
             >
-              {/** {isListView ? "返回复习" : "查看全部复习卡片"} */}
-              {isListView ? t("reviewButtonReturnToReview") : t("reviewButtonViewAllCards")}
+              {isListView ? "返回复习" : "查看全部复习卡片"}
             </button>
           </div>
         </header>
@@ -546,8 +525,7 @@ export default function ReviewPage() {
               
               {/* Memory Strength */}
               <div className="mt-4 flex items-center gap-3">
-                {/** 记忆强度 */}
-                <span className={`text-xs ${theme.textMuted}`}>{t("reviewMemoryStrength")}</span>
+                <span className={`text-xs ${theme.textMuted}`}>记忆强度</span>
                 <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
                   {(() => {
                     const strength = calculateMemoryStrength(currentReview?.review!)
@@ -565,9 +543,8 @@ export default function ReviewPage() {
                   })()}
                 </div>
                 <span className={`text-xs ${theme.textMuted}`}>
-                  {/** 待评估 */}
                   {currentReview?.review.totalReviews === 0 
-                    ? t("reviewPendingEvaluation") 
+                    ? '待评估' 
                     : `${calculateMemoryStrength(currentReview?.review!)}%`
                   }
                 </span>
@@ -580,8 +557,7 @@ export default function ReviewPage() {
                 <div className="flex-1 flex items-center justify-center">
                   <div className="text-center">
                     <Sparkles className={`h-8 w-8 ${theme.accentPurple} animate-pulse mx-auto mb-3`} />
-                    {/** AI 正在生成复习卡片... */}
-                    <p className={theme.textMuted}>{t("reviewGeneratingCards")}</p>
+                    <p className={theme.textMuted}>AI 正在生成复习卡片...</p>
                   </div>
                 </div>
               ) : currentCard ? (
@@ -589,36 +565,32 @@ export default function ReviewPage() {
                   {/* Card Type Badge */}
                   <div className="flex items-center justify-between mb-4">
                     <span className={`text-xs px-2 py-1 rounded-full bg-purple-500/20 ${theme.accentPurple}`}>
-                      {getCardTypeIcon(currentCard.type)} {getCardTypeLabel(currentCard.type, t)}
+                      {getCardTypeIcon(currentCard.type)} {getCardTypeLabel(currentCard.type)}
                     </span>
                     <div className="flex items-center gap-2">
                       <span className={`text-xs ${theme.textFaint}`}>
-                        {/** 卡片 {currentCardIndex + 1} / {currentCards.length} */}
-                        {`${t("reviewCardName")} ${currentCardIndex + 1} / ${currentCards.length}`}
+                        卡片 {currentCardIndex + 1} / {currentCards.length}
                       </span>
                       {/* 卡片操作按钮 */}
-                      {/** title="添加新卡片" */}
                       <div className="flex gap-1 ml-2">
                         <button
                           onClick={handleAddCard}
                           className={`p-1.5 rounded-lg hover:bg-green-500/20 ${theme.textMuted} hover:text-green-300 transition-colors`}
-                          title={t("reviewButtonAddCard")}
+                          title="添加新卡片"
                         >
                           <Plus className="h-3.5 w-3.5" />
                         </button>
-                        {/** title="编辑卡片" */}
                         <button
                           onClick={handleEditCard}
                           className={`p-1.5 rounded-lg hover:bg-blue-500/20 ${theme.textMuted} hover:text-blue-300 transition-colors`}
-                          title={t("reviewButtonEditCard")}
+                          title="编辑卡片"
                         >
                           <Edit className="h-3.5 w-3.5" />
                         </button>
-                        {/** title="删除卡片" */}
                         <button
                           onClick={handleDeleteCard}
                           className={`p-1.5 rounded-lg hover:bg-red-500/20 ${theme.textMuted} hover:text-red-300 transition-colors`}
-                          title={t("reviewButtonDeleteCard")}
+                          title="删除卡片"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -634,16 +606,14 @@ export default function ReviewPage() {
                     
                     {currentCard.hint && !showAnswer && (
                       <p className={`text-sm ${theme.textFaint} italic`}>
-                        {/** 💡 提示: {currentCard.hint} */}
-                        {t("reviewCurrentCardHintLabel")} {currentCard.hint}
+                        💡 提示: {currentCard.hint}
                       </p>
                     )}
                     
                     {/* Answer */}
                     {showAnswer && (
                       <div className={`mt-6 p-4 rounded-xl bg-green-500/10 border border-green-500/20`}>
-                        {/** 答案 */}
-                        <p className={`text-sm font-medium ${theme.accentGreen} mb-2`}>{t("reviewCurrentCardAnswerLabel")}</p>
+                        <p className={`text-sm font-medium ${theme.accentGreen} mb-2`}>答案</p>
                         <p className={`${theme.textSecondary} whitespace-pre-wrap`}>
                           {currentCard.answer}
                         </p>
@@ -673,8 +643,7 @@ export default function ReviewPage() {
                 </>
               ) : (
                 <div className="flex-1 flex items-center justify-center">
-                  {/** 无复习卡片 */}
-                  <p className={theme.textMuted}>{t("reviewWithNoCards")}</p>
+                  <p className={theme.textMuted}>无复习卡片</p>
                 </div>
               )}
             </div>
@@ -688,59 +657,51 @@ export default function ReviewPage() {
                     className={`flex-1 py-3 rounded-xl ${theme.textMuted} bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center gap-2`}
                   >
                     <SkipForward className="h-4 w-4" />
-                    {/** 跳过 */}
-                    {t("reviewButtonSkip")}
+                    跳过
                   </button>
                   <button
                     onClick={() => setShowAnswer(true)}
                     className="flex-[3] py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium hover:from-purple-500 hover:to-indigo-500 transition-colors flex items-center justify-center gap-2"
                   >
-                    {/** 显示答案 */}
-                    {t("reviewButtonShowAnswer")}
+                    显示答案
                     <ChevronRight className="h-4 w-4" />
                   </button>
                 </div>
               ) : (
                 <div>
                   <p className={`text-center text-sm ${theme.textMuted} mb-4`}>
-                    {/** 你答对了吗？ */}
-                    {t("reviewDidYouAnswerCorrectly")}
+                    你答对了吗？
                     {currentCardIndex < currentCards.length - 1 && (
                       <span className="block mt-1 text-xs text-purple-300">
-                        {/** 评分后将显示下一张卡片 ({currentCardIndex + 1}/{currentCards.length}) */}
-                        {t("reviewNextCardAfterRating")} ({currentCardIndex + 1}/{currentCards.length})
+                        评分后将显示下一张卡片 ({currentCardIndex + 1}/{currentCards.length})
                       </span>
                     )}
                   </p>
                   <div className="grid grid-cols-4 gap-2">
-                    {/** label="忘了" */}
                     <RatingButton 
                       rating={0}
-                      label={t("reviewButtonForgot")}
+                      label="忘了"
                       emoji="😵"
                       color="red"
                       onClick={handleRating}
                     />
-                    {/** label="困难" */}
                     <RatingButton 
                       rating={3}
-                      label={t("reviewButtonHard")}
+                      label="困难"
                       emoji="😓"
                       color="yellow"
                       onClick={handleRating}
                     />
-                    {/** label="记得" */}
                     <RatingButton 
                       rating={4}
-                      label={t("reviewButtonRemembered")}
+                      label="记得"
                       emoji="😊"
                       color="green"
                       onClick={handleRating}
                     />
-                    {/** label="简单" */}
                     <RatingButton 
                       rating={5}
-                      label={t("reviewButtonEasy")}
+                      label="简单"
                       emoji="🤩"
                       color="emerald"
                       onClick={handleRating}
@@ -768,8 +729,6 @@ interface ReviewListViewProps {
 }
 
 function ReviewListView({ grouped, allReviews, onStart, getStatusBadge, getDistanceLabel }: ReviewListViewProps) {
-  const { t } = useI18n()
-  
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<Array<{
     review: ReviewRecord
@@ -802,16 +761,15 @@ function ReviewListView({ grouped, allReviews, onStart, getStatusBadge, getDista
     return () => clearTimeout(debounceTimer)
   }, [searchQuery])
   
-  const renderSection = (titleKey: string, items: ReviewWithClip[], emptyTextKey: string, accent: string) => (
+  const renderSection = (title: string, items: ReviewWithClip[], emptyText: string, accent: string) => (
     <section className="mb-6">
       <div className="flex items-center justify-between mb-3">
-        <h3 className={`text-sm font-semibold ${theme.textPrimary}`}>{t(titleKey)}</h3>
-        <span className={`text-xs ${theme.textMuted}`}>{`${items.length} ${t("reviewItemsCount")}`}</span>
+        <h3 className={`text-sm font-semibold ${theme.textPrimary}`}>{title}</h3>
+        <span className={`text-xs ${theme.textMuted}`}>{items.length} 项</span>
       </div>
       {items.length === 0 ? (
         <div className="p-4 rounded-xl border border-white/5 text-center text-sm text-gray-400 bg-white/5">
-          {/** {emptyText} */}
-          {t(emptyTextKey)}
+          {emptyText}
         </div>
       ) : (
         <div className="space-y-3">
@@ -828,35 +786,31 @@ function ReviewListView({ grouped, allReviews, onStart, getStatusBadge, getDista
                     </div>
                     <h4 className={`text-base font-semibold ${theme.textPrimary} truncate`}>{item.clip.title}</h4>
                     <div className="flex items-center gap-2 text-xs text-gray-400 mt-1">
-                    <span className="px-2 py-0.5 rounded-full bg-white/5">{item.clip.source}</span>
-                    <span>{formatNextReviewDate(item.review, t)}</span>
-                  </div>
+                      <span className="px-2 py-0.5 rounded-full bg-white/5">{item.clip.source}</span>
+                      <span>{formatNextReviewDate(item.review)}</span>
+                    </div>
                   </div>
                   <div className="flex flex-col items-end gap-2">
                     <button
                       onClick={() => onStart(item)}
                       className="px-3 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-medium hover:from-purple-500 hover:to-indigo-500"
                     >
-                      {/** {item.review.nextReviewDate <= Date.now() ? "立即复习" : "提前复习"} */}
-                      {item.review.nextReviewDate <= Date.now() ? t("reviewButtonImmediateReview") : t("reviewButtonEarlyReview")}
+                      {item.review.nextReviewDate <= Date.now() ? "立即复习" : "提前复习"}
                     </button>
-                    {/** <div className="text-[11px] text-gray-400">复习 {item.review.totalReviews} 次</div> */}
-                    <div className="text-[11px] text-gray-400">{`${t("reviewItemsReviewLabelLeft")} ${item.review.totalReviews} ${t("reviewItemsReviewLabelRight")}`}</div>
+                    <div className="text-[11px] text-gray-400">复习 {item.review.totalReviews} 次</div>
                   </div>
                 </div>
                 <div className="mt-3 space-y-2">
                   <div className="flex items-center gap-2 text-xs text-gray-400">
-                    {/** 记忆强度 */}
-                    <span>{t("reviewMemoryStrength")}</span>
+                    <span>记忆强度</span>
                     <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
                       <div className="h-full bg-gradient-to-r from-red-500 via-yellow-500 to-green-500" style={{ width: `${strength}%` }} />
                     </div>
                     <span className="text-gray-300">{strength}%</span>
                   </div>
                   <div className="flex items-center gap-2 text-[11px] text-gray-400">
-                    {/** 下次复习 */}
-                    <span>{t("reviewNextReview")}</span>
-                    <span className="text-gray-200">{formatNextReviewDate(item.review, t)}</span>
+                    <span>下次复习</span>
+                    <span className="text-gray-200">{formatNextReviewDate(item.review)}</span>
                   </div>
                 </div>
               </div>
@@ -873,12 +827,11 @@ function ReviewListView({ grouped, allReviews, onStart, getStatusBadge, getDista
       <div className="mb-6">
         <div className="flex gap-2">
           <div className="flex-1 relative">
-            {/** placeholder="输入关键词实时搜索卡片内容..." */}
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t("reviewSearchPlaceholder")}
+              placeholder="输入关键词实时搜索卡片内容..."
               className="w-full px-4 py-2 bg-[#1e293b] border border-white/10 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all"
             />
             {isSearching && (
@@ -895,8 +848,7 @@ function ReviewListView({ grouped, allReviews, onStart, getStatusBadge, getDista
               }}
               className="px-4 py-2 rounded-xl bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors"
             >
-              {/** 清除 */}
-              {t("reviewButtonSearchClear")}
+              清除
             </button>
           )}
         </div>
@@ -904,8 +856,7 @@ function ReviewListView({ grouped, allReviews, onStart, getStatusBadge, getDista
         {/* 搜索结果 */}
         {searchResults.length > 0 && (
           <div className="mt-4 space-y-2">
-            {/** 找到 {searchResults.length} 张卡片 */}
-            <div className="text-sm text-slate-400 mb-2">{`${t("reviewSearchResultsLabelLeft")} ${searchResults.length} ${t("reviewSearchResultsLabelRight")}`}</div>
+            <div className="text-sm text-slate-400 mb-2">找到 {searchResults.length} 张卡片</div>
             {searchResults.map(({ review, cardIndex, card }, idx) => {
               // 找到对应的 ReviewWithClip 对象
               const reviewWithClip = allReviews.find(r => r.review.id === review.id)
@@ -927,10 +878,9 @@ function ReviewListView({ grouped, allReviews, onStart, getStatusBadge, getDista
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-xs px-2 py-0.5 rounded bg-purple-500/20 text-purple-300">
-                          {getCardTypeLabel(card.type, t)}
+                          {getCardTypeLabel(card.type)}
                         </span>
-                        {/** 卡片 #{cardIndex + 1} */}
-                        <span className="text-xs text-slate-500">{`${t("reviewSearchCardLabel")} #${cardIndex + 1}`}</span>
+                        <span className="text-xs text-slate-500">卡片 #{cardIndex + 1}</span>
                       </div>
                       <div className="text-sm text-slate-200 mb-1 group-hover:text-purple-200 transition-colors">{card.question}</div>
                       <div className="text-xs text-slate-400 truncate">{card.answer}</div>
@@ -945,37 +895,30 @@ function ReviewListView({ grouped, allReviews, onStart, getStatusBadge, getDista
           </div>
         )}
         
-        {/** 未找到匹配的卡片 */}
         {searchQuery && searchResults.length === 0 && !isSearching && (
-          <div className="mt-4 text-center text-sm text-slate-400 py-4">{t("reviewSearchNoResults")}</div>
+          <div className="mt-4 text-center text-sm text-slate-400 py-4">未找到匹配的卡片</div>
         )}
       </div>
       
       {/* 统计卡片 */} 
       <div className="grid grid-cols-3 gap-3 mb-6">
         <div className="p-3 rounded-xl bg-white/5 border border-white/10">
-          {/** 待复习 */}
-          <div className="text-xs text-gray-400 mb-1">{t("reviewLabelStatusDue")}</div>
+          <div className="text-xs text-gray-400 mb-1">待复习</div>
           <div className="text-2xl font-bold text-amber-300">{grouped.due.length}</div>
         </div>
         <div className="p-3 rounded-xl bg-white/5 border border-white/10">
-          {/** 即将复习 */}
-          <div className="text-xs text-gray-400 mb-1">{t("reviewLabelStatusUpcoming")}</div>
+          <div className="text-xs text-gray-400 mb-1">即将复习</div>
           <div className="text-2xl font-bold text-blue-300">{grouped.upcoming.length}</div>
         </div>
         <div className="p-3 rounded-xl bg-white/5 border border-white/10">
-          {/** 已暂停 */}
-          <div className="text-xs text-gray-400 mb-1">{t("reviewLabelStatusPaused")}</div>
+          <div className="text-xs text-gray-400 mb-1">已暂停</div>
           <div className="text-2xl font-bold text-gray-200">{grouped.paused.length}</div>
         </div>
       </div>
 
-      {/** "待复习"  "今天没有待复习内容" */}
-      {renderSection("reviewSectionDue", grouped.due, "reviewNoDueContent", "text-amber-300")}
-      {/** "即将复习"  "未来暂无计划" */}
-      {renderSection("reviewSectionUpcoming", grouped.upcoming, "reviewNoUpcomingContent", "text-blue-300")}
-      {/** "已暂停"  "暂无暂停的复习计划" */}
-      {renderSection("reviewSectionPaused", grouped.paused, "reviewNoPausedContent", "text-gray-300")}
+      {renderSection("待复习", grouped.due, "今天没有待复习内容", "text-amber-300")}
+      {renderSection("即将复习", grouped.upcoming, "未来暂无计划", "text-blue-300")}
+      {renderSection("已暂停", grouped.paused, "暂无暂停的复习计划", "text-gray-300")}
     </div>
   )
 }
@@ -1018,7 +961,6 @@ interface CompletionScreenProps {
 }
 
 function CompletionScreen({ completedCount, sessionDuration, onBack }: CompletionScreenProps) {
-  const { t } = useI18n()
   const minutes = Math.floor(sessionDuration / 60000)
   
   return (
@@ -1029,14 +971,12 @@ function CompletionScreen({ completedCount, sessionDuration, onBack }: Completio
         </div>
         
         <h2 className={`text-2xl font-bold ${theme.textPrimary} mb-2`}>
-          {/** {completedCount > 0 ? '太棒了！' : '今日已完成'} */}
-          {completedCount > 0 ? t("reviewGreat") : t("reviewAlreadyCompleteToday")}
+          {completedCount > 0 ? '太棒了！' : '今日已完成'}
         </h2>
         <p className={`${theme.textMuted} mb-8`}>
-          {/** `你已完成 ${completedCount} 个复习任务`  '没有待复习的内容，休息一下吧！' */}
           {completedCount > 0 
-            ? `${t("reviewCompleteLeft")} ${completedCount} ${t("reviewCompleteRight")}` 
-            : t("reviewNoDueContent")
+            ? `你已完成 ${completedCount} 个复习任务` 
+            : '没有待复习的内容，休息一下吧！'
           }
         </p>
         
@@ -1045,14 +985,12 @@ function CompletionScreen({ completedCount, sessionDuration, onBack }: Completio
             <div className={`p-4 rounded-xl bg-white/5`}>
               <CheckCircle2 className={`h-6 w-6 ${theme.accentGreen} mx-auto mb-2`} />
               <div className={`text-2xl font-bold ${theme.textPrimary}`}>{completedCount}</div>
-              {/** 完成数量 */}
-              <div className={`text-xs ${theme.textMuted}`}>{t("reviewCompleteCount")}</div>
+              <div className={`text-xs ${theme.textMuted}`}>完成数量</div>
             </div>
             <div className={`p-4 rounded-xl bg-white/5`}>
               <Clock className={`h-6 w-6 ${theme.accentPurple} mx-auto mb-2`} />
               <div className={`text-2xl font-bold ${theme.textPrimary}`}>{minutes || '<1'}</div>
-              {/** 分钟 */}
-              <div className={`text-xs ${theme.textMuted}`}>{t("reviewMinutes")}</div>
+              <div className={`text-xs ${theme.textMuted}`}>分钟</div>
             </div>
           </div>
         )}
@@ -1063,15 +1001,13 @@ function CompletionScreen({ completedCount, sessionDuration, onBack }: Completio
             className={`flex-1 py-3 rounded-xl ${theme.textMuted} bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center gap-2`}
           >
             <ArrowLeft className="h-4 w-4" />
-            {/** 返回 */}
-            {t("reviewButtonReturn")}
+            返回
           </button>
           <button
             onClick={() => window.location.href = chrome.runtime.getURL('tabs/history.html')}
             className="flex-1 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium hover:from-purple-500 hover:to-indigo-500 transition-colors"
           >
-            {/** 查看全部剪藏 */}
-            {t("reviewButtonViewAll")}
+            查看全部剪藏
           </button>
         </div>
       </div>

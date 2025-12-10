@@ -5,6 +5,7 @@
 import React, { useState, useEffect } from "react"
 import type { ReviewCard, CardType } from "@/lib/review/types"
 import { X, Save, Sparkles, HelpCircle, FileText, List, Target } from "lucide-react"
+import { useI18n } from "@/lib/use-i18n"
 import { getCardTypeLabel } from "@/lib/review/card-generator"
 
 interface CardEditorProps {
@@ -31,7 +32,8 @@ const getCardIcon = (type: CardType) => {
   return icons[type]
 }
 
-export function CardEditor({ initialCard, onSave, onCancel, title }: CardEditorProps) {
+export function CardEditor({ initialCard, onSave, onCancel }: CardEditorProps) {
+  const { t } = useI18n()
   const [type, setType] = useState<CardType>(initialCard?.type || 'qa')
   const [question, setQuestion] = useState(initialCard?.question || '')
   const [answer, setAnswer] = useState(initialCard?.answer || '')
@@ -49,7 +51,8 @@ export function CardEditor({ initialCard, onSave, onCancel, title }: CardEditorP
 
   const handleSave = () => {
     if (!question.trim() || !answer.trim()) {
-      alert('问题和答案不能为空')
+      // alert('问题和答案不能为空')
+      alert(t('cardEditorAlertEmptyError'))
       return
     }
 
@@ -64,25 +67,33 @@ export function CardEditor({ initialCard, onSave, onCancel, title }: CardEditorP
   }
 
   const getPlaceholder = (type: CardType, field: 'question' | 'answer') => {
-    const placeholders = {
+    const placeholderKeys = {
       qa: {
-        question: '输入问题，例如：什么是组件化开发？',
-        answer: '输入答案，例如：将 UI 拆分为独立、可复用的部分...'
+        questionText: '输入问题，例如：什么是组件化开发？',
+        answerText: '输入答案，例如：将 UI 拆分为独立、可复用的部分...',
+        question: 'cardEditorPlaceholderQAQuestion',
+        answer: 'cardEditorPlaceholderQAAnswer'
       },
       cloze: {
-        question: '输入填空题，用 ___ 表示空白，例如：React 使用 ___ 来管理状态',
-        answer: '输入答案，例如：useState Hook'
+        questionText: '输入填空题，用 ___ 表示空白，例如：React 使用 ___ 来管理状态',
+        answerText: '输入答案，例如：useState Hook',
+        question: 'cardEditorPlaceholderClozeQuestion',
+        answer: 'cardEditorPlaceholderClozeAnswer'
       },
       summary: {
-        question: '输入需要总结的主题，例如：总结这篇文章的核心观点',
-        answer: '输入总结内容'
+        questionText: '输入需要总结的主题，例如：总结这篇文章的核心观点',
+        answerText: '输入总结内容',
+        question: 'cardEditorPlaceholderSummaryQuestion',
+        answer: 'cardEditorPlaceholderSummaryAnswer'
       },
       keypoint: {
-        question: '输入要点标题，例如：React Hooks 的关键规则',
-        answer: '输入要点列表（可以分多行）'
+        questionText: '输入要点标题，例如：React Hooks 的关键规则',
+        answerText: '输入要点列表（可以分多行）',
+        question: 'cardEditorPlaceholderKeypointQuestion',
+        answer: 'cardEditorPlaceholderKeypointAnswer'
       }
     }
-    return placeholders[type][field]
+    return t(placeholderKeys[type][field])
   }
 
   return (
@@ -95,7 +106,8 @@ export function CardEditor({ initialCard, onSave, onCancel, title }: CardEditorP
               <Sparkles className="h-4 w-4 text-white" />
             </div>
             <h2 className="text-lg font-semibold text-slate-50">
-              {title || (initialCard ? '编辑卡片' : '新建卡片')}
+              {/** title || (initialCard ? '编辑卡片' : '新建卡片') */}
+              {initialCard ? t('cardEditorCardEdit') : t('cardEditorCardCreate')}
             </h2>
           </div>
           <button
@@ -111,17 +123,18 @@ export function CardEditor({ initialCard, onSave, onCancel, title }: CardEditorP
           {/* 卡片类型 */}
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-3">
-              卡片类型
+              {/** 卡片类型 */}
+              {t('cardEditorTypeLabel')}
             </label>
             <div className="grid grid-cols-4 gap-2">
-              {CARD_TYPES.map((t) => {
-                const Icon = getCardIcon(t)
-                const label = getCardTypeLabel(t)
-                const isSelected = type === t
+              {CARD_TYPES.map((cardType) => {
+                const Icon = getCardIcon(cardType)
+                const label = getCardTypeLabel(cardType, t)
+                const isSelected = type === cardType
                 return (
                   <button
-                    key={t}
-                    onClick={() => setType(t)}
+                    key={cardType}
+                    onClick={() => setType(cardType)}
                     className={`
                       p-3 rounded-xl border transition-all
                       ${isSelected 
@@ -141,7 +154,8 @@ export function CardEditor({ initialCard, onSave, onCancel, title }: CardEditorP
           {/* 问题 */}
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              问题/提示
+              {/** 问题/提示 */}
+              {t('cardEditorQuestionAndHintLabel')}
             </label>
             <textarea
               value={question}
@@ -155,7 +169,8 @@ export function CardEditor({ initialCard, onSave, onCancel, title }: CardEditorP
           {/* 答案 */}
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              答案
+              {/** 答案 */}
+              {t('cardEditorAnswerLabel')}
             </label>
             <textarea
               value={answer}
@@ -169,12 +184,14 @@ export function CardEditor({ initialCard, onSave, onCancel, title }: CardEditorP
           {/* 提示（可选） */}
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              提示 <span className="text-slate-500 text-xs">(可选)</span>
+              {/** 提示 <span className="text-slate-500 text-xs">(可选)</span> */}
+              {t('cardEditorHintLabel')} <span className="text-slate-500 text-xs">{t('cardEditorOptionalLabel')}</span>
             </label>
+            {/** placeholder="输入提示内容，帮助回忆答案..." */}
             <textarea
               value={hint}
               onChange={(e) => setHint(e.target.value)}
-              placeholder="输入提示内容，帮助回忆答案..."
+              placeholder={t('cardEditorHintPlaceholder')}
               className="w-full px-4 py-3 bg-[#1e293b] border border-white/10 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all resize-none"
               rows={2}
             />
@@ -187,14 +204,16 @@ export function CardEditor({ initialCard, onSave, onCancel, title }: CardEditorP
             onClick={onCancel}
             className="px-5 py-2.5 rounded-xl bg-[#1e293b] text-slate-300 hover:bg-[#334155] transition-colors"
           >
-            取消
+            {/** 取消 */}
+            {t('cardEditorButtonCancel')}
           </button>
           <button
             onClick={handleSave}
             className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 text-white hover:from-purple-600 hover:to-indigo-700 transition-all flex items-center gap-2"
           >
             <Save className="h-4 w-4" />
-            保存
+            {/** 保存 */}
+            {t('cardEditorButtonSave')}
           </button>
         </div>
       </div>

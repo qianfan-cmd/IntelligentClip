@@ -422,7 +422,7 @@ function HistoryLayout() {
               rawTextSnippet: clip.rawTextSnippet,
               rawTextFull: clip.rawTextFull
             }
-          })
+          }, translate)
           await ReviewStore.updateCards(reviewRecord.id, cards)
           console.log("[History] Cards pre-generated and cached", cards.length)
         } catch (cardErr) {

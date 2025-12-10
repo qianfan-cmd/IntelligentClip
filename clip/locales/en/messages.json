@@ -1036,7 +1036,7 @@
     "description": "没有AI标注时的提示标题"
   },
   "clipTagsPanelNoTagsHint": {
-    "message": "Say \"Help me add tags and ratings\" in the conversation to add annotations",
+    "message": "Say \"Help me add tag and rate\" in the conversation to add annotations",
     "description": "没有AI标注时的提示信息"
   },
   "clipTagsPanelTitle": {
@@ -1062,5 +1062,478 @@
   "clipTagsPanelCommentLabel": {
     "message": "Personal Comment:",
     "description": "个人感想标签"
+  },
+
+  "cardGeneratorCardTypeQA": {
+    "message": "Question-Answer",
+    "description": "问答卡片类型"
+  },
+  "cardGeneratorCardTypeCloze": {
+    "message": "Cloze",
+    "description": "完形填空卡片类型"
+  },
+  "cardGeneratorCardTypeSummary": {
+    "message": "Summary",
+    "description": "摘要卡片类型"
+  },
+  "cardGeneratorCardTypeKeypoint": {
+    "message": "Keypoint Review",
+    "description": "关键点卡片类型"
+  },
+  "cardGeneratorCardTypeUnknown": {
+    "message": "Unknown Type",
+    "description": "未知卡片类型"
+  },
+
+  "cardGeneratorThisContent": {
+    "message": "This content",
+    "description": "生成卡片时指代当前内容"
+  },
+  "cardGeneratorReferToOriginal": {
+    "message": "Please refer to the original text for review.",
+    "description": "提示用户参考原文"
+  },
+  "cardGeneratorReferToOriginalKeypoints": {
+    "message": "Please refer to the key points in the original text.",
+    "description": "提示用户参考原文中的关键要点"
+  },
+  "cardGeneratorSummaryQuestionLeft": {
+    "message": "Please restate the core conclusions or key causal chains of \"",
+    "description": "摘要卡片的问题"
+  },
+  "cardGeneratorSummaryQuestionRight": {
+    "message": "\" in your own words (avoid simply answering \"what's the main content\").",
+    "description": "摘要卡片的问题"
+  },
+
+  "cardGeneratorQADetailQuestion": {
+    "message": "What are the key details/data/conclusions of this content? Please answer with key points.",
+    "description": "QA卡片的细节问题"
+  },
+  "cardGeneratorKeypointQuestionLeft": {
+    "message": "Regarding \"",
+    "description": "要点卡片的问题"
+  },
+  "cardGeneratorKeypointQuestionRight": {
+    "message": "\", which key point best embodies its value/impact?",
+    "description": "要点卡片的问题"
+  },
+
+  "cardGeneratorClozeHint": {
+    "message": "The blank is a keyword from the original text",
+    "description": "填空题的提示"
+  },
+  "cardGeneratorQACoreQuestion": {
+    "message": "What is the core viewpoint of this content?",
+    "description": "兜底QA卡片的问题"
+  },
+
+
+  "reviewConfirmDeleteCard": {
+    "message": "Are you sure you want to delete this card?",
+    "description": "删除卡片确认信息"
+  },
+
+
+  "reviewItemStatusPaused": {
+    "message": "Paused",
+    "description": "复习状态 - 已暂停"
+  },
+  "reviewItemStatusUpcoming": {
+    "message": "Upcoming",
+    "description": "复习状态 - 即将复习"
+  },
+  "reviewItemStatusDue": {
+    "message": "Due",
+    "description": "复习状态 - 待复习"
+  },
+  "reviewItemImmediateReview": {
+    "message": "Immediate Review",
+    "description": "复习状态 - 立即复习"
+  },
+  "reviewTextOverdue": {
+    "message": "Overdue",
+    "description": "逾期文本"
+  },
+  "reviewTextDays": {
+    "message": "days",
+    "description": "天文本"
+  },
+  "reviewItemTomorrow": {
+    "message": "Tomorrow",
+    "description": "明天文本"
+  },
+  "reviewItemDaysLater": {
+    "message": "days later",
+    "description": "几天后文本"
+  },
+  "reviewItemWeeksLater": {
+    "message": "weeks later",
+    "description": "几周后文本"
+  },
+  
+  "reviewLoadingContent": {
+    "message": "Loading review content...",
+    "description": "加载复习内容时的提示"
+  },
+
+
+  "reviewCreateCard": {
+    "message": "Create Card",
+    "description": "新建卡片按钮文本"
+  },
+  "reviewEditCard": {
+    "message": "Edit Card",
+    "description": "编辑卡片按钮文本"
+  },
+  "reviewPageTitle": {
+    "message": "AI Review Assistant",
+    "description": "复习页面标题"
+  },
+  "reviewDueReviewToday": {
+    "message": "Due for Review Today:",
+    "description": "今日待复习卡片计数前缀"
+  },
+  "reviewCompleted": {
+    "message": "Completed:",
+    "description": "已完成卡片计数前缀"
+  },
+  "reviewButtonReturnToReview": {
+    "message": "Return to Review",
+    "description": "返回复习按钮文本"
+  },
+  "reviewButtonViewAllCards": {
+    "message": "View All Review Cards",
+    "description": "查看全部复习卡片按钮文本"
+  },
+  "reviewGeneratingCards": {
+    "message": "AI is generating review cards...",
+    "description": "生成复习卡片时的提示"
+  },
+  "reviewCardName": {
+    "message": "Card",
+    "description": "卡片名称"
+  },
+  "reviewButtonAddCard": {
+    "message": "Add New Card",
+    "description": "添加新卡片按钮提示"
+  },
+  "reviewButtonEditCard": {
+    "message": "Edit Card",
+    "description": "编辑卡片按钮提示"
+  },
+  "reviewButtonDeleteCard": {
+    "message": "Delete Card",
+    "description": "删除卡片按钮提示"
+  },
+  "reviewCurrentCardHintLabel": {
+    "message": "💡 Hint:",
+    "description": "当前卡片提示标签"
+  },
+  "reviewCurrentCardAnswerLabel": {
+    "message": "Answer",
+    "description": "当前卡片答案标签"
+  },
+  "reviewButtonSkip": {
+    "message": "Skip",
+    "description": "跳过按钮文本"
+  },
+  "reviewButtonShowAnswer": {
+    "message": "Show Answer",
+    "description": "显示答案按钮文本"
+  },
+  "reviewDidYouAnswerCorrectly": {
+    "message": "Did you answer correctly?",
+    "description": "是否答对了当前卡片"
+  },
+  "reviewNextCardAfterRating": {
+    "message": "Next card will be displayed after rating",
+    "description": "评分后显示下一张卡片提示"
+  },
+  "reviewButtonForgot": {
+    "message": "Forgot",
+    "description": "评分选项 - 忘了"
+  },
+  "reviewButtonHard": {
+    "message": "Hard",
+    "description": "评分选项 - 困难"
+  },
+  "reviewButtonRemembered": {
+    "message": "Remembered",
+    "description": "评分选项 - 记得"
+  },
+  "reviewButtonEasy": {
+    "message": "Easy",
+    "description": "评分选项 - 简单"
+  },
+  "reviewItemsCount": {
+    "message": "items",
+    "description": "项数"
+  },
+  "reviewButtonImmediateReview": {
+    "message": "Review Now",
+    "description": "立即复习按钮文本"
+  },
+  "reviewButtonEarlyReview": {
+    "message": "Review Early",
+    "description": "提前复习按钮文本"
+  },
+  "reviewItemsReviewLabelLeft": {
+    "message": "Reviewed",
+    "description": "复习标签左部"
+  },
+  "reviewItemsReviewLabelRight": {
+    "message": "times",
+    "description": "复习标签右部"
+  },
+  "reviewMemoryStrength": {
+    "message": "Memory Strength",
+    "description": "记忆强度标签"
+  },
+  "reviewNextReview": {
+    "message": "Next Review",
+    "description": "下次复习标签"
+  },
+  "reviewSearchPlaceholder": {
+    "message": "Enter keywords to search card content in real-time...",
+    "description": "搜索卡片输入框占位符"
+  },
+  "reviewButtonSearchClear": {
+    "message": "Clear",
+    "description": "搜索框清除按钮文本"
+  },
+  "reviewSearchResultsLabelLeft": {
+    "message": "Found",
+    "description": "搜索结果数量前缀"
+  },
+  "reviewSearchResultsLabelRight": {
+    "message": "cards",
+    "description": "搜索结果数量后缀"
+  },
+  "reviewSearchCardLabel": {
+    "message": "Card",
+    "description": "搜索结果卡片标签"
+  },
+  "reviewSearchNoResults": {
+    "message": "No matching cards found",
+    "description": "搜索无结果提示"
+  },
+  "reviewLabelStatusDue": {
+    "message": "Due",
+    "description": "待复习卡片状态标签"
+  },
+  "reviewLabelStatusUpcoming": {
+    "message": "Upcoming",
+    "description": "即将复习卡片状态标签"
+  },
+  "reviewLabelStatusPaused": {
+    "message": "Paused",
+    "description": "已暂停卡片状态标签"
+  },
+  "reviewSectionDue": {
+    "message": "Due for Review",
+    "description": "待复习卡片状态标签"
+  },
+  "reviewSectionUpcoming": {
+    "message": "Upcoming Reviews",
+    "description": "即将复习卡片状态标签"
+  },
+  "reviewSectionPaused": {
+    "message": "Paused Reviews",
+    "description": "已暂停卡片状态标签"
+  },
+  "reviewNoDueContent": {
+    "message": "No content due for review today",
+    "description": "待复习卡片无内容提示"
+  },
+  "reviewNoUpcomingContent": {
+    "message": "No future plans yet",
+    "description": "即将复习卡片无内容提示"
+  },
+  "reviewNoPausedContent": {
+    "message": "No paused review plans",
+    "description": "已暂停卡片无内容提示"
+  },
+  "reviewGreat": {
+    "message": "Great!",
+    "description": "复习完成标题1"
+  },
+  "reviewAlreadyCompleteToday": {
+    "message": "Already Completed Today",
+    "description": "复习完成标题2"
+  },
+  "reviewCompleteLeft": {
+    "message": "You have completed",
+    "description": "复习完成统计前缀"
+  },
+  "reviewCompleteRight": {
+    "message": "review tasks",
+    "description": "复习完成统计后缀"
+  },
+  "reviewCompleteCount": {
+    "message": "Completion Count",
+    "description": "复习完成统计"
+  },
+  "reviewMinutes": {
+    "message": "minutes",
+    "description": "复习用时统计"
+  },
+  "reviewButtonReturn": {
+    "message": "Return",
+    "description": "返回按钮文本"
+  },
+  "reviewButtonViewAll": {
+    "message": "View All Clips",
+    "description": "查看全部剪藏按钮文本"
+  },
+
+  "reviewWithNoCards": {
+    "message": "No Review Cards",
+    "description": "无复习卡片"
+  },
+  "reviewMainContent": {
+    "message": "Please review the main information of this content",
+    "description": "复习主要内容提示"
+  },
+  "reviewPendingEvaluation": {
+    "message": "Pending Evaluation",
+    "description": "待评估状态"
+  },
+
+
+
+  "cardEditorAlertEmptyError": {
+    "message": "Question and answer cannot be empty",
+    "description": "卡片编辑器空值错误提示"
+  },
+  "cardEditorPlaceholderQAQuestion": {
+    "message": "Enter a question, e.g., What is component-based development?",
+    "description": "卡片编辑器问题占位符"
+  },
+  "cardEditorPlaceholderQAAnswer": {
+    "message": "Enter an answer, e.g., Splitting UI into independent, reusable parts...",
+    "description": "卡片编辑器答案占位符"
+  },
+  "cardEditorPlaceholderClozeQuestion": {
+    "message": "Enter a cloze question with ___ for blanks, e.g., React uses ___ to manage state",
+    "description": "卡片编辑器填空题占位符"
+  },
+  "cardEditorPlaceholderClozeAnswer": {
+    "message": "Enter the answer, e.g., useState Hook",
+    "description": "卡片编辑器填空题答案占位符"
+  },
+  "cardEditorPlaceholderSummaryQuestion": {
+    "message": "Enter the topic to summarize, e.g., Summarize the core viewpoints of this article",
+    "description": "卡片编辑器总结占位符"
+  },
+  "cardEditorPlaceholderSummaryAnswer": {
+    "message": "Enter the summary content",
+    "description": "卡片编辑器总结答案占位符"
+  },
+  "cardEditorPlaceholderKeypointQuestion": {
+    "message": "Enter the keypoint title, e.g., Key Rules of React Hooks",
+    "description": "卡片编辑器要点占位符"
+  },
+  "cardEditorPlaceholderKeypointAnswer": {
+    "message": "Enter the keypoint list (can be on multiple lines)",
+    "description": "卡片编辑器要点答案占位符"
+  },
+  "cardEditorCardEdit": {
+    "message": "Edit Card",
+    "description": "卡片编辑器编辑按钮文本"
+  },
+  "cardEditorCardCreate": {
+    "message": "Create Card",
+    "description": "卡片编辑器新建按钮文本"
+  },
+  "cardEditorTypeLabel": {
+    "message": "Card Type",
+    "description": "卡片编辑器卡片类型标签"
+  },
+  "cardEditorQuestionAndHintLabel": {
+    "message": "Question/Hint",
+    "description": "卡片编辑器问题/提示标签"
+  },
+  "cardEditorAnswerLabel": {
+    "message": "Answer",
+    "description": "卡片编辑器答案标签"
+  },
+  "cardEditorHintLabel": {
+    "message": "Hint",
+    "description": "卡片编辑器提示标签"
+  },
+  "cardEditorOptionalLabel": {
+    "message": "(Optional)",
+    "description": "卡片编辑器可选标签"
+  },
+  "cardEditorHintPlaceholder": {
+    "message": "Enter hint content to help recall the answer...",
+    "description": "卡片编辑器提示占位符"
+  },
+  "cardEditorButtonCancel": {
+    "message": "Cancel",
+    "description": "卡片编辑器取消按钮文本"
+  },
+  "cardEditorButtonSave": {
+    "message": "Save",
+    "description": "卡片编辑器保存按钮文本"
+  },
+
+  
+  "sm2AlgorithmStatusNew": {
+    "message": "New Learning",
+    "description": "复习状态 - 新学习"
+  },
+  "sm2AlgorithmStatusLearning": {
+    "message": "Learning",
+    "description": "复习状态 - 学习中"
+  },
+  "sm2AlgorithmStatusOverdueLeft": {
+    "message": "Overdue",
+    "description": "复习状态 - 逾期"
+  },
+  "sm2AlgorithmStatusOverdueRight": {
+    "message": "days",
+    "description": "复习状态 - 逾期天"
+  },
+  "sm2AlgorithmStatusDue": {
+    "message": "Due",
+    "description": "复习状态 - 待复习"
+  },
+  "sm2AlgorithmStatusMastered": {
+    "message": "Mastered",
+    "description": "复习状态 - 已掌握"
+  },
+  "sm2AlgorithmDateNow": {
+    "message": "Now",
+    "description": "复习日期 - 现在"
+  },
+  "sm2AlgorithmDateWithinHour": {
+    "message": "Within 1 hour",
+    "description": "复习日期 - 1小时内"
+  },
+  "sm2AlgorithmDateHoursLater": {
+    "message": "hours later",
+    "description": "复习日期 - 几小时后"
+  },
+  "sm2AlgorithmDateTomorrow": {
+    "message": "Tomorrow",
+    "description": "复习日期 - 明天"
+  },
+  "sm2AlgorithmDateDaysLater": {
+    "message": "days later",
+    "description": "复习日期 - 几天后"
+  },
+  "sm2AlgorithmDateWeeksLater": {
+    "message": "weeks later",
+    "description": "复习日期 - 几周后"
+  },
+  "sm2AlgorithmDateMonthsLater": {
+    "message": "months later",
+    "description": "复习日期 - 几个月后"
+  },
+  "sm2AlgorithmDateYearsLater": {
+    "message": "years later",
+    "description": "复习日期 - 几年后"
   }
 }

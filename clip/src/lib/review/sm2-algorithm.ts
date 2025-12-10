@@ -175,9 +175,13 @@ export function calculateMemoryStrength(record: ReviewRecord): number {
  * 获取复习状态描述
  * 
  * @param record 复习记录
+ * @param t 翻译函数，用于国际化
  * @returns 状态描述
  */
-export function getReviewStatus(record: ReviewRecord): {
+export function getReviewStatus(
+  record: ReviewRecord,
+  t: (key: string, options?: Record<string, any>) => string
+): {
   status: 'new' | 'learning' | 'review' | 'overdue'
   label: string
   color: string
@@ -185,36 +189,42 @@ export function getReviewStatus(record: ReviewRecord): {
   const now = Date.now()
   
   if (record.totalReviews === 0) {
-    return { status: 'new', label: '新学习', color: 'blue' }
+    return { status: 'new', label: t('sm2AlgorithmStatusNew'), color: 'blue' }
   }
   
   if (record.repetitions < 2) {
-    return { status: 'learning', label: '学习中', color: 'yellow' }
+    return { status: 'learning', label: t('sm2AlgorithmStatusLearning'), color: 'yellow' }
   }
   
   if (record.nextReviewDate <= now) {
     const overdueDays = Math.floor((now - record.nextReviewDate) / DAY_MS)
     if (overdueDays > 7) {
-      return { status: 'overdue', label: `逾期 ${overdueDays} 天`, color: 'red' }
+      const overdueLabel = `${t("sm2AlgorithmStatusOverdueLeft")} ${overdueDays} ${"sm2AlgorithmStatusOverdueRight"}`
+      return { status: 'overdue', label: overdueLabel, color: 'red' }
     }
-    return { status: 'review', label: '待复习', color: 'orange' }
+    return { status: 'review', label: t('sm2AlgorithmStatusDue'), color: 'orange' }
   }
   
-  return { status: 'review', label: '已掌握', color: 'green' }
+  return { status: 'review', label: t('sm2AlgorithmStatusMastered'), color: 'green' }
 }
 
 /**
  * 预测下次复习日期（用于 UI 显示）
  * 
  * @param record 复习记录
+ * @param t 翻译函数，用于国际化
  * @returns 格式化的日期字符串
  */
-export function formatNextReviewDate(record: ReviewRecord): string {
+export function formatNextReviewDate(
+  record: ReviewRecord,
+  t: (key: string, options?: Record<string, any>) => string
+): string {
   const now = Date.now()
   const diff = record.nextReviewDate - now
   
   if (diff <= 0) {
-    return '现在'
+    // return '现在'
+    return t('sm2AlgorithmDateNow')
   }
   
   const days = Math.floor(diff / DAY_MS)
@@ -222,17 +232,27 @@ export function formatNextReviewDate(record: ReviewRecord): string {
   if (days === 0) {
     const hours = Math.floor(diff / (60 * 60 * 1000))
     if (hours === 0) {
-      return '1 小时内'
+      // return '1 小时内'
+      return t('sm2AlgorithmDateWithinHour')
     }
-    return `${hours} 小时后`
+    // return `${hours} 小时后`
+    return `{hours} ${t('sm2AlgorithmDateHoursLater')}`
   }
   
-  if (days === 1) return '明天'
-  if (days < 7) return `${days} 天后`
-  if (days < 30) return `${Math.floor(days / 7)} 周后`
-  if (days < 365) return `${Math.floor(days / 30)} 个月后`
+  /*
+    if (days === 1) return '明天'
+    if (days < 7) return `${days} 天后`
+    if (days < 30) return `${Math.floor(days / 7)} 周后`
+    if (days < 365) return `${Math.floor(days / 30)} 个月后`
+  */
+  if (days === 1) return t('sm2AlgorithmDateTomorrow')
+  if (days < 7) return `${days} ${t('sm2AlgorithmDateDaysLater')}`
+  if (days < 30) return `${Math.floor(days / 7)} ${t('sm2AlgorithmDateWeeksLater')}`
+  if (days < 365) return `${Math.floor(days / 30)} ${t('sm2AlgorithmDateMonthsLater')}`
   
-  return `${Math.floor(days / 365)} 年后`
+  
+  // return `${Math.floor(days / 365)} 年后`
+  return `${Math.floor(days / 365)} ${t('sm2AlgorithmDateYearsLater')}`
 }
 
 /**
