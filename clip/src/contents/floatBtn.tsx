@@ -32,18 +32,26 @@ export const config = {
   matches: ["<all_urls>"] // 匹配规则：所有 URL
 }
 
-// 独立的 Shadow Host，提升到全页最顶层，防止样式冲突
-export const getShadowHostId: PlasmoGetShadowHostId = () => "plasmo-inline" // 定义 Shadow DOM 的 ID
+// 独立的 Shadow Host：承载整个浮窗的根容器
+// 作用：
+// 1) 与页面 DOM 隔离，防止站点样式污染（Shadow DOM 隔离作用域）
+// 2) 通过固定的 host id，便于后续注入针对 host 的样式规则
+export const getShadowHostId: PlasmoGetShadowHostId = () => "plasmo-inline"
 
 /**
  * 获取注入的样式
  * 强制设置 host 的定位和层级，防止被页面原有样式覆盖
  */
 export const getStyle = () => {
-  const style = document.createElement('style') // 创建 style 标签
-  // 设置样式内容，强制 position 和 z-index
+  const style = document.createElement('style')
+  // 注入两部分样式：
+  // A) 全局 UI 样式（styleText）
+  // B) 针对 Shadow Host 的锁定规则：
+  //    - position: relative：让子元素使用绝对定位时以 host 为定位上下文，避免受页面布局影响
+  //    - z-index: auto：host 本身不抢层级；真正的顶层锁定在容器（#plasmo-shadow-container）里完成
+  //    - pointer-events: none：host 不拦截鼠标事件，事件直接穿透到浮窗按钮，避免“透明盖层”导致不可点击
   style.textContent = `${styleText}\n:host(#plasmo-inline){position:relative!important;z-index:auto!important;pointer-events:none!important;}`
-  return style // 返回 style 元素
+  return style
 }
 
 // 定义常量
@@ -370,7 +378,7 @@ const floatButton = () => { // 悬浮按钮主组件
     return () => window.removeEventListener("message", pageHandler)
   }, [])
 
-  // Determine menu position mode based on container position
+
   // 根据按钮位置决定菜单展开方向（防止溢出屏幕）
   const getMenuPositionMode = () => {
     if (!containerRef.current) return 'default';
@@ -642,21 +650,9 @@ const floatButton = () => { // 悬浮按钮主组件
   if (isTranslating) return;//若翻译已经启动则不翻译
   if (!isTranslated) { // 如果当前未翻译，则开始翻译
     setIsTranslating(true);
-    // const dismiss = showNotification("正在翻译可视区域…", "loading");
     const dismiss = showNotification(t("floatBtnNotificationTranslating"), "loading");
     loadingNotifyDismissRef.current = dismiss;
-    /* LLM 诊断暂时禁用
-    try { 
-      chrome.runtime.sendMessage({ action: "diagnose-llm" }, (resp) => { 
-        try { 
-          console.log("[LLM 诊断]", resp) 
-          if (resp?.error || (resp?.status && resp.status !== 200)) {
-             showNotification(`LLM 诊断异常: ${resp.error || resp.status}`, "warning")
-          }
-        } catch {} 
-      }) 
-    } catch {}
-    */
+  
     /** 启动定时器，延迟600ms秒执行，该函数负责节点扫描、并发调度、分批翻译、结果写回与恢复原文。
      * 在暂停的同时异步发送消息给内容脚本（chrome.runtime.sendMessage)=>跳转到pageTranslator接受消息
      * 如果消息回调到达表示通道正常，就清除计时器（此时就可以正常发送请求了）否则600ms后就走前端直启直接调用translateCurrentPage开始翻译

@@ -168,13 +168,26 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // 简单的 Ping 接口，用于检测后台是否存活
   if (request.action === "ping") { try { sendResponse({ ok: true }) } catch {}; return true }
   
-  // 处理整页翻译请求 (转发给 Content Script)
+  // 处理整页翻译请求（由 Popup、快捷键或其他脚本发起）
+  // 兼容两种字段：
+  // - request.type === "TRANSLATE_PAGE"：旧版/内容脚本惯用的消息类型字段
+  // - request.action === "translate-page"：新版/后台统一的动作字段
+  // 命中任一条件即触发“把指令转发给当前激活的标签页”的流程。
   if (request.type === "TRANSLATE_PAGE" || request.action === "translate-page") {
+    // 查询当前窗口中处于激活状态的标签页；
+    // chrome.tabs.query 返回 Promise<[Tab, ...]>，这里通过解构只取第一项（当前激活页）。
     chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
-      // 向当前激活的标签页发送翻译指令
+      // 构造并发送内容脚本可识别的指令：
+      // - type 固定为 "TRANSLATE_PAGE"，让 content script 的监听器接收并执行整页翻译逻辑；
+      // - translateLang 为目标语言，按优先级依次取 request.translateLang → request.targetLang → 默认 "zh-CN"。
+      //   这样无论调用方传入的是 translateLang 还是 targetLang 都能兼容，最终落到中文。
       if (tab?.id) chrome.tabs.sendMessage(tab.id, { type: "TRANSLATE_PAGE", translateLang: request.translateLang || request.targetLang || "zh-CN" })
+      // 回复调用方一个“已受理”的结果。
+      // sendResponse 必须在异步回调内调用；为避免 Service Worker 通道已关闭导致异常，这里使用 try/catch。
       try { sendResponse({ ok: true }) } catch {}
     })
+    // 返回 true 告诉浏览器：这是一次异步响应，消息通道需要在 then 回调里调用 sendResponse 后再结束。
+    // 若不返回 true，sendResponse 可能在 Promise 回调执行时通道已关闭而报错。
     return true
   }
 

@@ -29,7 +29,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg?.type === "TRANSLATE_PAGE") { // 扩展的翻译请求
     console.log("🔵 收到翻译触发指令, 正在翻译页面...", msg.translateLang) // 打印日志
 
-    // ⚠️ 同步回复，避免 channel closed 错误
+    // 同步回复，避免 channel closed 错误
     // 收到响应发送信息，发送true表示消息已收到 
     // 返回false表示同步响应，在监听函数返回true表示在异步操作完成后调用sendResponse
     sendResponse({ ok: true })
@@ -297,6 +297,18 @@ const __clipGetTop = (el: HTMLElement) => { try { return el.getBoundingClientRec
  * 启动整页翻译的主函数
  * @param targetLang 目标语言代码，默认 zh-CN
  */
+// 整页翻译主流程入口（讲解用步骤）：
+// 步骤1：环境清理与状态重置（断开旧观察器、移除标记与残留译文）
+// 步骤2：收集全页文本节点并设置目标语言
+// 步骤3：读取用户策略（race/gtx_first/llm_first 等），决定 GTX/LLM 的使用偏好
+// 步骤4：将文本节点按最近块级祖先分组，形成 Map<HTMLElement, Node[]>（便于按块并发）
+// 步骤5：优先应用词典缓存（__clipLexicon）进行“直替”，上报首段完成事件
+// 步骤6：创建 IntersectionObserver，父块进入视口时批量翻译（首屏体验优先）
+// 步骤7：双保险：对视口附近（含边距）块直接批处理，确保首屏快速完成
+// 步骤8：补漏轮询：周期性扫描未翻译节点并按位置排序批量处理
+// 步骤9：快速滚动监测：滚动活跃期内，优先翻译新进入视口的内容
+// 步骤10：URL 变化兜底检测：发现路由变更时停止翻译并清理缓存
+// 步骤11：MutationObserver 动态增量翻译：处理字符变更与新插入的节点
 export async function translateCurrentPage(targetLang = 'zh-CN') { // 启动整页翻译，目标语言默认中文
   if (isTranslatorActive) return // 如果已经在翻译中，直接返回
   isTranslatorActive = true // 标记为激活状态
@@ -305,12 +317,14 @@ export async function translateCurrentPage(targetLang = 'zh-CN') { // 启动整�
   __clipGtxEverSuccess = false // 重置成功标志
 
   // 重置观察器
+  // 步骤1：断开旧观察器，避免前一次翻译的监听影响当前流程
   if (observer) observer.disconnect(); // IntersectionObserver的实例方法，做懒加载，当父块进入视口时才触发该块的翻译。disconnect()方法用于停止观察所有目标元素的变化。
   observer = null
   if (mutObserver) mutObserver.disconnect()
   mutObserver = null
 
   // 翻译前做环境清理，移除之前的翻译结果
+  // 步骤1（续）：移除“下方显示译文”的元素与父元素上的 data-clip-translated 标记，保证从干净页面开始
   try {
     document.querySelectorAll('[data-clip-translated-below]').forEach((el) => { try { el.parentElement?.removeChild(el) } catch {} })
   } catch {}
@@ -318,11 +332,13 @@ export async function translateCurrentPage(targetLang = 'zh-CN') { // 启动整�
     document.querySelectorAll('[data-clip-translated]').forEach((el) => (el as HTMLElement).removeAttribute('data-clip-translated'))
   } catch {}
 
+  // 步骤2：收集文本候选并设置目标语言
   const textNodes = getTextNodes(document.body); // 获取页面所有可翻译的文本节点
   if (!textNodes.length) { isTranslatorActive = false; return } // 如果没有文本节点，退出
   __clipTargetLang = targetLang // 设置全局目标语言
 
   // 获取用户设置的翻译策略
+  // 步骤3：读取并解析翻译策略，影响后续 GTX/LLM 的请求顺序与回退行为
   try {
     const strategyRaw = (await chrome.storage.local.get('translate_strategy'))?.translate_strategy
     const strategy = typeof strategyRaw === 'string' ? strategyRaw : 'gtx_first'
@@ -330,7 +346,9 @@ export async function translateCurrentPage(targetLang = 'zh-CN') { // 启动整�
     __clipStrategy = strategy
   } catch {}
 
-  const elementMap = new Map<HTMLElement, Node[]>() // 父块与其文本节点映射，用于按块分组
+  // 父块与其文本节点映射，用于按块分组与逐块并发
+  // 步骤4：将所有文本节点按块级父元素分组，便于“按块并发 + 视口优先”
+  const elementMap = new Map<HTMLElement, Node[]>()
   
   /**
    * 获取最近的块级祖先元素
@@ -380,7 +398,7 @@ export async function translateCurrentPage(targetLang = 'zh-CN') { // 启动整�
     }
   })
 
-  // 1. 优先使用缓存词典进行快速替换
+  // 步骤5：词典缓存直替（降低网络请求量、提升即时反馈）
   try {
     let applied = 0
     for (const n of textNodes) {
@@ -403,8 +421,8 @@ export async function translateCurrentPage(targetLang = 'zh-CN') { // 启动整�
     }
   } catch {}
 
-  const renderMode: 'below' | 'replace' = 'replace' // 渲染模式：替换原文
-  const useHtmlTranslate = false // 是否使用整块 HTML 翻译（默认否，使用文本节点翻译）
+  const renderMode: 'below' | 'replace' = 'replace' // 渲染模式：替换原文（默认），也可配置“下方显示译文”
+  //const useHtmlTranslate = false // 是否使用整块 HTML 翻译（默认否，使用文本节点翻译）
 
   // HTML 翻译的并发限制
   const runTaskHtml = (function createLimitHtml(concurrency: number) {
@@ -424,73 +442,81 @@ export async function translateCurrentPage(targetLang = 'zh-CN') { // 启动整�
    * @param element 父块元素
    * @param nodes 包含的文本节点数组
    */
+  // 每个父块一个任务：受并发限制器 runTask 控制，避免瞬时请求过多
   const batchTranslateNodes = (element: HTMLElement, nodes: Node[]) => runTask(async () => { // 单个父块的并发翻译任务
+    // 若翻译流程已被停止或恢复原文，直接退出当前块的处理
     if (!isTranslatorActive) return // 检查激活状态
     
     // HTML 整体翻译分支（目前未启用）
-    if (useHtmlTranslate && isHtmlEligible(element)) {
-      try {
-        const html = element.innerHTML || ""
-        const resp = await new Promise<any>((res) => {
-          try {
-            chrome.runtime.sendMessage({ action: 'translate-html', html, targetLang }, (r) => { const err = chrome.runtime.lastError; if (err) { res(null); return } res(r) })
-          } catch { res(null) }
-        })
-        if (resp?.success && typeof resp.data === 'string') {
-          if (!__clipElementHtmlOriginal.has(element)) __clipElementHtmlOriginal.set(element, html)
-          element.dataset.clipTranslated='true'
-          element.innerHTML = resp.data
-          __clipElementHtmlTranslated.set(element, resp.data)
-          if (!__clipFirstReported) {
-            __clipFirstReported = true
-            try { chrome.runtime.sendMessage({ type: "CLIP_TRANSLATE_FIRST" }) } catch {}
-            try { window.postMessage({ source: "clip", type: "clip:translate-first" }, "*") } catch {}
-          }
-        }
-      } catch {}
-      return
-    }
+    // 可选：整块 HTML 翻译（保留标签），当前默认关闭，仅在满足复杂度限制且非交互时使用
+    // if (useHtmlTranslate && isHtmlEligible(element)) {
+    //   try {
+    //     const html = element.innerHTML || ""
+    //     const resp = await new Promise<any>((res) => {
+    //       try {
+    //         chrome.runtime.sendMessage({ action: 'translate-html', html, targetLang }, (r) => { const err = chrome.runtime.lastError; if (err) { res(null); return } res(r) })
+    //       } catch { res(null) }
+    //     })
+    //     if (resp?.success && typeof resp.data === 'string') {
+    //       if (!__clipElementHtmlOriginal.has(element)) __clipElementHtmlOriginal.set(element, html)
+    //       element.dataset.clipTranslated='true'
+    //       element.innerHTML = resp.data
+    //       __clipElementHtmlTranslated.set(element, resp.data)
+    //       if (!__clipFirstReported) {
+    //         __clipFirstReported = true
+    //         try { chrome.runtime.sendMessage({ type: "CLIP_TRANSLATE_FIRST" }) } catch {}
+    //         try { window.postMessage({ source: "clip", type: "clip:translate-first" }, "*") } catch {}
+    //       }
+    //     }
+    //   } catch {}
+    //   return
+    // }
 
     // 提取需要翻译的文本
+    // 提取候选文本并进行有效性筛选与缓存直替
+    // 将 Node 列表映射为纯文本并去除首尾空白，作为待筛选的候选文本
     const texts = nodes.map(n => (n.nodeValue||'').trim())
     const validIdx: number[] = []
     const payload: string[] = []
     for(let i=0;i<texts.length;i++){
       const t = texts[i]
       if (!isTranslatableText(t)) continue // 过滤不可翻译文本
-      const cached = __clipLexicon.get(norm(t)) // 检查缓存
+      const cached = __clipLexicon.get(norm(t)) // 检查缓存（相同原文复用译文）
       if (cached && cached !== t) {
+        // 首次命中时记录原文，便于之后恢复原文
         if (!__clipOriginal.has(nodes[i])) __clipOriginal.set(nodes[i], t)
         try { nodes[i].nodeValue = cached } catch {}
         __clipTranslated.set(nodes[i], cached)
         continue // 命中缓存则跳过网络请求
       }
-      validIdx.push(i) // 记录有效索引
+      validIdx.push(i) // 记录有效索引（对应 payload 中的位置）
       payload.push(t) // 加入待翻译列表
     }
     if(!payload.length) return // 如果没有需要翻译的内容，返回
 
-    // 标记为待处理
+    // 标记为待处理：防止同一节点在其他轮询中被重复提交
     validIdx.forEach(idx => __clipPending.add(nodes[idx]))
 
-    const SEP = "|||CLIP_SEP|||" // 分隔符，用于合并请求
+    // 分隔符用于合并请求与回填拆分，降低网络开销
+    const SEP = "|||CLIP_SEP|||" // 分隔符：用于合并请求、回填时拆分
     try {
-      const CHUNK = 16 // 每批次合并 16 段文本
-      const results: string[] = new Array(payload.length)
-      const jobs: Promise<void>[] = []
+      const CHUNK = 16 // 每批次合并 16 段文本：平衡响应速度与拆分稳定性
+      const results: string[] = new Array(payload.length) // 与 payload 对齐的结果数组
+      const jobs: Promise<void>[] = [] // 子批次任务列表
       
       // 分批处理
       for (let start = 0; start < payload.length; start += CHUNK) {
         const end = Math.min(start + CHUNK, payload.length)
         const sub = payload.slice(start, end)
         
+        // 为当前切片创建一个子任务，统一并发执行
         jobs.push((async () => {
           if (!isTranslatorActive) return
           try {
             // 发起翻译请求（合并后的文本）
             const translated = await requestTranslation(sub.join(SEP), targetLang)
             const normalized = translated.replace(/｜/g, "|") // 归一化中文分隔符
-            let parts = normalized.split(SEP).map(s => s.trim()) // 拆分结果
+            let parts = normalized.split(SEP).map(s => s.trim()) // 拆分结果（理想路径）
             
             // 容错处理：如果拆分失败，尝试其他常见分隔符格式
             if (parts.length === 1) {
@@ -507,7 +533,7 @@ export async function translateCurrentPage(targetLang = 'zh-CN') { // 启动整�
             const hasTarget = (s: string) => isZhTarget ? /[\u4e00-\u9fa5]/.test(s) : /[A-Za-z]/.test(s)
             const allOriginal = parts.length === sub.length && parts.every((p, i) => p === sub[i] && !hasTarget(p))
             
-            // 如果数量不匹配或翻译失败（全是原文），则回退到逐条翻译
+            // 如果数量不匹配或翻译失败（全是原文），则回退到逐条翻译，确保每段都有覆盖
             if (parts.length !== sub.length || allOriginal) {
               const per: string[] = []
               for (let i = 0; i < sub.length; i++) {
@@ -536,17 +562,17 @@ export async function translateCurrentPage(targetLang = 'zh-CN') { // 启动整�
                 const isZhTarget = /^zh/i.test(targetLang)
                 const hasTargetVal = isZhTarget ? /[\u4e00-\u9fa5]/.test(val) : /[A-Za-z]/.test(val)
                 
-                // 只有当结果有效且不为原文时才替换
+                // 只有当结果有效且不为原文时才替换，避免误写原文
                 if (hasTargetVal || val !== texts[nodePos]) {
                   try { nodes[nodePos].nodeValue = val } catch {}
                   __clipTranslated.set(nodes[nodePos], val)
-                  // 更新缓存
+                  // 更新缓存：同原文的文本在后续出现时可直接替换
                   if (texts[nodePos] && hasTargetVal) __clipLexicon.set(norm(texts[nodePos]), val)
                 }
               }
             }
             
-            // 如果有结果产生，尝试上报首次翻译
+            // 如果有结果产生，尝试上报首次翻译，驱动 UI 结束“加载中”
             if (isTranslatorActive && !__clipFirstReported && parts.length > 0) {
               __clipFirstReported = true
               try { chrome.runtime.sendMessage({ type: "CLIP_TRANSLATE_FIRST" }) } catch {}
@@ -556,16 +582,16 @@ export async function translateCurrentPage(targetLang = 'zh-CN') { // 启动整�
         })())
       }
       
-      await Promise.all(jobs) // 等待该块所有批次完成
+      await Promise.all(jobs) // 等待该块所有批次完成，确保 results 已填充
       
       if (!isTranslatorActive) return
       
-      // 最终确认渲染（防止漏网之鱼）
+      // 最终确认渲染（防止漏网之鱼）：补齐未即时写回的节点
       if (renderMode === 'replace') {
         for (let k = 0; k < validIdx.length; k++) {
           const idx = validIdx[k]
           const node = nodes[idx]
-          if (!__clipOriginal.has(node)) __clipOriginal.set(node, texts[idx])
+          if (!__clipOriginal.has(node)) __clipOriginal.set(node, texts[idx]) // 兜底记录原文
           if (!__clipTranslated.has(node)) {
             const val = results[k] || texts[idx]
             const isZhTarget = /^zh/i.test(targetLang)
@@ -573,7 +599,7 @@ export async function translateCurrentPage(targetLang = 'zh-CN') { // 启动整�
             if (hasTargetVal || val !== texts[idx]) {
               try { node.nodeValue = val } catch {}
               __clipTranslated.set(node, val)
-              if (texts[idx] && hasTargetVal) __clipLexicon.set(norm(texts[idx]), val)
+              if (texts[idx] && hasTargetVal) __clipLexicon.set(norm(texts[idx]), val) // 写入词典缓存
             }
           }
         }
@@ -585,12 +611,12 @@ export async function translateCurrentPage(targetLang = 'zh-CN') { // 启动整�
       }
     } catch(e) { /* ignore */ }
     finally {
-      // 移除 pending 状态
+      // 移除 pending 状态：声明该批处理完成，允许后续增量任务继续
       validIdx.forEach(idx => __clipPending.delete(nodes[idx]))
     }
   })
 
-  // 创建 IntersectionObserver 实例
+  // 步骤6：创建 IntersectionObserver（视口优先）——父块进入视口时触发批次翻译
   observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if(entry.isIntersecting){ // 如果元素进入视口
@@ -606,10 +632,10 @@ export async function translateCurrentPage(targetLang = 'zh-CN') { // 启动整�
     })
   }, { rootMargin:'800px 0px 800px 0px', threshold:0 }) // 扩大视口边距 800px，提前加载
 
-  // 将所有父块加入观察
+  // 将所有父块加入观察（等待进入视口触发批处理）
   elementMap.forEach((_,el)=>observer?.observe(el))
 
-  // 立即翻译视口附近的元素（防止 Observer 延迟）
+  // 步骤7：近视口双保险（立即处理首屏附近的块）——结合排序提高可读性与稳定性
   try {
     const entries: Array<{ el: HTMLElement; nodes: Node[] }> = []
     elementMap.forEach((nodes, el) => entries.push({ el, nodes }))
@@ -663,9 +689,10 @@ export async function translateCurrentPage(targetLang = 'zh-CN') { // 启动整�
     }
   })
 
-  console.log("✅ 可视区域监听已启动")
+  console.log("✅ 可视区域监听已启动") // 步骤6/7启动完成，开始首屏与滚动时的按块翻译
 
-  // 启动补漏轮询：定期扫描未翻译的节点
+  // 步骤8：补漏轮询（定期扫描未翻译节点，按位置排序批量处理）
+  // 步骤11（配合）：动态监听中也会做词典直替与增量翻译，这里是定时轮询版
   try {
     const continuousSweep = async (round = 1) => {
       try {
@@ -709,7 +736,7 @@ export async function translateCurrentPage(targetLang = 'zh-CN') { // 启动整�
     setTimeout(() => continuousSweep(1), 8000)
   } catch {}
 
-  // 启动快速滚动监测：滚动时立即检查并翻译新进入视口的内容
+  // 步骤9：快速滚动监测——滚动活跃期内立即检查并批量翻译新进入视口的内容
   try {
     const rushSchedule = () => {
       __clipRushDeadline = Date.now() + 10000 // 更新活跃截止时间
@@ -749,7 +776,7 @@ export async function translateCurrentPage(targetLang = 'zh-CN') { // 启动整�
     rushSchedule()
   } catch {}
 
-  // 兜底轮询检测 URL 变化（防止 popstate/hashchange 漏网）
+  // 步骤10：URL 变化兜底检测（防止 popstate/hashchange 漏网）
   try {
     const tick = () => {
       try {
@@ -778,7 +805,7 @@ export async function translateCurrentPage(targetLang = 'zh-CN') { // 启动整�
     setTimeout(tick, 1000)
   } catch {}
 
-  // 启动 MutationObserver 监听动态加载的 DOM
+  // 步骤11：启动 MutationObserver —— 侦测字符变化与子节点插入，做词典直替或增量翻译
   try {
     mutObserver = new MutationObserver((recs) => {
       if (!isTranslatorActive) return
@@ -842,7 +869,9 @@ export async function translateCurrentPage(targetLang = 'zh-CN') { // 启动整�
  * @param text 待翻译文本
  * @param lang 目标语言
  */
+// 翻译请求封装：根据策略并发尝试 GTX/LLM 或按偏好 fallback；对批量文本使用 SEP 合并以降低网络开销
 function requestTranslation(text: string, lang: string): Promise<string> {
+  // 步骤R：翻译请求封装——在 GTX 与 LLM 之间按策略选择，支持竞速与回退；批量场景用 SEP 合并
   return new Promise((resolve) => {
     const targetLang = (lang === 'zh' ? 'zh-CN' : lang)
     let finished = false
@@ -853,6 +882,7 @@ function requestTranslation(text: string, lang: string): Promise<string> {
     ;(async () => {
       // 策略：竞速模式 (Race)
       if (__clipStrategy === 'race') {
+        // 步骤R1：并行尝试 GTX 与 LLM，谁先返回有效译文就采用
         const srcLang = /^zh/i.test(targetLang) ? 'en' : 'zh-CN'
         
         // GTX 任务
@@ -975,7 +1005,7 @@ function requestTranslation(text: string, lang: string): Promise<string> {
         }
       } catch {}
 
-      // 3) 兜底：返回原文（等待补漏）
+      // 3) 兜底：返回原文（等待补漏）——保守策略，后续补漏轮询与滚动监测继续覆盖
       finish(text)
     })().catch(() => {})
 
@@ -987,7 +1017,9 @@ function requestTranslation(text: string, lang: string): Promise<string> {
  * 递归获取元素下的所有文本节点
  * 过滤不可见元素、脚本、样式等。
  */
+// 递归提取可翻译文本节点：过滤不可见/交互/代码块等，保障页面功能与排版稳定
 function getTextNodes(element: Node): Node[] {
+  // 步骤G：递归提取可翻译文本节点——过滤脚本/样式/代码/交互等，保证安全与排版稳定
   let nodes: Node[] = []
   const invalidTags=['SCRIPT','STYLE','NOSCRIPT','CODE','PRE','SVG','TEXTAREA','INPUT','SELECT','OPTION','META','LINK','AUDIO','VIDEO','IMG','IFRAME']
   if(element.nodeType===Node.ELEMENT_NODE){//如果是元素节点
@@ -1028,20 +1060,22 @@ async function runBulkRound(nodes: Node[], targetLang: string) {
     __clipPending.add(nodes[i]) // 标记为处理中
   }
   if (!payload.length) return
+  // 批量合并分隔符：用于一次请求翻译多段文本，减少网络开销
   const SEP = "|||CLIP_SEP|||"
-      const CHUNK = 16
+  // 每批次最大 16 段，避免返回过慢与拆分错误概率上升
+  const CHUNK = 16
       for (let start = 0; start < payload.length; start += CHUNK) {
         const end = Math.min(start + CHUNK, payload.length)
         const sub = payload.slice(start, end)
         await new Promise<void>((resolve) => {
           try {
         if (!isTranslatorActive) { resolve(); return }
-        // 直接调用 background 的 LLM 接口 (这里逻辑似乎是专门为 LLM 补漏设计的？或者复用接口)
+        // 走后台 LLM 翻译（批量）：优先质量兜底，后台有并发限流与错误分类
         chrome.runtime.sendMessage({ action: 'translate-text-llm', text: sub.join(SEP), targetLang }, (resp) => {
           const err = chrome.runtime.lastError
           if (err || !resp?.success || typeof resp.data !== 'string') {
             const code = resp?.error
-            // 遇到限流，增加延迟并尝试单条重试
+            // 限流：指数退避（上限 20s），并降级为“逐条重试”
             if (code === 'RATE_LIMIT') {
               __clipSweepDelayMs = Math.min(20000, Math.floor(__clipSweepDelayMs * 1.5))
               const promises: Promise<void>[] = []
@@ -1052,11 +1086,12 @@ async function runBulkRound(nodes: Node[], targetLang: string) {
                 promises.push(new Promise<void>((done) => {
                   try {
                     if (!isTranslatorActive) { __clipPending.delete(nodes[ni]); done(); return }
+                    // 延迟分散请求，缓解瞬时速率限制
                     const delay = Math.min(2000 + Math.floor(Math.random() * 2000), __clipSweepDelayMs)
                     setTimeout(() => {
                       try {
                         chrome.runtime.sendMessage({ action: 'translate-text-llm', text: sub[i], targetLang }, (resp2) => {
-                          // ... 处理单条重试结果 ...
+                          // 单条重试：解析翻译结果并写回
                           const err2 = chrome.runtime.lastError
                           const node = nodes[ni]
                           const srcText = texts[ni]
@@ -1067,7 +1102,7 @@ async function runBulkRound(nodes: Node[], targetLang: string) {
                           }
                           if (!__clipOriginal.has(node)) __clipOriginal.set(node, srcText)
                           const isZhTarget = /^zh/i.test(targetLang)
-                          // ... 验证并替换 ...
+                          // 校验目标语言字符集（中文/英文），避免原文误回写
                           const hasTargetVal = isZhTarget ? /[\u4e00-\u9fa5]/.test(val) : /[A-Za-z]/.test(val)
                           if (hasTargetVal || val !== srcText) {
                             try { node.nodeValue = val } catch {}
@@ -1086,6 +1121,7 @@ async function runBulkRound(nodes: Node[], targetLang: string) {
               return
             }
             if (code === 'RETRYABLE') {
+              // 可重试错误：直接逐条再次调用 LLM，不做退避
               const promises: Promise<void>[] = []
               for (let i = 0; i < sub.length; i++) {
                 const gi = start + i
@@ -1120,6 +1156,7 @@ async function runBulkRound(nodes: Node[], targetLang: string) {
               Promise.all(promises).then(() => { __clipSweepDelayMs = 8000; resolve() })
               return
             }
+            // 其他错误：清理 pending 并结束该批
             for (let i = 0; i < sub.length; i++) { const gi = start + i; const ni = valid[gi]; if (ni !== undefined) __clipPending.delete(nodes[ni]) }
             resolve(); return
           }
@@ -1132,6 +1169,7 @@ async function runBulkRound(nodes: Node[], targetLang: string) {
             }
           } catch {}
           if (!parts.length) {
+            // 非 JSON 返回：按分隔符拆分
             const normalized = resp.data.replace(/｜/g, "|")
             parts = normalized.split(SEP).map(s => s.trim())
           }
