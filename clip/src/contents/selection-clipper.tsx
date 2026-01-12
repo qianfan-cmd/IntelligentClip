@@ -130,7 +130,8 @@ function SelectionClipper() {
   const [selectedText, setSelectedText] = useState("")
   const [loading, setLoading] = useState(false)
   const [savingDirect, setSavingDirect] = useState(false)
-  const { translate: translateCurrentPage } = useContentScriptI18n()
+  const { t } = useContentScriptI18n()
+  const translateCurrentPage = t
   
   // 【修复】使用统一的 API 配置模块，包含加载状态
   const { apiKey: openAIKey, isLoading: isApiKeyLoading } = useApiConfig()

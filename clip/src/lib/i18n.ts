@@ -3,15 +3,15 @@
 import { LanguageCode } from "./atoms/language";
 
 // 语言文件缓存
-let languageCache: Record<string, Record<string, string>> = {};
+const languageCache: Record<string, Record<string, string>> = {};
 
 // 获取用户选择的语言
 async function getUserLanguage(): Promise<LanguageCode> {
   const stored = await chrome.storage.local.get(["preferredLocale", "languageConfig"]);
   
   // 优先使用 languageConfig 中的语言设置
-  if (stored.languageConfig && stored.languageConfig.code) {
-    return stored.languageConfig.code;
+  if (stored.languageConfig && stored.languageConfig.language) {
+    return stored.languageConfig.language as LanguageCode;
   }
   
   // 兼容旧的 preferredLocale 设置
@@ -32,18 +32,42 @@ async function loadLanguageFile(languageCode: LanguageCode): Promise<Record<stri
 
   try {
     // 加载语言文件
-    const response = await fetch(chrome.runtime.getURL(`_locales/${languageCode}/messages.json`));
-    if (!response.ok) {
+    //content script不能用fetch，能用chorome.runtime.sendMessage
+    //const response = await fetch(chrome.runtime.getURL(`_locales/${languageCode}/messages.json`));
+    
+    const res = await chrome.runtime.sendMessage({
+      type: "GET_LOCALE",
+      lang: languageCode
+    })
+
+    //如果响应无效，且当前请求的不是简体中文时，尝试请求简体中文；如果失败则返回空对象，不再递归
+    if (!res.ok || !res.data) {
+      if (languageCode !== 'zh_CN') {
+        const fallback = await chrome.runtime.sendMessage({
+          type: "GET_LOCALE",
+          lang: "zh_CN"
+        });
+        if (fallback?.ok || fallback.data) {
+          const translations: Record<string, string> = {};
+          for (const key in fallback.data) {
+            const v = fallback.data[key]?.message;
+            if (typeof v === 'string') translations[key] = v;
+          }
+          languageCache['zh_CN'] = translations;//缓存语言
+          return translations;
+        }
+      }
       throw new Error(`Failed to load language file for ${languageCode}`);
     }
 
-    const languageData = await response.json();
-    
+    //响应成功，解析数据
+    const languageData = res.data;
     // 构建翻译映射
     const translations: Record<string, string> = {};
     for (const key in languageData) {
-      if (languageData[key].message) {
-        translations[key] = languageData[key].message;
+      const v = languageData[key]?.message;
+      if (typeof v === "string") {
+        translations[key] = v;
       }
     }
 
@@ -51,9 +75,13 @@ async function loadLanguageFile(languageCode: LanguageCode): Promise<Record<stri
     languageCache[languageCode] = translations;
     return translations;
   } catch (error) {
-    console.error(`Failed to load language file for ${languageCode}:`, error);
+    console.log(`Failed to load language file for ${languageCode}:`, error);
+    //console.error(`Failed to load language file for ${languageCode}:`, error);
     // 如果加载失败，返回默认语言（简体中文）
-    return loadLanguageFile("zh_CN");
+    // if (languageCode !== 'zh_CN') {
+    //   return loadLanguageFile("zh_CN");
+    // }
+    //throw error;
   }
 }
 

@@ -191,6 +191,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true
   }
 
+//多语言支持
+if (request.type === 'GET_LOCALE') {
+  const run = async () => {
+    try {
+      const lang = String(request.lang || "zh_CN");
+      const url = chrome.runtime.getURL(`_locales/${lang}/messages.json`);
+      const resp = await fetch(url);
+      if (!resp.ok) { sendResponse({ ok: false, error: `HTTP ${resp.status}`}); return;}
+      const data = await resp.json();
+      sendResponse({ ok: true, data});
+    } catch (error: any) {
+      const msg = error?.message || String(error);
+      sendResponse({ ok: false, error: msg});
+    }
+  }
+  run().catch(()=>{});
+  return true;
+}
+
   // 兼容旧消息类型：打开历史记录
   if (request.type === "clip:open-history") {
     const historyUrl = chrome.runtime.getURL("tabs/history.html")
